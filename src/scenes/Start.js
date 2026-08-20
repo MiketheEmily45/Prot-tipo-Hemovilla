@@ -12,11 +12,11 @@ export class Start extends Phaser.Scene {
     }
 
     create() {
-        this.background = this.add.tileSprite(318, 326, 637, 653, 'background');
+        this.background = this.add.tileSprite(256, 256, 512, 512, 'background');
         const title = this.add.image(this.background.width / 2, this.background.height / 2 - 100, 'title');
         title.setOrigin(0.5);
         title.setScale(2);
-        const startButton = this.add.tileSprite(this.background.width / 2, this.background.height / 2 + 100, 216, 86, 'start-button');
+        const startButton = this.add.tileSprite(this.background.width / 2, this.background.height / 2 + 120, 216, 86, 'start-button');
         startButton.setInteractive();
         startButton.setOrigin(0.5);
         startButton.on('pointerdown', () => {
@@ -26,7 +26,7 @@ export class Start extends Phaser.Scene {
             startButton.clearTint();
             this.scene.start('GameMap');
         })
-        const configButton = this.add.tileSprite(this.background.width / 2 + 240, this.background.height / 2 + 250, 84, 80, 'config-button');
+        const configButton = this.add.tileSprite(this.background.width / 2 + 200, this.background.height / 2 + 200, 84, 80, 'config-button');
         configButton.setInteractive();
         configButton.setOrigin(0.5);
         configButton.on('pointerdown', () => {

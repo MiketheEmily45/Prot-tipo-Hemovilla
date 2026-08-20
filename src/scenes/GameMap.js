@@ -10,19 +10,13 @@ export class GameMap extends Phaser.Scene {
         this.load.image('map2', 'assets/ComplementosCidade1.png');
         this.load.image('mapcolision1', 'assets/ConstrucoesPrincipaisCidade1.png');
         this.load.image('mapcolision2', 'assets/ConstrucoesSecundariasCidade1.png');
-        // Load player sprites for all directions
-        this.load.image('down', 'assets/down.png');
-        this.load.image('down2', 'assets/down2.png');
-        this.load.image('down3', 'assets/down3.png');
-        this.load.image('up', 'assets/up.png');
-        this.load.image('up2', 'assets/up2.png');
-        this.load.image('up3', 'assets/up3.png');
-        this.load.image('left', 'assets/left.png');
-        this.load.image('left2', 'assets/left2.png');
-        this.load.image('left3', 'assets/left3.png');
-        this.load.image('right', 'assets/right.png');
-        this.load.image('right2', 'assets/right2.png');
-        this.load.image('right3', 'assets/right3.png');
+        // Seu Joaquim
+        this.load.image('SJPD', 'assets/SeuJoaquim.ParadoDireita.png');
+        this.load.image('SJPE', 'assets/SeuJoaquim.ParadoEsquerda.png');
+        this.load.image('SJAD1', 'assets/SeuJoaquim.AndarDireita1.png');
+        this.load.image('SJAE1', 'assets/SeuJoaquim.AndarEsquerda1.png');
+        this.load.image('SJAD2', 'assets/SeuJoaquim.AndarDireita2.png');
+        this.load.image('SJAE2', 'assets/SeuJoaquim.AndarEsquerda2.png');
     }
 
     create() {
@@ -30,7 +24,7 @@ export class GameMap extends Phaser.Scene {
         this.background2 = this.add.tileSprite(256, 256, 512, 512, 'map2');
         this.background3 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision1');
         this.background4 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision2');
-        this.player = this.physics.add.sprite(41, 79, 'down');
+        this.player = this.physics.add.sprite(27, 43, 'SJPD');
         this.player.setCollideWorldBounds(true);
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -38,42 +32,38 @@ export class GameMap extends Phaser.Scene {
         this.anims.create({
             key: 'walk_down',
             frames: [
-                { key: 'down' },
-                { key: 'down2' },
-                { key: 'down3' }
+                { key: 'SJAD1' },
+                { key: 'SJAD2' }
             ],
-            frameRate: 10,
+            frameRate: 2,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk_up',
             frames: [
-                { key: 'up' },
-                { key: 'up2' },
-                { key: 'up3' }
+                { key: 'SJAE1' },
+                { key: 'SJAE2' }
             ],
-            frameRate: 10,
+            frameRate: 2,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk_left',
             frames: [
-                { key: 'left' },
-                { key: 'left2' },
-                { key: 'left3' }
+                { key: 'SJPE1' },
+                { key: 'SJPE2' }
             ],
-            frameRate: 10,
+            frameRate: 2,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk_right',
             frames: [
-                { key: 'right' },
-                { key: 'right2' },
-                { key: 'right3' }
+                { key: 'SJPD1' },
+                { key: 'SJPD2' }
             ],
             frameRate: 5,
             repeat: -1

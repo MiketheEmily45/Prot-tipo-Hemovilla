@@ -25,12 +25,14 @@ export class GameMap extends Phaser.Scene {
         this.load.image('DMAD2', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarDireita2.png');
         this.load.image('DMAE2', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarEsquerda2.png');
         //Dona Aparecida
-        this.load.image('DAPD', 'assets/Personagens/DonaAparecida/DonaAparecida.ParadaDireita.png');
-        this.load.image('DAPE', 'assets/Personagens/DonaAparecida/DonaAparecida.ParadaEsquerda.png');
+        this.load.image('DAPD', 'assets/Personagens/DonaAparecida/DonaAparecida.PosiçãoParadaDireita.png');
+        this.load.image('DAPE', 'assets/Personagens/DonaAparecida/DonaAparecida.PosiçãoParadaEsquerda.png');
         this.load.image('DAAD1', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarDireita1.png');
         this.load.image('DAAE1', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarEsquerda1.png');
         this.load.image('DAAD2', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarDireita2.png');
         this.load.image('DAAE2', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarEsquerda2.png');
+        // Balao temporario exibido quando um personagem clicavel esta parado.
+        this.load.image('balao_temporario', 'assets/Personagens/balao_temporario.png');
     }
 
     create() {
@@ -143,6 +145,15 @@ export class GameMap extends Phaser.Scene {
 
         this.startMove();
 
+        this.clickableCharacters = [];
+        this.registerClickableCharacter({
+            sprite: this.joaquim,
+            // O Seu Joaquim recebe o balao acima da cabeca.
+            balloonOffset: { x: 0, y: -55 },
+            stop: () => this.stopJoaquimForInteraction(),
+            resume: () => this.resumeJoaquimFromInteraction()
+        });
+
         this.horizontalNPCs = [
             this.createHorizontalWalker({
                 sprite: this.physics.add.sprite(280, 290, 'DMPE'),
@@ -169,6 +180,88 @@ export class GameMap extends Phaser.Scene {
                 idleRight: 'DAPD'
             })
         ];
+
+        this.registerClickableCharacter({
+            sprite: this.horizontalNPCs[0].sprite,
+            // A Dona Marlene recebe o balao a esquerda.
+            balloonOffset: { x: -55, y: -15 },
+            stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[0]),
+            resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[0])
+        });
+
+        this.registerClickableCharacter({
+            sprite: this.horizontalNPCs[1].sprite,
+            // A Dona Aparecida recebe o balao a esquerda.
+            balloonOffset: { x: -55, y: -15 },
+            stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
+            resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[1])
+        });
+    }
+
+    registerClickableCharacter(config) {
+        const character = {
+            ...config,
+            isStoppedByClick: false,
+            balloon: null
+        };
+
+        character.sprite.setInteractive({ useHandCursor: true });
+        character.sprite.on('pointerdown', () => this.toggleCharacterInteraction(character));
+        this.clickableCharacters.push(character);
+    }
+
+    toggleCharacterInteraction(character) {
+        if (character.isStoppedByClick) {
+            character.isStoppedByClick = false;
+            character.balloon.destroy();
+            character.balloon = null;
+            character.resume();
+            return;
+        }
+
+        character.isStoppedByClick = true;
+        character.stop();
+        character.balloon = this.add.image(0, 0, 'balao_temporario');
+        this.updateCharacterBalloonPosition(character);
+    }
+
+    updateCharacterBalloonPosition(character) {
+        if (!character.balloon) {
+            return;
+        }
+
+        character.balloon.setPosition(
+            character.sprite.x + character.balloonOffset.x,
+            character.sprite.y + character.balloonOffset.y
+        );
+    }
+
+    stopJoaquimForInteraction() {
+        this.joaquim.setVelocity(0, 0);
+        this.joaquim.anims.stop();
+        this.joaquim.setTexture(this.idleTextures[this.lastDirection] || 'SJPD');
+    }
+
+    resumeJoaquimFromInteraction() {
+        if (this.isPaused) {
+            this.joaquim.setVelocity(0, 0);
+            this.joaquim.setTexture(this.idleTextures[this.lastDirection] || 'SJPD');
+            return;
+        }
+
+        this.startMove();
+    }
+
+    stopHorizontalWalkerForInteraction(walker) {
+        walker.isStoppedByClick = true;
+        walker.sprite.setVelocityX(0);
+        walker.sprite.anims.stop();
+        walker.sprite.setTexture(walker.direction === 'left' ? walker.idleLeft : walker.idleRight);
+    }
+
+    resumeHorizontalWalkerFromInteraction(walker) {
+        walker.isStoppedByClick = false;
+        this.updateHorizontalWalker(walker);
     }
 
     createHorizontalWalker(config) {
@@ -187,6 +280,11 @@ export class GameMap extends Phaser.Scene {
     }
 
     updateHorizontalWalker(walker) {
+        if (walker.isStoppedByClick) {
+            walker.sprite.setVelocityX(0);
+            return;
+        }
+
         const { sprite, minX, maxX, speed, walkLeftAnim, walkRightAnim } = walker;
 
         if (walker.direction === 'left' && sprite.x <= minX) {
@@ -224,6 +322,20 @@ export class GameMap extends Phaser.Scene {
     }
 
     update(time) {
+        const joaquimInteraction = this.clickableCharacters && this.clickableCharacters[0];
+
+        if (joaquimInteraction && joaquimInteraction.isStoppedByClick) {
+            this.joaquim.setVelocity(0, 0);
+            this.updateCharacterBalloonPosition(joaquimInteraction);
+            this.clickableCharacters.slice(1).forEach((character) => this.updateCharacterBalloonPosition(character));
+
+            if (this.horizontalNPCs) {
+                this.horizontalNPCs.forEach((walker) => this.updateHorizontalWalker(walker));
+            }
+
+            return;
+        }
+
         if (this.isPaused && time >= this.nextDirectionChange) {
             this.currentDirection = this.currentDirection === 'up' ? 'down' : 'up';
             this.startMove();
@@ -244,6 +356,10 @@ export class GameMap extends Phaser.Scene {
 
         if (this.horizontalNPCs) {
             this.horizontalNPCs.forEach((walker) => this.updateHorizontalWalker(walker));
+        }
+
+        if (this.clickableCharacters) {
+            this.clickableCharacters.forEach((character) => this.updateCharacterBalloonPosition(character));
         }
     }
 

@@ -33,6 +33,7 @@ export class GameMap extends Phaser.Scene {
         this.load.image('DAAE2', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarEsquerda2.png');
         // Balao temporario exibido quando um personagem clicavel esta parado.
         this.load.image('balao_temporario', 'assets/Personagens/balao_temporario.png');
+        this.load.image('icone_alerta', 'assets/Personagens/icone_alerta.png');
     }
 
     create() {
@@ -142,6 +143,7 @@ export class GameMap extends Phaser.Scene {
         this.currentDirection = 'up';
         this.moveStartY = this.joaquim.y;
         this.nextDirectionChange = this.time.now + this.pauseTime;
+        this.remainingPauseTime = this.pauseTime;
 
         this.startMove();
 
@@ -150,6 +152,7 @@ export class GameMap extends Phaser.Scene {
             sprite: this.joaquim,
             // O Seu Joaquim recebe o balao acima da cabeca.
             balloonOffset: { x: 0, y: -55 },
+            alertInterval: 60000,
             stop: () => this.stopJoaquimForInteraction(),
             resume: () => this.resumeJoaquimFromInteraction()
         });
@@ -185,6 +188,7 @@ export class GameMap extends Phaser.Scene {
             sprite: this.horizontalNPCs[0].sprite,
             // A Dona Marlene recebe o balao a esquerda.
             balloonOffset: { x: -55, y: -15 },
+            alertInterval: 120000,
             stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[0]),
             resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[0])
         });
@@ -193,6 +197,7 @@ export class GameMap extends Phaser.Scene {
             sprite: this.horizontalNPCs[1].sprite,
             // A Dona Aparecida recebe o balao a esquerda.
             balloonOffset: { x: -55, y: -15 },
+            alertInterval: 240000,
             stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
             resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[1])
         });
@@ -202,7 +207,11 @@ export class GameMap extends Phaser.Scene {
         const character = {
             ...config,
             isStoppedByClick: false,
-            balloon: null
+            balloon: null,
+            // Cada personagem controla seu proprio alerta e quando ele deve aparecer.
+            alertIcon: null,
+            alertOffset: config.alertOffset || { x: -13, y: -35 },
+            nextAlertTime: config.alertInterval ? this.time.now + config.alertInterval : null
         };
 
         character.sprite.setInteractive({ useHandCursor: true });
@@ -211,6 +220,10 @@ export class GameMap extends Phaser.Scene {
     }
 
     toggleCharacterInteraction(character) {
+        if (character.alertIcon) {
+            this.resetCharacterAlert(character);
+        }
+
         if (character.isStoppedByClick) {
             character.isStoppedByClick = false;
             character.balloon.destroy();
@@ -225,6 +238,13 @@ export class GameMap extends Phaser.Scene {
         this.updateCharacterBalloonPosition(character);
     }
 
+    resetCharacterAlert(character) {
+        // Ao interagir com um personagem alertado, remove o icone e reinicia a contagem.
+        character.alertIcon.destroy();
+        character.alertIcon = null;
+        character.nextAlertTime = this.time.now + character.alertInterval;
+    }
+
     updateCharacterBalloonPosition(character) {
         if (!character.balloon) {
             return;
@@ -236,7 +256,42 @@ export class GameMap extends Phaser.Scene {
         );
     }
 
+    updateCharacterAlert(character, time) {
+        if (!character.alertInterval) {
+            return;
+        }
+
+        // Quando o tempo configurado termina, cria o icone uma unica vez.
+        if (!character.alertIcon && time >= character.nextAlertTime) {
+            character.alertIcon = this.add.image(0, 0, 'icone_alerta');
+            character.alertIcon.setDepth(character.sprite.depth + 1);
+        }
+
+        // Mantem o alerta acompanhando o personagem enquanto ele se movimenta.
+        if (character.alertIcon) {
+            character.alertIcon.setPosition(
+                character.sprite.x + character.alertOffset.x,
+                character.sprite.y + character.alertOffset.y
+            );
+        }
+    }
+
+    updateCharacterIndicators(time) {
+        if (!this.clickableCharacters) {
+            return;
+        }
+
+        this.clickableCharacters.forEach((character) => {
+            this.updateCharacterBalloonPosition(character);
+            this.updateCharacterAlert(character, time);
+        });
+    }
+
     stopJoaquimForInteraction() {
+        if (this.isPaused) {
+            this.remainingPauseTime = Math.max(0, this.nextDirectionChange - this.time.now);
+        }
+
         this.joaquim.setVelocity(0, 0);
         this.joaquim.anims.stop();
         this.joaquim.setTexture(this.idleTextures[this.lastDirection] || 'SJPD');
@@ -244,12 +299,13 @@ export class GameMap extends Phaser.Scene {
 
     resumeJoaquimFromInteraction() {
         if (this.isPaused) {
+            this.nextDirectionChange = this.time.now + this.remainingPauseTime;
             this.joaquim.setVelocity(0, 0);
             this.joaquim.setTexture(this.idleTextures[this.lastDirection] || 'SJPD');
             return;
         }
 
-        this.startMove();
+        this.startMove(false);
     }
 
     stopHorizontalWalkerForInteraction(walker) {
@@ -304,11 +360,15 @@ export class GameMap extends Phaser.Scene {
         this.joaquim.anims.stop();
         this.joaquim.setTexture(this.idleTextures[this.lastDirection] || 'SJPD');
         this.nextDirectionChange = this.time.now + this.pauseTime;
+        this.remainingPauseTime = this.pauseTime;
     }
 
-    startMove() {
+    startMove(resetMoveStart = true) {
         this.isPaused = false;
-        this.moveStartY = this.joaquim.y;
+
+        if (resetMoveStart) {
+            this.moveStartY = this.joaquim.y;
+        }
 
         if (this.currentDirection === 'up') {
             this.joaquim.setVelocity(0, -this.playerSpeed);
@@ -323,11 +383,10 @@ export class GameMap extends Phaser.Scene {
 
     update(time) {
         const joaquimInteraction = this.clickableCharacters && this.clickableCharacters[0];
+        this.updateCharacterIndicators(time);
 
         if (joaquimInteraction && joaquimInteraction.isStoppedByClick) {
             this.joaquim.setVelocity(0, 0);
-            this.updateCharacterBalloonPosition(joaquimInteraction);
-            this.clickableCharacters.slice(1).forEach((character) => this.updateCharacterBalloonPosition(character));
 
             if (this.horizontalNPCs) {
                 this.horizontalNPCs.forEach((walker) => this.updateHorizontalWalker(walker));
@@ -356,10 +415,6 @@ export class GameMap extends Phaser.Scene {
 
         if (this.horizontalNPCs) {
             this.horizontalNPCs.forEach((walker) => this.updateHorizontalWalker(walker));
-        }
-
-        if (this.clickableCharacters) {
-            this.clickableCharacters.forEach((character) => this.updateCharacterBalloonPosition(character));
         }
     }
 

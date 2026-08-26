@@ -10,6 +10,7 @@ export class GameMap extends Phaser.Scene {
         this.load.image('map2', 'assets/Mapas/Cidade1/ComplementosCidade1.png');
         this.load.image('mapcolision1', 'assets/Mapas/Cidade1/ConstrucoesPrincipaisCidade1.png');
         this.load.image('mapcolision2', 'assets/Mapas/Cidade1/ConstrucoesSecundariasCidade1.png');
+        this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
         // Seu Joaquim
         this.load.image('SJPD', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoDireita.png');
         this.load.image('SJPE', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoEsquerda.png');
@@ -41,6 +42,20 @@ export class GameMap extends Phaser.Scene {
         this.background2 = this.add.tileSprite(256, 256, 512, 512, 'map2');
         this.background3 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision1');
         this.background4 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision2');
+
+        // Botao fixo no canto superior esquerdo para voltar ao menu inicial.
+        const pauseButton = this.add.image(8, 8, 'pause-button');
+        pauseButton.setOrigin(0);
+        pauseButton.setDepth(100);
+        pauseButton.setInteractive({ useHandCursor: true });
+        pauseButton.on('pointerdown', () => {
+            // Usa o mesmo escurecimento do botao Iniciar enquanto o clique esta pressionado.
+            pauseButton.setTint(0x8B2E40);
+        });
+        pauseButton.on('pointerup', () => {
+            pauseButton.clearTint();
+            this.scene.start('Start');
+        });
 
         this.cursors = this.input.keyboard.createCursorKeys();
 

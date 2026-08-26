@@ -7,7 +7,7 @@ export class ConfigMenu extends Phaser.Scene {
     preload() {
         // Usa a mesma tela inicial como fundo para o menu de configuracoes nao ficar vazio.
         this.load.image('config-menu', 'assets/Telas/Fundos/telainicial.png');
-        this.load.image('config-button', 'assets/Telas/Botoes/botaoconfig.png');
+        this.load.image('config-button', 'assets/Telas/Botoes/botao_config.png');
     }
 
     create() {

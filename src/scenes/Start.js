@@ -6,8 +6,8 @@ export class Start extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/Telas/Fundos/telainicial.png');
-        this.load.image('start-button', 'assets/Telas/Botoes/botaostart.png');
-        this.load.image('config-button', 'assets/Telas/Botoes/botaoconfig.png');
+        this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
+        this.load.image('config-button', 'assets/Telas/Botoes/botao_config.png');
         this.load.image('title', 'assets/Telas/Fundos/title.png');
     }
 

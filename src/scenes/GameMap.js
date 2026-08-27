@@ -50,6 +50,7 @@ export class GameMap extends Phaser.Scene {
         this.background3 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision1');
         this.background4 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision2');
 
+        this.alertedIconKeys = new Set();
         this.createCharacterIconButtons();
 
         // Botao fixo no canto superior esquerdo para voltar ao menu inicial.
@@ -177,6 +178,7 @@ export class GameMap extends Phaser.Scene {
             // O Seu Joaquim recebe o balao acima da cabeca.
             balloonOffset: { x: 0, y: -55 },
             alertInterval: 60000,
+            iconButtonKey: 'joaquim',
             stop: () => this.stopJoaquimForInteraction(),
             resume: () => this.resumeJoaquimFromInteraction()
         });
@@ -213,6 +215,7 @@ export class GameMap extends Phaser.Scene {
             // A Dona Marlene recebe o balao a esquerda.
             balloonOffset: { x: -55, y: -15 },
             alertInterval: 120000,
+            iconButtonKey: 'marlene',
             stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[0]),
             resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[0])
         });
@@ -222,6 +225,7 @@ export class GameMap extends Phaser.Scene {
             // A Dona Aparecida recebe o balao a esquerda.
             balloonOffset: { x: -55, y: -15 },
             alertInterval: 240000,
+            iconButtonKey: 'aparecida',
             stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
             resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[1])
         });
@@ -232,29 +236,47 @@ export class GameMap extends Phaser.Scene {
         const iconSpacing = 80;
         const centerX = 256;
         const icons = [
-            { key: 'joaquim-icon', x: centerX - iconSpacing },
-            { key: 'marlene-icon', x: centerX },
-            { key: 'aparecida-icon', x: centerX + iconSpacing }
+            { id: 'joaquim', key: 'joaquim-icon', x: centerX - iconSpacing },
+            { id: 'marlene', key: 'marlene-icon', x: centerX },
+            { id: 'aparecida', key: 'aparecida-icon', x: centerX + iconSpacing }
         ];
 
-        icons.forEach(({ key, x }) => {
+        this.characterIconButtons = {};
+
+        icons.forEach(({ id, key, x }) => {
             const iconButton = this.add.image(x, iconY, key);
             iconButton.setOrigin(0.5);
             iconButton.setDepth(100);
             iconButton.setInteractive({ useHandCursor: true });
+            this.characterIconButtons[id] = iconButton;
 
             iconButton.on('pointerdown', () => {
                 iconButton.setTint(0x8B2E40);
             });
 
             iconButton.on('pointerup', () => {
-                iconButton.clearTint();
+                this.updateIconButtonTint(id);
             });
 
             iconButton.on('pointerout', () => {
-                iconButton.clearTint();
+                this.updateIconButtonTint(id);
             });
         });
+    }
+
+    updateIconButtonTint(iconButtonKey) {
+        const iconButton = this.characterIconButtons && this.characterIconButtons[iconButtonKey];
+
+        if (!iconButton) {
+            return;
+        }
+
+        if (this.alertedIconKeys.has(iconButtonKey)) {
+            iconButton.setTint(0xff5555);
+            return;
+        }
+
+        iconButton.clearTint();
     }
 
     registerClickableCharacter(config) {
@@ -297,6 +319,11 @@ export class GameMap extends Phaser.Scene {
         character.alertIcon.destroy();
         character.alertIcon = null;
         character.nextAlertTime = this.time.now + character.alertInterval;
+
+        if (character.iconButtonKey) {
+            this.alertedIconKeys.delete(character.iconButtonKey);
+            this.updateIconButtonTint(character.iconButtonKey);
+        }
     }
 
     updateCharacterBalloonPosition(character) {
@@ -319,6 +346,11 @@ export class GameMap extends Phaser.Scene {
         if (!character.alertIcon && time >= character.nextAlertTime) {
             character.alertIcon = this.add.image(0, 0, 'icone_alerta');
             character.alertIcon.setDepth(character.sprite.depth + 1);
+
+            if (character.iconButtonKey) {
+                this.alertedIconKeys.add(character.iconButtonKey);
+                this.updateIconButtonTint(character.iconButtonKey);
+            }
         }
 
         // Mantem o alerta acompanhando o personagem enquanto ele se movimenta.

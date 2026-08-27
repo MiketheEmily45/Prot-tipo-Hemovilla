@@ -1,3 +1,26 @@
+// Dados da mini-tela. Novos personagens podem ser adicionados aqui sem alterar
+// a logica do painel, desde que tambem sejam registrados nos botoes do mapa.
+const characterData = {
+    joaquim: {
+        nome: 'Seu Joaquim',
+        descricao: 'Seu Joaquim é o único carteiro de Hemovilla, sempre visto cruzando as ruas com seu boné amarelo e uma pesada bolsa azul. Como tem muito trabalho, ele detesta esperar. Um dos moradores locais costuma dizer: "Eu queria que o Joaquim tivesse um pouco mais de paciência. Ele enfia as cartas na caixa e some antes mesmo de eu conseguir oferecer um copo d\'água!" Você dificilmente o encontrará parado em um só lugar, pois ele passa o dia inteiro perambulando apressado pela cidadezinha para garantir que todas as correspondências sejam entregues.',
+        tipoSanguineo: null,
+        condicao: null
+    },
+    marlene: {
+        nome: 'Dona Marlene',
+        descricao: 'Dona Marlene vive na floricultura da cidade. É fácil reconhecê-la pelo cabelo curto grisalho e os aventais floridos. Ela costuma discutir com seu filho, que não entende a dedicação extrema dela ao trabalho. Ele costuma dizer: "Eu queria que a mãe descansasse mais e parasse de tratar as mudas como pessoas. Ela tem um talento incrível para a culinária, mas prefere passar o dia inteiro conversando com samambaias!" Você quase sempre encontrará Dona Marlene no balcão da floricultura, atendendo com alegria e apresentando suas "amigas" floridas para os clientes.',
+        tipoSanguineo: null,
+        condicao: null
+    },
+    aparecida: {
+        nome: 'Dona Aparecida',
+        descricao: 'Dona Aparecida comanda o salão de beleza de Hemovilla. É impossível não notá-la. Durante o dia, você a encontrará no salão cortando cabelos e conversando, mas à noite a energia dela é outra: é muito fácil achá-la esbanjando alegria enquanto dança forró com o Seu Joaquim.',
+        tipoSanguineo: null,
+        condicao: null
+    }
+};
+
 export class GameMap extends Phaser.Scene {
 
     constructor() {
@@ -14,6 +37,8 @@ export class GameMap extends Phaser.Scene {
         this.load.image('joaquim-icon', 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png');
         this.load.image('marlene-icon', 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png');
         this.load.image('aparecida-icon', 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png');
+        // Moldura usada como painel da descricao dos personagens.
+        this.load.image('character-frame', 'assets/Personagens/moldura_personagens.png');
         // Seu Joaquim
         this.load.image('SJPD', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoDireita.png');
         this.load.image('SJPE', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoEsquerda.png');
@@ -256,12 +281,170 @@ export class GameMap extends Phaser.Scene {
 
             iconButton.on('pointerup', () => {
                 this.updateIconButtonTint(id);
+                // O mesmo icone alterna a descricao; outro icone troca o personagem.
+                this.openCharacterDescription(id);
             });
 
             iconButton.on('pointerout', () => {
                 this.updateIconButtonTint(id);
             });
         });
+    }
+
+    openCharacterDescription(characterId) {
+        const data = characterData[characterId];
+
+        if (!data) {
+            return;
+        }
+
+        if (this.characterOverlay) {
+            // Clicar no personagem atual fecha o painel. Clicar em outro
+            // remove o painel anterior antes de criar o novo conteudo.
+            if (this.characterOverlay.characterId === characterId) {
+                this.closeCharacterDescription();
+                return;
+            }
+
+            this.closeCharacterDescription();
+        }
+
+        // Escurece somente o mapa para manter a faixa de icones clicavel.
+        const overlay = this.add.rectangle(256, 256, 512, 512, 0x000000, 0.68);
+        overlay.setDepth(200);
+        overlay.setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => this.closeCharacterDescription());
+
+        const panelWidth = 448;
+        const panelHeight = 448;
+        const panelX = 256;
+        const contentWidth = 390;
+        const fontSizes = [18, 16, 14];
+        let description;
+        let title;
+
+        // Tenta fontes maiores primeiro; a menor opcao continua legivel e o
+        // restante do texto pode ser acessado com a rolagem.
+        for (const fontSize of fontSizes) {
+            const lineHeight = Math.round(fontSize * 1.25);
+            const candidate = this.add.text(panelX, 0, data.descricao, {
+                fontFamily: 'monospace',
+                fontSize: `${fontSize}px`,
+                color: '#3b2a20',
+                lineSpacing: 2,
+                wordWrap: { width: contentWidth, useAdvancedWrap: true }
+            }).setOrigin(0.5, 0);
+            const candidateTitle = this.add.text(panelX, 0, data.nome, {
+                fontFamily: 'monospace',
+                fontSize: `${fontSize + 4}px`,
+                fontStyle: 'bold',
+                color: '#3b2a20'
+            }).setOrigin(0.5, 0);
+            const requiredHeight = 32 + lineHeight + candidateTitle.height + candidate.height;
+
+            if (requiredHeight <= panelHeight - 24 || fontSize === fontSizes[fontSizes.length - 1]) {
+                description = candidate;
+                title = candidateTitle;
+                break;
+            }
+
+            candidate.destroy();
+            candidateTitle.destroy();
+        }
+
+        // O painel fica 20 pixels acima do centro vertical da tela.
+        const panelTop = 284 - panelHeight / 2;
+        const panelY = panelTop + panelHeight / 2;
+        const frame = this.add.image(panelX, panelY, 'character-frame');
+        frame.setDisplaySize(panelWidth, panelHeight);
+        frame.setDepth(201);
+
+        const panelBlocker = this.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0xffffff, 0);
+        panelBlocker.setDepth(202);
+        panelBlocker.setInteractive();
+        panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event.stopPropagation());
+
+        title.setPosition(panelX, panelTop + 34);
+        title.setDepth(203);
+        const descriptionTop = panelTop + 70 + title.height;
+        const descriptionBottom = panelTop + panelHeight - 20;
+        const descriptionViewportHeight = descriptionBottom - descriptionTop;
+        // A mascara impede que o texto ultrapasse a area interna da moldura.
+        const descriptionMask = this.make.graphics({ add: false });
+        descriptionMask.fillStyle(0xffffff);
+        descriptionMask.fillRect(
+            panelX - contentWidth / 2,
+            descriptionTop,
+            contentWidth,
+            descriptionViewportHeight
+        );
+        description.setPosition(panelX, descriptionTop);
+        description.setMask(descriptionMask.createGeometryMask());
+        description.setDepth(203);
+
+        let descriptionScrollY = 0;
+        const maxDescriptionScroll = Math.max(0, description.height - descriptionViewportHeight);
+
+        // Move apenas a descricao quando o cursor estiver sobre sua area.
+        const onDescriptionWheel = (pointer, _gameObjects, _deltaX, deltaY) => {
+            const isOverDescription = pointer.x >= panelX - contentWidth / 2
+                && pointer.x <= panelX + contentWidth / 2
+                && pointer.y >= descriptionTop
+                && pointer.y <= descriptionBottom;
+
+            if (!isOverDescription || maxDescriptionScroll === 0) {
+                return;
+            }
+
+            descriptionScrollY = Phaser.Math.Clamp(
+                descriptionScrollY + deltaY,
+                0,
+                maxDescriptionScroll
+            );
+            description.y = descriptionTop - descriptionScrollY;
+        };
+        this.input.on('wheel', onDescriptionWheel);
+
+        const closeButton = this.add.text(panelX + panelWidth / 2 - 28, panelTop + 14, 'X', {
+            fontFamily: 'monospace',
+            fontSize: '20px',
+            fontStyle: 'bold',
+            color: '#afadab'
+        }).setOrigin(0.5);
+        closeButton.setDepth(204);
+        closeButton.setInteractive({ useHandCursor: true });
+        closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event.stopPropagation();
+            this.closeCharacterDescription();
+        });
+
+        this.characterOverlay = {
+            characterId,
+            overlay,
+            frame,
+            panelBlocker,
+            title,
+            description,
+            descriptionMask,
+            closeButton,
+            onDescriptionWheel
+        };
+    }
+
+    closeCharacterDescription() {
+        if (!this.characterOverlay) {
+            return;
+        }
+
+        // Remove o evento de rolagem junto com os objetos para evitar listeners
+        // ativos depois que a mini-tela foi fechada.
+        this.input.off('wheel', this.characterOverlay.onDescriptionWheel);
+        Object.entries(this.characterOverlay).forEach(([key, element]) => {
+            if (key !== 'onDescriptionWheel' && key !== 'characterId') {
+                element.destroy();
+            }
+        });
+        this.characterOverlay = null;
     }
 
     updateIconButtonTint(iconButtonKey) {

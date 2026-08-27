@@ -11,6 +11,9 @@ export class GameMap extends Phaser.Scene {
         this.load.image('mapcolision1', 'assets/Mapas/Cidade1/ConstrucoesPrincipaisCidade1.png');
         this.load.image('mapcolision2', 'assets/Mapas/Cidade1/ConstrucoesSecundariasCidade1.png');
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
+        this.load.image('joaquim-icon', 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png');
+        this.load.image('marlene-icon', 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png');
+        this.load.image('aparecida-icon', 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png');
         // Seu Joaquim
         this.load.image('SJPD', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoDireita.png');
         this.load.image('SJPE', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoEsquerda.png');
@@ -38,10 +41,16 @@ export class GameMap extends Phaser.Scene {
     }
 
     create() {
+        this.scale.resize(512, 608);
+        this.cameras.main.setViewport(0, 0, 512, 608);
+        this.physics.world.setBounds(0, 0, 512, 512);
+
         this.background1 = this.add.tileSprite(256, 256, 512, 512, 'map1');
         this.background2 = this.add.tileSprite(256, 256, 512, 512, 'map2');
         this.background3 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision1');
         this.background4 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision2');
+
+        this.createCharacterIconButtons();
 
         // Botao fixo no canto superior esquerdo para voltar ao menu inicial.
         const pauseButton = this.add.image(8, 8, 'pause-button');
@@ -215,6 +224,36 @@ export class GameMap extends Phaser.Scene {
             alertInterval: 240000,
             stop: () => this.stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
             resume: () => this.resumeHorizontalWalkerFromInteraction(this.horizontalNPCs[1])
+        });
+    }
+
+    createCharacterIconButtons() {
+        const iconY = 560;
+        const iconSpacing = 80;
+        const centerX = 256;
+        const icons = [
+            { key: 'joaquim-icon', x: centerX - iconSpacing },
+            { key: 'marlene-icon', x: centerX },
+            { key: 'aparecida-icon', x: centerX + iconSpacing }
+        ];
+
+        icons.forEach(({ key, x }) => {
+            const iconButton = this.add.image(x, iconY, key);
+            iconButton.setOrigin(0.5);
+            iconButton.setDepth(100);
+            iconButton.setInteractive({ useHandCursor: true });
+
+            iconButton.on('pointerdown', () => {
+                iconButton.setTint(0x8B2E40);
+            });
+
+            iconButton.on('pointerup', () => {
+                iconButton.clearTint();
+            });
+
+            iconButton.on('pointerout', () => {
+                iconButton.clearTint();
+            });
         });
     }
 

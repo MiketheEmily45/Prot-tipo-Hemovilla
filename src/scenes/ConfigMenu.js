@@ -11,6 +11,8 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     create() {
+        this.scale.resize(512, 512);
+        this.cameras.main.setViewport(0, 0, 512, 512);
         this.background = this.add.tileSprite(256, 256, 512, 512, 'config-menu');
         // Mantem o botao na mesma posicao da tela inicial.
         const configButton = this.add.tileSprite(this.background.width / 2 + 200, this.background.height / 2 + 200, 84, 80, 'config-button');

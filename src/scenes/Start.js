@@ -12,6 +12,8 @@ export class Start extends Phaser.Scene {
     }
 
     create() {
+        this.scale.resize(512, 512);
+        this.cameras.main.setViewport(0, 0, 512, 512);
         this.background = this.add.tileSprite(256, 256, 512, 512, 'background');
         const title = this.add.image(this.background.width / 2, this.background.height / 2 - 100, 'title');
         title.setOrigin(0.5);

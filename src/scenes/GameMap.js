@@ -63,6 +63,8 @@ export class GameMap extends Phaser.Scene {
         // Balao temporario exibido quando um personagem clicavel esta parado.
         this.load.image('balao_temporario', 'assets/Personagens/balao_temporario.png');
         this.load.image('icone_alerta', 'assets/Personagens/icone_alerta.png');
+        // Botao de alerta localizado no canto inferior esquerdo da tela.
+        this.load.image('alert-button', 'assets/Telas/Botoes/botao_alerta.png');
     }
 
     create() {
@@ -90,6 +92,22 @@ export class GameMap extends Phaser.Scene {
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
             this.scene.start('Start');
+        });
+
+        // Botao de alerta localizado no canto inferior esquerdo da tela.
+        // Este botao ativa o alerta de todos os personagens quando pressionado.
+        const alertButton = this.add.image(8, 600, 'alert-button');
+        alertButton.setOrigin(0, 1);
+        alertButton.setDepth(100);
+        alertButton.setInteractive({ useHandCursor: true });
+        alertButton.on('pointerdown', () => {
+            // Aplica escurecimento visual enquanto o botao esta sendo pressionado.
+            alertButton.setTint(0x8B2E40);
+        });
+        alertButton.on('pointerup', () => {
+            alertButton.clearTint();
+            // Chama o metodo que ativa o alerta de todos os personagens do mapa.
+            this.triggerAllCharactersAlert();
         });
 
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -648,6 +666,26 @@ export class GameMap extends Phaser.Scene {
             this.joaquim.play('walk_Joaquim_down', true);
             this.lastDirection = 'down';
         }
+    }
+
+    // Metodo que ativa o alerta de todos os personagens do mapa simultaneamente.
+    // Ao chamar este metodo, todos os personagens receberao seu icone de alerta,
+    // e os botoes dos personagens serao destacados em vermelho.
+    triggerAllCharactersAlert() {
+        // Itera sobre cada personagem registrado na lista de personagens clicaveis.
+        if (!this.clickableCharacters) {
+            return;
+        }
+
+        this.clickableCharacters.forEach((character) => {
+            // Define o tempo do proximo alerta como o momento atual,
+            // forçando o alerta a ser criado imediatamente na proxima atualizacao.
+            character.nextAlertTime = this.time.now;
+            
+            // Se o personagem ainda nao possui um icone de alerta, o metodo
+            // updateCharacterAlert criara um quando este metodo for chamado.
+            // Se ja possui, o metodo mantera o alerta visivel.
+        });
     }
 
     update(time) {

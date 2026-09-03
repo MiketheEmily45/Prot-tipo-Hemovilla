@@ -14,7 +14,9 @@ export class Start extends Phaser.Scene {
 
     create() {
         const menuMusic = this.sound.get('start-music');
-        if (!menuMusic || !menuMusic.isPlaying) {
+        if (menuMusic && !menuMusic.isPlaying) {
+            menuMusic.play();
+        } else if (!menuMusic) {
             this.sound.play('start-music', { loop: true });
         }
         this.scale.resize(512, 512);

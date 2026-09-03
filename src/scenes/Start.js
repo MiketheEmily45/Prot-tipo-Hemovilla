@@ -9,9 +9,11 @@ export class Start extends Phaser.Scene {
         this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         this.load.image('config-button', 'assets/Telas/Botoes/botao_config.png');
         this.load.image('title', 'assets/Telas/Fundos/title.png');
+        this.load.audio('start-music', 'assets/Musica/MenuMusic.mp3');
     }
 
     create() {
+        this.sound.play('start-music', { loop: true });
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
         this.background = this.add.tileSprite(256, 256, 512, 512, 'background');
@@ -26,6 +28,7 @@ export class Start extends Phaser.Scene {
         })
         startButton.on('pointerup', () => {            
             startButton.clearTint();
+            this.sound.stopByKey('start-music');
             this.scene.start('GameMap');
         })
         const configButton = this.add.tileSprite(this.background.width / 2 + 200, this.background.height / 2 + 200, 84, 80, 'config-button');

@@ -13,7 +13,10 @@ export class Start extends Phaser.Scene {
     }
 
     create() {
-        this.sound.play('start-music', { loop: true });
+        const menuMusic = this.sound.get('start-music');
+        if (!menuMusic || !menuMusic.isPlaying) {
+            this.sound.play('start-music', { loop: true });
+        }
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
         this.background = this.add.tileSprite(256, 256, 512, 512, 'background');

@@ -1,7 +1,10 @@
+import { preloadCityCharacters, rememberCityCharacters } from './CityCharacters.js';
+import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createCharacterAnimations } from './characterAnimations.js';
 import { createHorizontalWalker, updateHorizontalWalker, stopHorizontalWalkerForInteraction, resumeHorizontalWalkerFromInteraction, startMove, startPause, stopJoaquimForInteraction, resumeJoaquimFromInteraction } from './CharacterMovement.js';
 import { registerClickableCharacter, updateCharacterIndicators, triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
+import { CityNavigation, preloadCities } from './CityNavigation.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -10,11 +13,8 @@ export class GameMap extends Phaser.Scene {
     }
 
     preload() {
-        //Fundo do Mapa
-        this.load.image('map1', 'assets/Mapas/Cidade1/BaseCidade1.png');
-        this.load.image('map2', 'assets/Mapas/Cidade1/ComplementosCidade1.png');
-        this.load.image('mapcolision1', 'assets/Mapas/Cidade1/ConstrucoesPrincipaisCidade1.png');
-        this.load.image('mapcolision2', 'assets/Mapas/Cidade1/ConstrucoesSecundariasCidade1.png');
+        preloadCities(this);
+        preloadCityCharacters(this);
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
         this.load.image('joaquim-icon', 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png');
         this.load.image('marlene-icon', 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png');
@@ -54,10 +54,9 @@ export class GameMap extends Phaser.Scene {
         this.cameras.main.setViewport(0, 0, 512, 608);
         this.physics.world.setBounds(0, 0, 512, 512);
 
-        this.background1 = this.add.tileSprite(256, 256, 512, 512, 'map1');
-        this.background2 = this.add.tileSprite(256, 256, 512, 512, 'map2');
-        this.background3 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision1');
-        this.background4 = this.add.tileSprite(256, 256, 512, 512, 'mapcolision2');
+        this.cityNavigation = new CityNavigation(this);
+        this.cityCharacterGroups = {};
+        this.characterOverlay = null;
 
         this.alertedIconKeys = new Set();
         createCharacterIconButtons(this);
@@ -73,12 +72,16 @@ export class GameMap extends Phaser.Scene {
         });
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
+            closeCharacterDescription(this);
             this.scene.start('Start');
         });
+
+        this.cityNavigation.createButtons(pauseButton);
 
         // Botao de alerta localizado no canto inferior esquerdo da tela.
         // Este botao ativa o alerta de todos os personagens quando pressionado.
         const alertButton = this.add.image(8, 600, 'alert-button');
+        this.alertButton = alertButton;
         alertButton.setOrigin(0, 1);
         alertButton.setDepth(100);
         alertButton.setInteractive({ useHandCursor: true });
@@ -176,9 +179,17 @@ export class GameMap extends Phaser.Scene {
             stop: () => stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
             resume: () => resumeHorizontalWalkerFromInteraction(this, this.horizontalNPCs[1])
         });
+        rememberCityCharacters(this, 0);
     }
 
     update(time) {
+        // As cidades sem personagens nao atualizam movimento nem geram alertas.
+        if (this.currentCityIndex !== 0) {
+            updateCharacterIndicators(this, time);
+            this.horizontalNPCs.forEach((walker) => updateHorizontalWalker(walker));
+            return;
+        }
+
         const joaquimInteraction = this.clickableCharacters && this.clickableCharacters[0];
         updateCharacterIndicators(this, time);
 
@@ -216,4 +227,3 @@ export class GameMap extends Phaser.Scene {
     }
 
 }
-

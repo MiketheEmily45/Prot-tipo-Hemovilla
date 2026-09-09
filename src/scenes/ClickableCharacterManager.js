@@ -13,15 +13,18 @@ export function registerClickableCharacter(scene, config) {
     };
 
     character.sprite.setInteractive({ useHandCursor: true });
-    character.sprite.on('pointerdown', () => toggleCharacterInteraction(scene, character));
+    character.sprite.on('pointerdown', () => {
+        // Somente o clique direto no personagem atende o alerta e reinicia o contador.
+        // Consultar o painel pelo icone da barra nao deve consumir esse alerta.
+        if (character.alertIcon) resetCharacterAlert(scene, character);
+        toggleCharacterInteraction(scene, character);
+    });
     scene.clickableCharacters.push(character);
 }
 
 export function toggleCharacterInteraction(scene, character) {
-    if (character.alertIcon) {
-        resetCharacterAlert(scene, character);
-    }
-
+    // Regra comum a todas as cidades, incluindo futuros personagens da Cidade3:
+    // clicar no mapa alterna parada/balao; a descricao pertence apenas ao icone.
     if (character.isStoppedByClick) {
         character.isStoppedByClick = false;
         character.balloon.destroy();

@@ -37,14 +37,19 @@ const { triggerAllCharactersAlert } = await import('../src/scenes/ClickableChara
 const { city2Characters, city3Characters } = await import('../src/scenes/CityCharacters.js');
 const scene = new GameMap();
 const create = (...args) => new DisplayObject(...args);
+const soundsPlayed = [];
 Object.assign(scene, {
-    load: { image(key, path) { assert.ok(fs.existsSync(path), path); } },
+    load: {
+        image(key, path) { assert.ok(fs.existsSync(path), path); },
+        audio(key, path) { assert.ok(fs.existsSync(path), path); }
+    },
     add: { image: create, sprite: create, tileSprite: create, rectangle: create, text: create },
     make: { graphics: create },
     physics: { add: { sprite: create }, world: { setBounds() {} } },
     scale: { resize() {} }, cameras: { main: { setViewport() {} } },
     input: Object.assign(new EventEmitter(), { keyboard: { createCursorKeys() {} } }),
-    time: { now: 100 }, anims: { exists: () => false, create() {} }
+    time: { now: 100 }, anims: { exists: () => false, create() {} },
+    sound: { play: (key, config) => { soundsPlayed.push({ key, config }); }, get: () => null }
 });
 scene.preload(); scene.create();
 const city1 = scene.clickableCharacters;
@@ -54,6 +59,7 @@ const city2 = scene.clickableCharacters;
 assert.ok(city1.every(c => !c.sprite.visible && !c.sprite.body.enable));
 triggerAllCharactersAlert(scene); scene.update(100);
 assert.ok(city2.every(c => c.alertIcon && scene.characterIconButtons[c.iconButtonKey].tint === 0xff5555));
+assert.ok(soundsPlayed.some(sound => sound.key === 'alert-sound'));
 assert.ok(city1.every(c => !c.alertIcon));
 
 // Em qualquer cidade, o sprite alterna balao/parada e o icone consulta dados.
@@ -75,9 +81,15 @@ city2.forEach((character) => {
     assert.equal(character.sprite.body.velocity.x, 0);
     assert.equal(character.balloon.texture, 'balao_temporario');
     assert.ok(character.balloon.y < character.sprite.y);
+    assert.ok(character.miniGameButton);
+    assert.equal(character.alertIcon, alert);
+    assert.equal(scene.alertedIconKeys.has(id), true);
+    assert.equal(scene.characterIconButtons[id].tint, 0xff5555);
+    character.miniGameButton.emit('pointerdown');
     assert.equal(character.alertIcon, null);
     assert.equal(scene.alertedIconKeys.has(id), false);
     assert.equal(scene.characterIconButtons[id].tint, null);
+    assert.equal(character.miniGameButton.tint, 0x9ca3af);
     const balloon = character.balloon;
     scene.characterIconButtons[id].emit('pointerup');
     closeCharacterDescription(scene);
@@ -119,7 +131,11 @@ city3.forEach((character, index) => {
     assert.equal(scene.characterOverlay, null);
     assert.equal(character.balloon.texture, 'balao_temporario');
     assert.equal(character.sprite.body.velocity.x, 0);
+    assert.equal(character.alertIcon, alert);
+    character.miniGameButton.emit('pointerdown');
     assert.equal(character.alertIcon, null);
+    assert.equal(scene.alertedIconKeys.has(id), false);
+    assert.equal(scene.characterIconButtons[id].tint, null);
     scene.characterIconButtons[id].emit('pointerup');
     closeCharacterDescription(scene);
     assert.equal(character.sprite.body.velocity.x, 0);

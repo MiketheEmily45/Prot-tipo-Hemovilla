@@ -45,6 +45,8 @@ export class GameMap extends Phaser.Scene {
         // Balao temporario exibido quando um personagem clicavel esta parado.
         this.load.image('balao_temporario', 'assets/Personagens/balao_temporario.png');
         this.load.image('icone_alerta', 'assets/Personagens/icone_alerta.png');
+        this.load.image('botao_minigame', 'assets/Telas/Botoes/botao_minigame.png');
+        this.load.audio('alert-sound', 'assets/Musica/som_alerta.mp3');
         // Botao de alerta localizado no canto inferior esquerdo da tela.
         this.load.image('alert-button', 'assets/Telas/Botoes/botao_alerta.png');
     }

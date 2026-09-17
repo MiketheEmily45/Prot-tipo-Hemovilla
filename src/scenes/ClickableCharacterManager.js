@@ -6,6 +6,7 @@ export function registerClickableCharacter(scene, config) {
         ...config,
         isStoppedByClick: false,
         balloon: null,
+        balloonButton: null,
         // Cada personagem controla seu proprio alerta e quando ele deve aparecer.
         alertIcon: null,
         alertOffset: config.alertOffset || { x: -13, y: -35 },
@@ -18,14 +19,22 @@ export function registerClickableCharacter(scene, config) {
 }
 
 export function toggleCharacterInteraction(scene, character) {
+    const hadAlert = !!character.alertIcon;
+
     if (character.alertIcon) {
         resetCharacterAlert(scene, character);
     }
 
     if (character.isStoppedByClick) {
         character.isStoppedByClick = false;
-        character.balloon.destroy();
-        character.balloon = null;
+        if (character.balloon) {
+            character.balloon.destroy();
+            character.balloon = null;
+        }
+        if (character.balloonButton) {
+            character.balloonButton.destroy();
+            character.balloonButton = null;
+        }
         character.resume();
         return;
     }
@@ -33,7 +42,36 @@ export function toggleCharacterInteraction(scene, character) {
     character.isStoppedByClick = true;
     character.stop();
     character.balloon = scene.add.image(0, 0, 'balao_temporario');
+
+    if (hadAlert) {
+        createMinigameBalloonButton(scene, character);
+    }
+
     updateCharacterBalloonPosition(character);
+}
+
+function createMinigameBalloonButton(scene, character) {
+    if (character.balloonButton) {
+        return;
+    }
+
+    character.balloonButton = scene.add.image(0, 0, 'start-button');
+    character.balloonButton.setScale(0.35);
+    character.balloonButton.setDepth(character.sprite.depth + 10);
+    character.balloonButton.setInteractive({ useHandCursor: true });
+
+    character.balloonButton.on('pointerdown', () => {
+        character.balloonButton.setTint(0x8B2E40);
+    });
+
+    character.balloonButton.on('pointerup', () => {
+        character.balloonButton.clearTint();
+        scene.scene.start('Minigame');
+    });
+
+    character.balloonButton.on('pointerout', () => {
+        character.balloonButton.clearTint();
+    });
 }
 
 export function updateCharacterBalloonPosition(character) {
@@ -45,6 +83,13 @@ export function updateCharacterBalloonPosition(character) {
         character.sprite.x + character.balloonOffset.x,
         character.sprite.y + character.balloonOffset.y
     );
+
+    if (character.balloonButton) {
+        character.balloonButton.setPosition(
+            character.balloon.x,
+            character.balloon.y - 18
+        );
+    }
 }
 
 export function updateCharacterAlert(scene, character, time) {

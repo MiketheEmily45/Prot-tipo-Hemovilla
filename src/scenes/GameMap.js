@@ -16,6 +16,7 @@ export class GameMap extends Phaser.Scene {
         this.load.image('mapcolision1', 'assets/Mapas/Cidade1/ConstrucoesPrincipaisCidade1.png');
         this.load.image('mapcolision2', 'assets/Mapas/Cidade1/ConstrucoesSecundariasCidade1.png');
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
+        this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         this.load.image('joaquim-icon', 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png');
         this.load.image('marlene-icon', 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png');
         this.load.image('aparecida-icon', 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png');

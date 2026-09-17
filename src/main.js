@@ -1,6 +1,7 @@
 import { Start } from './scenes/Start.js'
 import { GameMap } from './scenes/GameMap.js'
 import { ConfigMenu } from './scenes/ConfigMenu.js'
+import { Minigame } from './scenes/Minigame.js'
 
 const config = {
     type: Phaser.AUTO,
@@ -21,7 +22,8 @@ const config = {
     scene: [
         Start,
         GameMap,
-        ConfigMenu
+        ConfigMenu,
+        Minigame
     ],
     scale: {
         mode: Phaser.Scale.FIT,

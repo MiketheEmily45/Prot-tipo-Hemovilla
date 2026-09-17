@@ -35,6 +35,7 @@ export function createCharacterIconButtons(scene) {
             updateIconButtonTint(scene, id);
         });
     });
+
 }
 
 export function updateIconButtonTint(scene, iconButtonKey) {

@@ -6,7 +6,6 @@ export function registerClickableCharacter(scene, config) {
         ...config,
         isStoppedByClick: false,
         balloon: null,
-        balloonButton: null,
         // Cada personagem controla seu proprio alerta e quando ele deve aparecer.
         alertIcon: null,
         alertOffset: config.alertOffset || { x: -13, y: -35 },
@@ -14,27 +13,21 @@ export function registerClickableCharacter(scene, config) {
     };
 
     character.sprite.setInteractive({ useHandCursor: true });
-    character.sprite.on('pointerdown', () => toggleCharacterInteraction(scene, character));
+    character.sprite.on('pointerdown', () => {
+        toggleCharacterInteraction(scene, character);
+    });
     scene.clickableCharacters.push(character);
 }
 
 export function toggleCharacterInteraction(scene, character) {
-    const hadAlert = !!character.alertIcon;
-
     if (character.alertIcon) {
         resetCharacterAlert(scene, character);
     }
 
     if (character.isStoppedByClick) {
         character.isStoppedByClick = false;
-        if (character.balloon) {
-            character.balloon.destroy();
-            character.balloon = null;
-        }
-        if (character.balloonButton) {
-            character.balloonButton.destroy();
-            character.balloonButton = null;
-        }
+        character.balloon.destroy();
+        character.balloon = null;
         character.resume();
         return;
     }
@@ -42,12 +35,8 @@ export function toggleCharacterInteraction(scene, character) {
     character.isStoppedByClick = true;
     character.stop();
     character.balloon = scene.add.image(0, 0, 'balao_temporario');
-
-    if (hadAlert) {
-        createMinigameBalloonButton(scene, character);
-    }
-
     updateCharacterBalloonPosition(character);
+    updateMiniGameButtonState(character);
 }
 
 function createMinigameBalloonButton(scene, character) {
@@ -83,13 +72,6 @@ export function updateCharacterBalloonPosition(character) {
         character.sprite.x + character.balloonOffset.x,
         character.sprite.y + character.balloonOffset.y
     );
-
-    if (character.balloonButton) {
-        character.balloonButton.setPosition(
-            character.balloon.x,
-            character.balloon.y - 18
-        );
-    }
 }
 
 export function updateCharacterAlert(scene, character, time) {
@@ -101,6 +83,7 @@ export function updateCharacterAlert(scene, character, time) {
     if (!character.alertIcon && time >= character.nextAlertTime) {
         character.alertIcon = scene.add.image(0, 0, 'icone_alerta');
         character.alertIcon.setDepth(character.sprite.depth + 1);
+        playAlertSound(scene);
 
         if (character.iconButtonKey) {
             scene.alertedIconKeys.add(character.iconButtonKey);
@@ -108,16 +91,29 @@ export function updateCharacterAlert(scene, character, time) {
         }
     }
 
-    // Mantem o alerta acompanhando o personagem enquanto ele se movimenta.
+    if (character.miniGameButton) {
+        updateMiniGameButtonState(character);
+    }
+
     if (character.alertIcon) {
-        character.alertIcon.setPosition(
-            character.sprite.x + character.alertOffset.x,
-            character.sprite.y + character.alertOffset.y
-        );
+        if (shouldHideAlertIcon(character)) {
+            character.alertIcon.setVisible(false);
+        } else {
+            character.alertIcon.setVisible(true);
+            character.alertIcon.setPosition(
+                character.sprite.x + character.alertOffset.x,
+                character.sprite.y + character.alertOffset.y
+            );
+        }
     }
 }
 
 export function resetCharacterAlert(scene, character) {
+    if (!character.alertIcon) {
+        updateMiniGameButtonState(character);
+        return;
+    }
+
     // Ao interagir com um personagem alertado, remove o icone e reinicia a contagem.
     character.alertIcon.destroy();
     character.alertIcon = null;
@@ -127,6 +123,8 @@ export function resetCharacterAlert(scene, character) {
         scene.alertedIconKeys.delete(character.iconButtonKey);
         updateIconButtonTint(scene, character.iconButtonKey);
     }
+
+    updateMiniGameButtonState(character);
 }
 
 export function updateCharacterIndicators(scene, time) {
@@ -159,6 +157,29 @@ export function triggerAllCharactersAlert(scene, time) {
         // updateCharacterAlert criara um quando este metodo for chamado.
         // Se ja possui, o metodo mantera o alerta visivel.
     });
+}
+
+function updateMiniGameButtonState(character) {
+    if (!character.miniGameButton) {
+        return;
+    }
+
+    if (character.alertIcon) {
+        character.miniGameButton.clearTint();
+        character.miniGameButton.setAlpha(1);
+        return;
+    }
+
+    character.miniGameButton.setTint(0x9ca3af);
+    character.miniGameButton.setAlpha(0.8);
+}
+
+function playAlertSound(scene) {
+    if (!scene || !scene.sound || typeof scene.sound.play !== 'function') {
+        return;
+    }
+
+    scene.sound.play('alert-sound', { volume: 0.8 });
 }
 
 function updateIconButtonTint(scene, iconButtonKey) {

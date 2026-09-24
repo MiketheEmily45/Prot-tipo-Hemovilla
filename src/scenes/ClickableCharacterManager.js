@@ -1,11 +1,15 @@
 // Gerencia personagens clicaveis: baloes temporarios, icones de alerta,
 // interacoes ao clicar e atualizacoes de posicao.
+import { openCharacterDescription } from './CharacterDescriptionPanel.js';
+import { characterData } from './characterData.js';
 
 export function registerClickableCharacter(scene, config) {
     const character = {
         ...config,
         isStoppedByClick: false,
         balloon: null,
+        miniGameButton: null,
+        descriptionButton: null,
         // Cada personagem controla seu proprio alerta e quando ele deve aparecer.
         alertIcon: null,
         alertOffset: config.alertOffset || { x: -13, y: -35 },
@@ -20,14 +24,14 @@ export function registerClickableCharacter(scene, config) {
 }
 
 export function toggleCharacterInteraction(scene, character) {
-    if (character.alertIcon) {
-        resetCharacterAlert(scene, character);
-    }
-
     if (character.isStoppedByClick) {
         character.isStoppedByClick = false;
         character.balloon.destroy();
         character.balloon = null;
+        character.miniGameButton.destroy();
+        character.miniGameButton = null;
+        character.descriptionButton.destroy();
+        character.descriptionButton = null;
         character.resume();
         return;
     }
@@ -35,31 +39,29 @@ export function toggleCharacterInteraction(scene, character) {
     character.isStoppedByClick = true;
     character.stop();
     character.balloon = scene.add.image(0, 0, 'balao_temporario');
+    character.balloon.setDepth(character.sprite.depth + 2);
+    createMinigameBalloonButton(scene, character);
+    character.descriptionButton = scene.add.image(0, 0, 'botao_descricao');
+    character.descriptionButton.setDepth(character.balloon.depth + 1);
+    character.descriptionButton.setInteractive({ useHandCursor: true });
+    character.descriptionButton.on('pointerdown', () => {
+        openCharacterDescription(scene, character.iconButtonKey, characterData);
+    });
     updateCharacterBalloonPosition(character);
     updateMiniGameButtonState(character);
 }
 
 function createMinigameBalloonButton(scene, character) {
-    if (character.balloonButton) {
+    if (character.miniGameButton) {
         return;
     }
 
-    character.balloonButton = scene.add.image(0, 0, 'start-button');
-    character.balloonButton.setScale(0.35);
-    character.balloonButton.setDepth(character.sprite.depth + 10);
-    character.balloonButton.setInteractive({ useHandCursor: true });
-
-    character.balloonButton.on('pointerdown', () => {
-        character.balloonButton.setTint(0x8B2E40);
-    });
-
-    character.balloonButton.on('pointerup', () => {
-        character.balloonButton.clearTint();
-        scene.scene.start('Minigame');
-    });
-
-    character.balloonButton.on('pointerout', () => {
-        character.balloonButton.clearTint();
+    character.miniGameButton = scene.add.image(0, 0, 'botao_minigame');
+    character.miniGameButton.setDepth(character.balloon.depth + 1);
+    character.miniGameButton.setInteractive({ useHandCursor: true });
+    character.miniGameButton.on('pointerdown', () => {
+        if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
+        resetCharacterAlert(scene, character);
     });
 }
 
@@ -72,6 +74,8 @@ export function updateCharacterBalloonPosition(character) {
         character.sprite.x + character.balloonOffset.x,
         character.sprite.y + character.balloonOffset.y
     );
+    character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y);
+    character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y);
 }
 
 export function updateCharacterAlert(scene, character, time) {
@@ -96,15 +100,11 @@ export function updateCharacterAlert(scene, character, time) {
     }
 
     if (character.alertIcon) {
-        if (shouldHideAlertIcon(character)) {
-            character.alertIcon.setVisible(false);
-        } else {
-            character.alertIcon.setVisible(true);
-            character.alertIcon.setPosition(
-                character.sprite.x + character.alertOffset.x,
-                character.sprite.y + character.alertOffset.y
-            );
-        }
+        character.alertIcon.setVisible(true);
+        character.alertIcon.setPosition(
+            character.sprite.x + character.alertOffset.x,
+            character.sprite.y + character.alertOffset.y
+        );
     }
 }
 
@@ -114,7 +114,7 @@ export function resetCharacterAlert(scene, character) {
         return;
     }
 
-    // Ao interagir com um personagem alertado, remove o icone e reinicia a contagem.
+    // Ao clicar no botao do minigame, remove o icone e reinicia a contagem.
     character.alertIcon.destroy();
     character.alertIcon = null;
     character.nextAlertTime = scene.time.now + character.alertInterval;
@@ -165,12 +165,14 @@ function updateMiniGameButtonState(character) {
     }
 
     if (character.alertIcon) {
+        character.miniGameButton.input.enabled = true;
         character.miniGameButton.clearTint();
         character.miniGameButton.setAlpha(1);
         return;
     }
 
     character.miniGameButton.setTint(0x9ca3af);
+    character.miniGameButton.input.enabled = false;
     character.miniGameButton.setAlpha(0.8);
 }
 

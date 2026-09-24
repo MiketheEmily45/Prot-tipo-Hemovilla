@@ -15,6 +15,7 @@ class DisplayObject extends EventEmitter {
     setText(v) { this.texture = v; return this; }
     setDepth(v) { this.depth = v; return this; }
     setTint(v) { this.tint = v; return this; }
+    setAlpha(v) { this.alpha = v; return this; }
     clearTint() { this.tint = null; return this; }
     setPosition(x, y) { Object.assign(this, { x, y }); return this; }
     setVelocity(x, y) { this.body.velocity = { x, y }; return this; }
@@ -82,6 +83,17 @@ city2.forEach((character) => {
     assert.equal(character.balloon.texture, 'balao_temporario');
     assert.ok(character.balloon.y < character.sprite.y);
     assert.ok(character.miniGameButton);
+    assert.equal(character.miniGameButton.texture, 'botao_minigame');
+    assert.equal(character.miniGameButton.x, character.balloon.x + 22);
+    assert.equal(character.descriptionButton.texture, 'botao_descricao');
+    assert.equal(character.descriptionButton.x, character.balloon.x - 22);
+    assert.equal(character.descriptionButton.y, character.balloon.y);
+    character.descriptionButton.emit('pointerdown');
+    assert.equal(scene.characterOverlay.characterId, id);
+    assert.equal(character.alertIcon, alert);
+    closeCharacterDescription(scene);
+    assert.equal(character.miniGameButton.y, character.balloon.y);
+    assert.equal(character.miniGameButton.input.enabled, true);
     assert.equal(character.alertIcon, alert);
     assert.equal(scene.alertedIconKeys.has(id), true);
     assert.equal(scene.characterIconButtons[id].tint, 0xff5555);
@@ -90,6 +102,18 @@ city2.forEach((character) => {
     assert.equal(scene.alertedIconKeys.has(id), false);
     assert.equal(scene.characterIconButtons[id].tint, null);
     assert.equal(character.miniGameButton.tint, 0x9ca3af);
+    assert.equal(character.miniGameButton.visible, true);
+    assert.equal(character.miniGameButton.input.enabled, false);
+    const resetDeadline = character.nextAlertTime;
+    scene.time.now += 1;
+    character.miniGameButton.emit('pointerdown');
+    assert.equal(character.nextAlertTime, resetDeadline);
+    scene.time.now -= 1;
+    const button = character.miniGameButton;
+    const descriptionButton = character.descriptionButton;
+    descriptionButton.emit('pointerdown');
+    assert.equal(scene.characterOverlay.characterId, id);
+    closeCharacterDescription(scene);
     const balloon = character.balloon;
     scene.characterIconButtons[id].emit('pointerup');
     closeCharacterDescription(scene);
@@ -98,6 +122,10 @@ city2.forEach((character) => {
     character.sprite.emit('pointerdown');
     assert.equal(character.balloon, null);
     assert.ok(balloon.destroyed);
+    assert.ok(button.destroyed);
+    assert.ok(descriptionButton.destroyed);
+    assert.equal(character.descriptionButton, null);
+    assert.equal(character.miniGameButton, null);
     assert.notEqual(character.sprite.body.velocity.x, 0);
 });
 assert.equal(scene.input.listenerCount('wheel'), 0);
@@ -154,6 +182,10 @@ scene.time.now = 1100;
 scene.cityNavigation.goTo(1);
 assert.ok(city3.every(c => !c.sprite.visible && !c.sprite.body.enable));
 assert.equal(city3[0].balloon.visible, false);
+assert.equal(city3[0].miniGameButton.visible, false);
+assert.equal(city3[0].descriptionButton.visible, false);
+assert.equal(city3[0].descriptionButton.input.enabled, false);
+assert.equal(city3[0].miniGameButton.input.enabled, false);
 assert.equal(scene.clickableCharacters, city2);
 assert.equal(city2[0].nextAlertTime, 61100);
 assert.ok(city2.every(c => c.sprite.visible && c.sprite.body.enable));
@@ -173,6 +205,9 @@ scene.time.now = 2100;
 scene.cityNavigation.goTo(2);
 assert.equal(scene.clickableCharacters, city3);
 assert.equal(city3[0].balloon.visible, true);
+assert.equal(city3[0].miniGameButton.visible, true);
+assert.equal(city3[0].descriptionButton.visible, true);
+assert.equal(city3[0].descriptionButton.input.enabled, true);
 assert.equal(city3[0].sprite.body.velocity.x, 0);
 assert.equal(city3[0].nextAlertTime, 61100);
 city3[0].sprite.emit('pointerdown');

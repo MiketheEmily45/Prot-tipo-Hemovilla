@@ -73,13 +73,21 @@ export function rememberCityCharacters(scene, index) {
 }
 
 function setGroupVisible(group, visible) {
-    group.characters.forEach(({ sprite, balloon, alertIcon }) => {
+    group.characters.forEach(({ sprite, balloon, alertIcon, miniGameButton, descriptionButton }) => {
         sprite.setVisible(visible);
         sprite.body.enable = visible;
         sprite.input.enabled = visible;
         if (visible) sprite.anims.resume();
         else sprite.anims.pause();
         balloon?.setVisible(visible);
+        if (descriptionButton) {
+            descriptionButton.setVisible(visible);
+            descriptionButton.input.enabled = visible;
+        }
+        if (miniGameButton) {
+            miniGameButton.setVisible(visible);
+            miniGameButton.input.enabled = visible && !!alertIcon;
+        }
         alertIcon?.setVisible(visible);
     });
     Object.values(group.icons).forEach((icon) => {
@@ -94,7 +102,7 @@ export function switchCityCharacters(scene, index) {
     setGroupVisible(previous, false);
     let group = scene.cityCharacterGroups[index];
     if (!group) {
-        // O registro comum mostra apenas o balao vazio no clique do sprite.
+        // O registro comum mostra o balao com o botao do minigame no clique do sprite.
         // Os icones continuam abrindo as descricoes, sem consumir alertas.
         createCityCharacters(scene, charactersByCity[index] ?? []);
         rememberCityCharacters(scene, index);

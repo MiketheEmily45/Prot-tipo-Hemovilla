@@ -5,7 +5,7 @@ import { createCharacterIconButtons } from './IconButtons.js';
 // Coordenadas do centro dos sprites; os pes ficam sobre a rua/calcada.
 // Cada percurso horizontal permanece junto ao respectivo estabelecimento.
 export const city2Characters = [
-    { id: 'bruno', asset: 'Bruno', idle: 'Parado', x: 280, y: 94, minX: 250, maxX: 475, speed: 25, alertInterval: 60000 },
+    { id: 'bruno', asset: 'Bruno', idle: 'Parado', x: 300, y: 94, minX: 300, maxX: 390, speed: 25, alertInterval: 60000 },
     { id: 'beatriz', asset: 'Beatriz', idle: 'Parada', x: 360, y: 466, minX: 345, maxX: 465, speed: 25, alertInterval: 120000 },
     { id: 'carlos', asset: 'Carlos', idle: 'Parado', x: 390, y: 290, minX: 360, maxX: 460, speed: 20, alertInterval: 240000 }
 ];

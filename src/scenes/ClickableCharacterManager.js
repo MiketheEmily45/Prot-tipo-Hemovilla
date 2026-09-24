@@ -3,6 +3,37 @@
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
 
+const maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
+const femaleCharacterIds = new Set(['yasmin', 'beatriz', 'marlene', 'aparecida']);
+
+function getCharacterGender(character) {
+    const key = character?.iconButtonKey ?? character?.name ?? character?.sprite?.texture?.key ?? '';
+
+    if (maleCharacterIds.has(key)) {
+        return 'male';
+    }
+
+    if (femaleCharacterIds.has(key)) {
+        return 'female';
+    }
+
+    return null;
+}
+
+function playCharacterClickSound(scene, character) {
+    if (!scene || !scene.sound || typeof scene.sound.play !== 'function') {
+        return;
+    }
+
+    const gender = getCharacterGender(character);
+    if (!gender) {
+        return;
+    }
+
+    const soundKey = gender === 'male' ? 'masculine-huh' : 'feminine-huh';
+    scene.sound.play(soundKey, { volume: 0.8 });
+}
+
 export function registerClickableCharacter(scene, config) {
     const character = {
         ...config,
@@ -18,6 +49,7 @@ export function registerClickableCharacter(scene, config) {
 
     character.sprite.setInteractive({ useHandCursor: true });
     character.sprite.on('pointerdown', () => {
+        playCharacterClickSound(scene, character);
         toggleCharacterInteraction(scene, character);
     });
     scene.clickableCharacters.push(character);

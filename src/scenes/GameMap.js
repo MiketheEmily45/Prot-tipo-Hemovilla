@@ -49,6 +49,8 @@ export class GameMap extends Phaser.Scene {
         this.load.image('botao_minigame', 'assets/Telas/Botoes/botao_minigame.png');
         this.load.image('botao_descricao', 'assets/Telas/Botoes/botao_descricao.png');
         this.load.audio('alert-sound', 'assets/Musica/som_alerta.mp3');
+        this.load.audio('masculine-huh', 'assets/SFX/MasculineHuh.mp3');
+        this.load.audio('feminine-huh', 'assets/SFX/FeminineHuh.mp3');
         // Botao de alerta localizado no canto inferior esquerdo da tela.
         this.load.image('alert-button', 'assets/Telas/Botoes/botao_alerta.png');
     }

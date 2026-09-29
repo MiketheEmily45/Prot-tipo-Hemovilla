@@ -68,6 +68,7 @@ city2.forEach((character) => {
     const id = character.iconButtonKey;
     const alert = character.alertIcon;
     const deadline = character.nextAlertTime;
+    const expectedGenderSound = { bruno: 'masculine-huh', beatriz: 'feminine-huh', carlos: 'masculine-huh' }[id];
     scene.characterIconButtons[id].emit('pointerup');
     assert.equal(scene.characterOverlay.characterId, id);
     assert.ok(scene.characterOverlay.description.texture.includes('A definir'));
@@ -150,12 +151,17 @@ assert.ok([...city1, ...city2].every(c => !c.alertIcon));
 city3.forEach((character, index) => {
     const id = character.iconButtonKey;
     const alert = character.alertIcon;
+    const expectedGenderSound = { caue: 'masculine-huh', yasmin: 'feminine-huh', teo: 'masculine-huh' }[id];
     scene.characterIconButtons[id].emit('pointerup');
     assert.equal(scene.characterOverlay.characterId, id);
     assert.ok(scene.characterOverlay.description.texture.includes('A definir'));
     assert.equal(character.alertIcon, alert);
     closeCharacterDescription(scene);
     character.sprite.emit('pointerdown');
+    assert.ok(expectedGenderSound, id);
+    assert.ok(soundsPlayed.some(sound => sound.key === expectedGenderSound));
+    assert.ok(expectedGenderSound, id);
+    assert.ok(soundsPlayed.some(sound => sound.key === expectedGenderSound));
     assert.equal(scene.characterOverlay, null);
     assert.equal(character.balloon.texture, 'balao_temporario');
     assert.equal(character.sprite.body.velocity.x, 0);

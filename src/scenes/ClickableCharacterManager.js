@@ -61,7 +61,13 @@ function createMinigameBalloonButton(scene, character) {
     character.miniGameButton.setInteractive({ useHandCursor: true });
     character.miniGameButton.on('pointerdown', () => {
         if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
+        character.miniGameButton.setTint(0x8B2E40);
+    });
+    character.miniGameButton.on('pointerup', () => {
+        if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
+        character.miniGameButton.clearTint();
         resetCharacterAlert(scene, character);
+        scene.scene.start('Minigame');
     });
 }
 

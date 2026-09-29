@@ -2,9 +2,9 @@ import { switchCityCharacters } from './CityCharacters.js';
 import { createCityNavigationButtons } from './IconButtons.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 
-// A ordem das camadas segue a composicao original da Cidade1.
+// A ordem das camadas segue a composicao original da Cidade 1.
 export const cities = [
-    { folder: 'Cidade1', layers: ['BaseCidade1', 'ComplementosCidade1', 'ConstrucoesPrincipaisCidade1', 'ConstrucoesSecundariasCidade1'] },
+    { folder: 'Cidade 1', layers: ['BaseCidade1', 'ComplementosCidade1', 'ConstrucoesPrincipaisCidade1', 'ConstrucoesSecundariasCidade1'] },
     { folder: 'Cidade 2', layers: ['BaseCidade2', 'ComplementosCidade2', 'ConstrucoesPrincipaisCidade2', 'ConstrucoesSecundariasCidade2'] },
     { folder: 'Cidade 3', layers: ['BaseCidade3', 'ComplementosCidade3', 'ConstruçõesPrincipaisCidade3'] }
 ];

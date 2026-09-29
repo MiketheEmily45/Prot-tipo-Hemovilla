@@ -19,7 +19,7 @@ export const city3Characters = [
     { id: 'teo', asset: 'Theo', idle: 'Parado', x: 150, y: 375, minX: 85, maxX: 265, speed: 25, alertInterval: 240000 }
 ];
 
-// A Cidade1 mantem sua criacao original; as demais compartilham este cadastro.
+// A Cidade 1 mantem sua criacao original; as demais compartilham este cadastro.
 export const charactersByCity = [[], city2Characters, city3Characters];
 
 export function preloadCityCharacters(scene) {

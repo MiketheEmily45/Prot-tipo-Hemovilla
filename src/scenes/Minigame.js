@@ -5,8 +5,8 @@ export class Minigame extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('minigame-background', 'assets/Telas/Fundos/telainicial.png');
-        this.load.image('minigame-back-button', 'assets/Telas/Botoes/botao_pausa.png');
+        this.load.image('minigame-background', 'assets/Mini-game/Cenario/SalaHospital.png');
+        this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
     }
 
     create() {
@@ -15,33 +15,18 @@ export class Minigame extends Phaser.Scene {
 
         this.background = this.add.tileSprite(256, 256, 512, 512, 'minigame-background');
 
-        const title = this.add.text(256, 150, 'Minigame', {
-            fontFamily: 'Arial',
-            fontSize: '32px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        });
-        title.setOrigin(0.5);
+        const pauseButton = this.add.image(8, 8, 'pause-button');
+        pauseButton.setOrigin(0);
+        pauseButton.setDepth(100);
+        pauseButton.setInteractive({ useHandCursor: true });
 
-        const instructions = this.add.text(256, 230, 'Tela de minigame', {
-            fontFamily: 'Arial',
-            fontSize: '20px',
-            color: '#f3d6a0'
-        });
-        instructions.setOrigin(0.5);
-
-        const backButton = this.add.image(256, 380, 'minigame-back-button');
-        backButton.setOrigin(0.5);
-        backButton.setScale(0.9);
-        backButton.setInteractive({ useHandCursor: true });
-
-        backButton.on('pointerdown', () => {
-            backButton.setTint(0x8B2E40);
+        pauseButton.on('pointerdown', () => {
+            pauseButton.setTint(0x8B2E40);
         });
 
-        backButton.on('pointerup', () => {
-            backButton.clearTint();
-            this.scene.start('GameMap');
+        pauseButton.on('pointerup', () => {
+            pauseButton.clearTint();
+            this.scene.start('Start');
         });
     }
 

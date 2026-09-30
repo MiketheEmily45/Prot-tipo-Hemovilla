@@ -1,3 +1,5 @@
+// Tela do mini-game
+
 export class Minigame extends Phaser.Scene {
 
     constructor() {

@@ -1,4 +1,4 @@
-// Cria todas as animacoes dos personagens (Joaquim, Marlene e Aparecida).
+// Cria todas as animacoes dos personagens da cidade 1.
 // Esta funcao deve ser chamada na fase de create() da scene.
 export function createCharacterAnimations(scene) {
     scene.anims.create({

@@ -1,7 +1,8 @@
-// Gerencia movimento de personagens: Seu Joaquim (movimento vertical autônomo)
-// e NPCs (movimento horizontal). Exporta funções para criar, atualizar e controlar.
+// Gerencia movimento de personagens: Seu Joaquim possui (movimento vertical autônomo)
+// enquanto os outros NPCs possuem (movimento horizontal). 
+// Exporta funções para criar, atualizar e controlar.
 
-// ========== HORIZONTAL WALKER (Marlene, Aparecida) ==========
+// ========== HORIZONTAL WALKER ==========
 
 export function createHorizontalWalker(scene, config) {
     const walker = {

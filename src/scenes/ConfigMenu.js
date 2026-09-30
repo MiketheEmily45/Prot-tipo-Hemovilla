@@ -1,3 +1,5 @@
+// Tela de configurações
+
 export class ConfigMenu extends Phaser.Scene {
 
     constructor() {

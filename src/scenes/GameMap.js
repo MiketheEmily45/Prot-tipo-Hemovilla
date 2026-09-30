@@ -1,7 +1,13 @@
-import { preloadCityCharacters, rememberCityCharacters } from './CityCharacters.js';
+import {
+    preloadCityCharacters,
+    rememberCityCharacters,
+    city1Characters,
+    createHorizontalCityCharacter,
+    preloadJoaquim,
+    createJoaquimAnimations
+} from './CityCharacters.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
-import { createCharacterAnimations } from './characterAnimations.js';
-import { createHorizontalWalker, updateHorizontalWalker, stopHorizontalWalkerForInteraction, resumeHorizontalWalkerFromInteraction, startMove, startPause, stopJoaquimForInteraction, resumeJoaquimFromInteraction } from './CharacterMovement.js';
+import { updateHorizontalWalker, startMove, startPause, stopJoaquimForInteraction, resumeJoaquimFromInteraction } from './CharacterMovement.js';
 import { registerClickableCharacter, updateCharacterIndicators, triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
@@ -15,34 +21,11 @@ export class GameMap extends Phaser.Scene {
     preload() {
         preloadCities(this);
         preloadCityCharacters(this);
+        preloadJoaquim(this);
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
         this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
-        this.load.image('joaquim-icon', 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png');
-        this.load.image('marlene-icon', 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png');
-        this.load.image('aparecida-icon', 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png');
         // Moldura usada como painel da descricao dos personagens.
         this.load.image('character-frame', 'assets/Personagens/moldura_personagens.png');
-        // Seu Joaquim
-        this.load.image('SJPD', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoDireita.png');
-        this.load.image('SJPE', 'assets/Personagens/SeuJoaquim/SeuJoaquim.ParadoEsquerda.png');
-        this.load.image('SJAD1', 'assets/Personagens/SeuJoaquim/SeuJoaquim.AndarDireita1.png');
-        this.load.image('SJAE1', 'assets/Personagens/SeuJoaquim/SeuJoaquim.AndarEsquerda1.png');
-        this.load.image('SJAD2', 'assets/Personagens/SeuJoaquim/SeuJoaquim.AndarDireita2.png');
-        this.load.image('SJAE2', 'assets/Personagens/SeuJoaquim/SeuJoaquim.AndarEsquerda2.png');
-        //Dona Marlene
-        this.load.image('DMPD', 'assets/Personagens/DonaMarlene/DonaMarlene.ParadaDireita.png');
-        this.load.image('DMPE', 'assets/Personagens/DonaMarlene/DonaMarlene.ParadaEsquerda.png');
-        this.load.image('DMAD1', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarDireita1.png');
-        this.load.image('DMAE1', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarEsquerda1.png');
-        this.load.image('DMAD2', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarDireita2.png');
-        this.load.image('DMAE2', 'assets/Personagens/DonaMarlene/DonaMarlene.AndarEsquerda2.png');
-        //Dona Aparecida
-        this.load.image('DAPD', 'assets/Personagens/DonaAparecida/DonaAparecida.PosiçãoParadaDireita.png');
-        this.load.image('DAPE', 'assets/Personagens/DonaAparecida/DonaAparecida.PosiçãoParadaEsquerda.png');
-        this.load.image('DAAD1', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarDireita1.png');
-        this.load.image('DAAE1', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarEsquerda1.png');
-        this.load.image('DAAD2', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarDireita2.png');
-        this.load.image('DAAE2', 'assets/Personagens/DonaAparecida/DonaAparecida.AndarEsquerda2.png');
         // Balao temporario exibido quando um personagem clicavel esta parado.
         this.load.image('balao_temporario', 'assets/Personagens/balao_temporario.png');
         this.load.image('icone_alerta', 'assets/Personagens/icone_alerta.png');
@@ -103,18 +86,18 @@ export class GameMap extends Phaser.Scene {
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.joaquim = this.physics.add.sprite(120, 480, 'SJPD');
-        this.joaquim.setCollideWorldBounds(true);
+        createJoaquimAnimations(this);
 
-        createCharacterAnimations(this);
+        this.joaquim = this.physics.add.sprite(120, 480, 'joaquim-idle-right');
+        this.joaquim.setCollideWorldBounds(true);
 
         this.isMoving = false;
         this.lastDirection = 'down';
         this.idleTextures = {
-            up: 'SJPE',
-            down: 'SJPD',
-            left: 'SJPE',
-            right: 'SJPD'
+            up: 'joaquim-idle-left',
+            down: 'joaquim-idle-right',
+            left: 'joaquim-idle-left',
+            right: 'joaquim-idle-right'
         };
 
         this.playerSpeed = 30;
@@ -139,51 +122,9 @@ export class GameMap extends Phaser.Scene {
             resume: () => resumeJoaquimFromInteraction(this)
         });
 
-        this.horizontalNPCs = [
-            createHorizontalWalker(this, {
-                sprite: this.physics.add.sprite(280, 290, 'DMPE'),
-                name: 'marlene',
-                minX: 280,
-                maxX: 480,
-                speed: 25,
-                direction: 'left',
-                walkLeftAnim: 'walk_marlene_left',
-                walkRightAnim: 'walk_marlene_right',
-                idleLeft: 'DMPE',
-                idleRight: 'DMPD'
-            }),
-            createHorizontalWalker(this, {
-                sprite: this.physics.add.sprite(300, 100, 'DAPE'),
-                name: 'aparecida',
-                minX: 300,
-                maxX: 480,
-                speed: 20,
-                direction: 'right',
-                walkLeftAnim: 'walk_aparecida_left',
-                walkRightAnim: 'walk_aparecida_right',
-                idleLeft: 'DAPE',
-                idleRight: 'DAPD'
-            })
-        ];
-
-        registerClickableCharacter(this, {
-            sprite: this.horizontalNPCs[0].sprite,
-            // A Dona Marlene recebe o balao a esquerda.
-            balloonOffset: { x: -55, y: -15 },
-            alertInterval: 120000,
-            iconButtonKey: 'marlene',
-            stop: () => stopHorizontalWalkerForInteraction(this.horizontalNPCs[0]),
-            resume: () => resumeHorizontalWalkerFromInteraction(this, this.horizontalNPCs[0])
-        });
-
-        registerClickableCharacter(this, {
-            sprite: this.horizontalNPCs[1].sprite,
-            // A Dona Aparecida recebe o balao a esquerda.
-            balloonOffset: { x: -55, y: -15 },
-            alertInterval: 240000,
-            iconButtonKey: 'aparecida',
-            stop: () => stopHorizontalWalkerForInteraction(this.horizontalNPCs[1]),
-            resume: () => resumeHorizontalWalkerFromInteraction(this, this.horizontalNPCs[1])
+        this.horizontalNPCs = [];
+        city1Characters.forEach((config) => {
+            createHorizontalCityCharacter(this, config);
         });
         rememberCityCharacters(this, 0);
     }

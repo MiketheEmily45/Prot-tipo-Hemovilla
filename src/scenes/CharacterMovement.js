@@ -75,7 +75,7 @@ export function startPause(scene) {
     scene.isPaused = true;
     scene.joaquim.setVelocity(0, 0);
     scene.joaquim.anims.stop();
-    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'SJPD');
+    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
     scene.nextDirectionChange = scene.time.now + scene.pauseTime;
     scene.remainingPauseTime = scene.pauseTime;
 }
@@ -87,14 +87,14 @@ export function stopJoaquimForInteraction(scene) {
 
     scene.joaquim.setVelocity(0, 0);
     scene.joaquim.anims.stop();
-    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'SJPD');
+    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
 }
 
 export function resumeJoaquimFromInteraction(scene) {
     if (scene.isPaused) {
         scene.nextDirectionChange = scene.time.now + scene.remainingPauseTime;
         scene.joaquim.setVelocity(0, 0);
-        scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'SJPD');
+        scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
         return;
     }
 

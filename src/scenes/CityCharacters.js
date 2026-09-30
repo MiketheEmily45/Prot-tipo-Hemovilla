@@ -2,6 +2,11 @@ import { createHorizontalWalker, stopHorizontalWalkerForInteraction, resumeHoriz
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 
+export const city1Characters = [
+    { id: 'marlene', asset: 'DonaMarlene', idle: 'Parada', x: 280, y: 290, minX: 280, maxX: 480, speed: 25, direction: 'left', balloonOffset: { x: -55, y: -15 }, alertInterval: 120000 },
+    { id: 'aparecida', asset: 'DonaAparecida', idle: 'PosiçãoParada', x: 300, y: 100, minX: 300, maxX: 480, speed: 20, direction: 'right', balloonOffset: { x: -55, y: -15 }, alertInterval: 240000 }
+];
+
 // Coordenadas do centro dos sprites; os pes ficam sobre a rua/calcada.
 // Cada percurso horizontal permanece junto ao respectivo estabelecimento.
 export const city2Characters = [
@@ -23,7 +28,7 @@ export const city3Characters = [
 export const charactersByCity = [[], city2Characters, city3Characters];
 
 export function preloadCityCharacters(scene) {
-    charactersByCity.flat().forEach(({ id, asset, idle }) => {
+    [...city1Characters, ...charactersByCity.flat()].forEach(({ id, asset, idle }) => {
         const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
         load(`${id}-icon`, 'Icone');
         ['Direita', 'Esquerda'].forEach((side, index) => {
@@ -34,32 +39,98 @@ export function preloadCityCharacters(scene) {
     });
 }
 
+export function preloadJoaquim(scene) {
+    const id = 'joaquim';
+    const asset = 'SeuJoaquim';
+    const idle = 'Parado';
+    const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
+    load(`${id}-icon`, 'Icone');
+    ['Direita', 'Esquerda'].forEach((side, index) => {
+        const direction = index === 0 ? 'right' : 'left';
+        load(`${id}-idle-${direction}`, `${idle}${side}`);
+        [1, 2].forEach((frame) => load(`${id}-${direction}-${frame}`, `Andar${side}${frame}`));
+    });
+}
+
+export function createJoaquimAnimations(scene) {
+    if (!scene.anims.exists('walk_Joaquim_down')) {
+        scene.anims.create({
+            key: 'walk_Joaquim_down',
+            frames: [
+                { key: 'joaquim-right-1' },
+                { key: 'joaquim-right-2' }
+            ],
+            frameRate: 2,
+            repeat: -1
+        });
+    }
+
+    if (!scene.anims.exists('walk_Joaquim_up')) {
+        scene.anims.create({
+            key: 'walk_Joaquim_up',
+            frames: [
+                { key: 'joaquim-left-1' },
+                { key: 'joaquim-left-2' }
+            ],
+            frameRate: 2,
+            repeat: -1
+        });
+    }
+}
+
+export function createHorizontalCityCharacter(scene, config) {
+    const {
+        id,
+        direction = 'right',
+        balloonOffset = { x: 0, y: -55 },
+        animFrameRate = 4
+    } = config;
+
+    ['left', 'right'].forEach((dir) => {
+        const key = `walk_${id}_${dir}`;
+        if (!scene.anims.exists(key)) {
+            scene.anims.create({
+                key,
+                frames: [1, 2].map((frame) => ({ key: `${id}-${dir}-${frame}` })),
+                frameRate: animFrameRate,
+                repeat: -1
+            });
+        }
+    });
+
+    const walker = createHorizontalWalker(scene, {
+        ...config,
+        sprite: scene.physics.add.sprite(config.x, config.y, `${id}-idle-${direction}`),
+        direction,
+        walkLeftAnim: `walk_${id}_left`,
+        walkRightAnim: `walk_${id}_right`,
+        idleLeft: `${id}-idle-left`,
+        idleRight: `${id}-idle-right`
+    });
+
+    if (!scene.horizontalNPCs) scene.horizontalNPCs = [];
+    scene.horizontalNPCs.push(walker);
+
+    if (!scene.clickableCharacters) scene.clickableCharacters = [];
+    registerClickableCharacter(scene, {
+        sprite: walker.sprite,
+        iconButtonKey: id,
+        alertInterval: config.alertInterval,
+        balloonOffset,
+        stop: () => stopHorizontalWalkerForInteraction(walker),
+        resume: () => resumeHorizontalWalkerFromInteraction(scene, walker)
+    });
+
+    return walker;
+}
+
 function createCityCharacters(scene, characters) {
     scene.clickableCharacters = [];
     scene.horizontalNPCs = [];
     scene.alertedIconKeys = new Set();
     createCharacterIconButtons(scene, characters.map(({ id }) => id));
     characters.forEach((config) => {
-        const { id } = config;
-        ['left', 'right'].forEach((direction) => {
-            const key = `walk_${id}_${direction}`;
-            if (!scene.anims.exists(key)) scene.anims.create({
-                key, frames: [1, 2].map((frame) => ({ key: `${id}-${direction}-${frame}` })),
-                frameRate: 4, repeat: -1
-            });
-        });
-        const walker = createHorizontalWalker(scene, {
-            ...config, sprite: scene.physics.add.sprite(config.x, config.y, `${id}-idle-right`),
-            direction: 'right', walkLeftAnim: `walk_${id}_left`, walkRightAnim: `walk_${id}_right`,
-            idleLeft: `${id}-idle-left`, idleRight: `${id}-idle-right`
-        });
-        scene.horizontalNPCs.push(walker);
-        registerClickableCharacter(scene, {
-            sprite: walker.sprite, iconButtonKey: id,
-            alertInterval: config.alertInterval, balloonOffset: { x: 0, y: -55 },
-            stop: () => stopHorizontalWalkerForInteraction(walker),
-            resume: () => resumeHorizontalWalkerFromInteraction(scene, walker)
-        });
+        createHorizontalCityCharacter(scene, config);
     });
 }
 

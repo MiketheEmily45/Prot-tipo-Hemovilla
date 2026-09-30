@@ -35,11 +35,12 @@ globalThis.Phaser = { Scene: class {} };
 const { GameMap } = await import('../src/scenes/GameMap.js');
 const { closeCharacterDescription } = await import('../src/scenes/CharacterDescriptionPanel.js');
 const { triggerAllCharactersAlert } = await import('../src/scenes/ClickableCharacterManager.js');
-const { city2Characters, city3Characters } = await import('../src/scenes/CityCharacters.js');
+const { city1Characters, city2Characters, city3Characters } = await import('../src/scenes/CityCharacters.js');
 const scene = new GameMap();
 const create = (...args) => new DisplayObject(...args);
 const soundsPlayed = [];
 Object.assign(scene, {
+    scene: { start() {} },
     load: {
         image(key, path) { assert.ok(fs.existsSync(path), path); },
         audio(key, path) { assert.ok(fs.existsSync(path), path); }
@@ -99,6 +100,7 @@ city2.forEach((character) => {
     assert.equal(scene.alertedIconKeys.has(id), true);
     assert.equal(scene.characterIconButtons[id].tint, 0xff5555);
     character.miniGameButton.emit('pointerdown');
+    character.miniGameButton.emit('pointerup');
     assert.equal(character.alertIcon, null);
     assert.equal(scene.alertedIconKeys.has(id), false);
     assert.equal(scene.characterIconButtons[id].tint, null);
@@ -108,6 +110,7 @@ city2.forEach((character) => {
     const resetDeadline = character.nextAlertTime;
     scene.time.now += 1;
     character.miniGameButton.emit('pointerdown');
+    character.miniGameButton.emit('pointerup');
     assert.equal(character.nextAlertTime, resetDeadline);
     scene.time.now -= 1;
     const button = character.miniGameButton;
@@ -167,6 +170,7 @@ city3.forEach((character, index) => {
     assert.equal(character.sprite.body.velocity.x, 0);
     assert.equal(character.alertIcon, alert);
     character.miniGameButton.emit('pointerdown');
+    character.miniGameButton.emit('pointerup');
     assert.equal(character.alertIcon, null);
     assert.equal(scene.alertedIconKeys.has(id), false);
     assert.equal(scene.characterIconButtons[id].tint, null);
@@ -201,6 +205,13 @@ assert.equal(scene.clickableCharacters, city1);
 assert.deepEqual(Object.keys(scene.characterIconButtons), ['joaquim', 'marlene', 'aparecida']);
 assert.equal(scene.nextDirectionChange, 1800);
 scene.update(1100);
+city1Characters.forEach((config, index) => {
+    const walker = scene.horizontalNPCs[index];
+    walker.sprite.x = config.maxX; walker.direction = 'right'; scene.update(1100);
+    assert.ok(walker.sprite.body.velocity.x < 0);
+    walker.sprite.x = config.minX; scene.update(1100);
+    assert.ok(walker.sprite.body.velocity.x > 0);
+});
 // O campo de tipo sanguineo tambem aparece nos tres paineis da Cidade1.
 for (const id of Object.keys(scene.characterIconButtons)) {
     scene.characterIconButtons[id].emit('pointerup');

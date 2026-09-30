@@ -5,8 +5,8 @@ import { Minigame } from './scenes/Minigame.js'
 
 const config = {
     type: Phaser.AUTO,
-    title: 'Overlord Rising',
-    description: '',
+    title: 'Hemovilla: Missão ABO',
+    description: 'Jogo educativo sobre tipagem sanguínea (sistema ABO)',
     parent: 'game-container',
     width: 512,
     height: 512,

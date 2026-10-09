@@ -6,7 +6,7 @@ import {
     preloadJoaquim
 } from './CityCharacters.js';
 import { updateHorizontalWalker } from './CharacterMovement.js';
-import { updateCharacterIndicators } from './ClickableCharacterManager.js';
+import { ClickableCharacterManager, updateCharacterIndicators } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
@@ -57,6 +57,7 @@ export class GameMap extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.clickableCharacters = [];
+        this.clickableCharacterManager = new ClickableCharacterManager(this);
         this.joaquimController = new JoaquimController(this);
         this.joaquimController.create();
 

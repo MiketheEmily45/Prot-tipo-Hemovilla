@@ -1,102 +1,214 @@
-// Gerencia movimento de personagens: Seu Joaquim possui (movimento vertical autônomo)
-// enquanto os outros NPCs possuem (movimento horizontal). 
-// Exporta funções para criar, atualizar e controlar.
+// Gerencia movimentação configurável de personagens (eixo horizontal ou vertical, limites, velocidade e pausas opcionais).
 
-// ========== HORIZONTAL WALKER ==========
+export class CharacterMovement {
+    constructor(scene, sprite, config = {}) {
+        this.scene = scene;
+        this.sprite = sprite;
+        this.config = config;
+        this.id = config.id;
+        this.axis = config.axis || 'horizontal';
+        this.speed = config.speed ?? (this.axis === 'vertical' ? 30 : 20);
+        this.direction = config.direction || (this.axis === 'vertical' ? 'up' : 'left');
+        this.lastDirection = this.direction;
 
-export function createHorizontalWalker(scene, config) {
-    const walker = {
-        ...config,
-        sprite: config.sprite,
-        direction: config.direction || 'left',
-        isStoppedByClick: false
-    };
+        // Limites horizontais
+        this.minX = config.minX;
+        this.maxX = config.maxX;
 
-    walker.sprite.setCollideWorldBounds(true);
-    walker.sprite.setImmovable(true);
-    walker.sprite.setVelocityX(walker.direction === 'left' ? -walker.speed : walker.speed);
-    walker.sprite.play(walker.direction === 'left' ? walker.walkLeftAnim : walker.walkRightAnim, true);
+        // Limites verticais
+        this.verticalDistance = config.verticalDistance ?? 120;
+        this.moveStartY = config.y ?? (sprite ? sprite.y : 0);
 
-    return walker;
-}
+        // Pausas autônomas periódicas
+        this.hasPause = Boolean(config.hasPause || config.pauseTime);
+        this.pauseTime = config.pauseTime ?? 700;
+        this.isPaused = false;
+        this._nextDirectionChange = scene?.time?.now != null ? scene.time.now + this.pauseTime : 0;
+        this.remainingPauseTime = this.pauseTime;
+        this.isMoving = false;
 
-export function updateHorizontalWalker(walker) {
-    if (walker.isStoppedByClick) {
-        walker.sprite.setVelocityX(0);
-        return;
+        // Nomes de animações
+        this.walkLeftAnim = config.walkLeftAnim || (config.id ? `walk_${config.id}_left` : '');
+        this.walkRightAnim = config.walkRightAnim || (config.id ? `walk_${config.id}_right` : '');
+        this.walkUpAnim = config.walkUpAnim || (config.id ? `walk_${config.id}_up` : '');
+        this.walkDownAnim = config.walkDownAnim || (config.id ? `walk_${config.id}_down` : '');
+
+        // Texturas idle
+        this.idleLeft = config.idleLeft || (config.id ? `${config.id}-idle-left` : '');
+        this.idleRight = config.idleRight || (config.id ? `${config.id}-idle-right` : '');
+        this.idleTextures = config.idleTextures || {
+            up: config.idleUp || this.idleLeft,
+            down: config.idleDown || this.idleRight,
+            left: this.idleLeft,
+            right: this.idleRight
+        };
+
+        this.isStoppedByClick = false;
+
+        this.init();
     }
 
-    const { sprite, minX, maxX, speed, walkLeftAnim, walkRightAnim } = walker;
-
-    if (walker.direction === 'left' && sprite.x <= minX) {
-        walker.direction = 'right';
-    } else if (walker.direction === 'right' && sprite.x >= maxX) {
-        walker.direction = 'left';
+    get nextDirectionChange() {
+        if (this.scene && this.scene.nextDirectionChange !== undefined && this.axis === 'vertical') {
+            return this.scene.nextDirectionChange;
+        }
+        return this._nextDirectionChange;
     }
 
-    const velocityX = walker.direction === 'left' ? -speed : speed;
-    sprite.setVelocityX(velocityX);
-    sprite.play(walker.direction === 'left' ? walkLeftAnim : walkRightAnim, true);
-}
-
-export function stopHorizontalWalkerForInteraction(walker) {
-    walker.isStoppedByClick = true;
-    walker.sprite.setVelocityX(0);
-    walker.sprite.anims.stop();
-    walker.sprite.setTexture(walker.direction === 'left' ? walker.idleLeft : walker.idleRight);
-}
-
-export function resumeHorizontalWalkerFromInteraction(scene, walker) {
-    walker.isStoppedByClick = false;
-    updateHorizontalWalker(walker);
-}
-
-// ========== JOAQUIM MOVEMENT (Seu Joaquim) ==========
-
-export function startMove(scene, resetMoveStart = true) {
-    scene.isPaused = false;
-
-    if (resetMoveStart) {
-        scene.moveStartY = scene.joaquim.y;
+    set nextDirectionChange(val) {
+        this._nextDirectionChange = val;
+        if (this.scene && this.axis === 'vertical') {
+            this.scene.nextDirectionChange = val;
+        }
     }
 
-    if (scene.currentDirection === 'up') {
-        scene.joaquim.setVelocity(0, -scene.playerSpeed);
-        scene.joaquim.play('walk_Joaquim_up', true);
-        scene.lastDirection = 'up';
-    } else {
-        scene.joaquim.setVelocity(0, scene.playerSpeed);
-        scene.joaquim.play('walk_Joaquim_down', true);
-        scene.lastDirection = 'down';
-    }
-}
-
-export function startPause(scene) {
-    scene.isPaused = true;
-    scene.joaquim.setVelocity(0, 0);
-    scene.joaquim.anims.stop();
-    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
-    scene.nextDirectionChange = scene.time.now + scene.pauseTime;
-    scene.remainingPauseTime = scene.pauseTime;
-}
-
-export function stopJoaquimForInteraction(scene) {
-    if (scene.isPaused) {
-        scene.remainingPauseTime = Math.max(0, scene.nextDirectionChange - scene.time.now);
+    init() {
+        if (!this.sprite) return;
+        this.sprite.setCollideWorldBounds(true);
+        const shouldBeImmovable = this.config?.immovable ?? (this.axis === 'horizontal');
+        if (shouldBeImmovable) {
+            this.sprite.setImmovable(true);
+        }
+        this.startMove(true);
     }
 
-    scene.joaquim.setVelocity(0, 0);
-    scene.joaquim.anims.stop();
-    scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
-}
+    startMove(resetStart = true) {
+        this.isPaused = false;
+        this.isMoving = true;
 
-export function resumeJoaquimFromInteraction(scene) {
-    if (scene.isPaused) {
-        scene.nextDirectionChange = scene.time.now + scene.remainingPauseTime;
-        scene.joaquim.setVelocity(0, 0);
-        scene.joaquim.setTexture(scene.idleTextures[scene.lastDirection] || 'joaquim-idle-right');
-        return;
+        if (this.axis === 'vertical') {
+            if (resetStart && this.sprite) {
+                this.moveStartY = this.sprite.y;
+            }
+            if (this.direction === 'up') {
+                this.sprite.setVelocity(0, -this.speed);
+                if (this.walkUpAnim && this.sprite.play) this.sprite.play(this.walkUpAnim, true);
+                this.lastDirection = 'up';
+            } else {
+                this.sprite.setVelocity(0, this.speed);
+                if (this.walkDownAnim && this.sprite.play) this.sprite.play(this.walkDownAnim, true);
+                this.lastDirection = 'down';
+            }
+        } else {
+            const velX = this.direction === 'left' ? -this.speed : this.speed;
+            this.sprite.setVelocityX(velX);
+            const anim = this.direction === 'left' ? this.walkLeftAnim : this.walkRightAnim;
+            if (anim && this.sprite.play) this.sprite.play(anim, true);
+            this.lastDirection = this.direction;
+        }
+
+        this.syncScene();
     }
 
-    startMove(scene, false);
+    startPause() {
+        this.isPaused = true;
+        this.isMoving = false;
+        this.sprite.setVelocity(0, 0);
+        if (this.sprite.anims) this.sprite.anims.stop();
+
+        const idleTex = this.idleTextures[this.lastDirection] ||
+            (this.lastDirection === 'left' ? this.idleLeft : this.idleRight);
+        if (idleTex && this.sprite.setTexture) this.sprite.setTexture(idleTex);
+
+        const now = this.scene?.time?.now ?? 0;
+        this.nextDirectionChange = now + this.pauseTime;
+        this.remainingPauseTime = this.pauseTime;
+
+        this.syncScene();
+    }
+
+    update(time) {
+        if (this.isStoppedByClick) {
+            this.sprite.setVelocity(0, 0);
+            return;
+        }
+
+        const currentTime = time ?? this.scene?.time?.now ?? 0;
+
+        if (this.hasPause) {
+            if (this.isPaused && currentTime >= this.nextDirectionChange) {
+                this.direction = this.direction === 'up' ? 'down' : 'up';
+                this.startMove(true);
+            }
+
+            const body = this.sprite.body;
+            if (!this.isPaused) {
+                const blocked = body && (body.blocked.up || body.blocked.down);
+                const reachedDistance = Math.abs(this.sprite.y - this.moveStartY) >= this.verticalDistance;
+                if (blocked || reachedDistance) {
+                    this.startPause();
+                    return;
+                }
+            }
+
+            this.isMoving = !this.isPaused;
+            this.syncScene();
+            return;
+        }
+
+        if (this.axis === 'horizontal') {
+            if (this.direction === 'left' && this.sprite.x <= this.minX) {
+                this.direction = 'right';
+            } else if (this.direction === 'right' && this.sprite.x >= this.maxX) {
+                this.direction = 'left';
+            }
+
+            const velX = this.direction === 'left' ? -this.speed : this.speed;
+            this.sprite.setVelocityX(velX);
+            const anim = this.direction === 'left' ? this.walkLeftAnim : this.walkRightAnim;
+            if (anim && this.sprite.play) this.sprite.play(anim, true);
+        }
+    }
+
+    stop() {
+        this.isStoppedByClick = true;
+        if (this.hasPause && this.isPaused) {
+            const now = this.scene?.time?.now ?? 0;
+            this.remainingPauseTime = Math.max(0, this.nextDirectionChange - now);
+        }
+
+        this.sprite.setVelocity(0, 0);
+        if (this.sprite.anims) this.sprite.anims.stop();
+        const idleTex = this.idleTextures[this.lastDirection] ||
+            (this.direction === 'left' ? this.idleLeft : this.idleRight);
+        if (idleTex && this.sprite.setTexture) this.sprite.setTexture(idleTex);
+
+        this.syncScene();
+    }
+
+    resume() {
+        this.isStoppedByClick = false;
+
+        if (this.hasPause) {
+            if (this.isPaused) {
+                const now = this.scene?.time?.now ?? 0;
+                this.nextDirectionChange = now + this.remainingPauseTime;
+                this.sprite.setVelocity(0, 0);
+                const idleTex = this.idleTextures[this.lastDirection] ||
+                    (this.direction === 'left' ? this.idleLeft : this.idleRight);
+                if (idleTex && this.sprite.setTexture) this.sprite.setTexture(idleTex);
+                this.syncScene();
+                return;
+            }
+            this.startMove(false);
+            return;
+        }
+
+        this.update();
+    }
+
+    syncScene() {
+        if (!this.scene || this.axis !== 'vertical') return;
+        this.scene.isMoving = this.isMoving;
+        this.scene.isPaused = this.isPaused;
+        this.scene.lastDirection = this.lastDirection;
+        this.scene.currentDirection = this.direction;
+        this.scene.playerSpeed = this.speed;
+        this.scene.verticalDistance = this.verticalDistance;
+        this.scene.pauseTime = this.pauseTime;
+        this.scene.moveStartY = this.moveStartY;
+        this.scene.nextDirectionChange = this.nextDirectionChange;
+        this.scene.remainingPauseTime = this.remainingPauseTime;
+        this.scene.idleTextures = this.idleTextures;
+    }
 }

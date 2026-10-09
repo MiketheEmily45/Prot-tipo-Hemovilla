@@ -1,16 +1,13 @@
 import {
     preloadCityCharacters,
     rememberCityCharacters,
-    city1Characters,
-    createHorizontalCityCharacter,
-    preloadJoaquim,
-    createJoaquimAnimations
+    allCity1Characters,
+    createCityCharacter
 } from './CityCharacters.js';
-import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
-import { updateHorizontalWalker, startMove, startPause, stopJoaquimForInteraction, resumeJoaquimFromInteraction } from './CharacterMovement.js';
-import { registerClickableCharacter, updateCharacterIndicators, triggerAllCharactersAlert } from './ClickableCharacterManager.js';
+import { ClickableCharacterManager, updateCharacterIndicators } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
+import { MapControls } from './MapControls.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -21,7 +18,6 @@ export class GameMap extends Phaser.Scene {
     preload() {
         preloadCities(this);
         preloadCityCharacters(this);
-        preloadJoaquim(this);
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
         this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         // Moldura usada como painel da descricao dos personagens.
@@ -50,126 +46,27 @@ export class GameMap extends Phaser.Scene {
         this.alertedIconKeys = new Set();
         createCharacterIconButtons(this);
 
-        // Botao fixo no canto superior esquerdo para voltar ao menu inicial.
-        const pauseButton = this.add.image(8, 8, 'pause-button');
-        pauseButton.setOrigin(0);
-        pauseButton.setDepth(100);
-        pauseButton.setInteractive({ useHandCursor: true });
-        pauseButton.on('pointerdown', () => {
-            // Usa o mesmo escurecimento do botao Iniciar enquanto o clique esta pressionado.
-            pauseButton.setTint(0x8B2E40);
-        });
-        pauseButton.on('pointerup', () => {
-            pauseButton.clearTint();
-            closeCharacterDescription(this);
-            this.scene.start('Start');
-        });
-
+        this.mapControls = new MapControls(this);
+        const { pauseButton } = this.mapControls.create();
         this.cityNavigation.createButtons(pauseButton);
-
-        // Botao de alerta localizado no canto inferior esquerdo da tela.
-        // Este botao ativa o alerta de todos os personagens quando pressionado.
-        const alertButton = this.add.image(8, 600, 'alert-button');
-        this.alertButton = alertButton;
-        alertButton.setOrigin(0, 1);
-        alertButton.setDepth(100);
-        alertButton.setInteractive({ useHandCursor: true });
-        alertButton.on('pointerdown', () => {
-            // Aplica escurecimento visual enquanto o botao esta sendo pressionado.
-            alertButton.setTint(0x8B2E40);
-        });
-        alertButton.on('pointerup', () => {
-            alertButton.clearTint();
-            // Chama a funcao que ativa o alerta de todos os personagens do mapa.
-            triggerAllCharactersAlert(this);
-        });
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        createJoaquimAnimations(this);
-
-        this.joaquim = this.physics.add.sprite(120, 480, 'joaquim-idle-right');
-        this.joaquim.setCollideWorldBounds(true);
-
-        this.isMoving = false;
-        this.lastDirection = 'down';
-        this.idleTextures = {
-            up: 'joaquim-idle-left',
-            down: 'joaquim-idle-right',
-            left: 'joaquim-idle-left',
-            right: 'joaquim-idle-right'
-        };
-
-        this.playerSpeed = 30;
-        this.verticalDistance = 120;
-        this.pauseTime = 700;
-        this.isPaused = false;
-        this.currentDirection = 'up';
-        this.moveStartY = this.joaquim.y;
-        this.nextDirectionChange = this.time.now + this.pauseTime;
-        this.remainingPauseTime = this.pauseTime;
-
-        startMove(this);
-
         this.clickableCharacters = [];
-        registerClickableCharacter(this, {
-            sprite: this.joaquim,
-            // O Seu Joaquim recebe o balao acima da cabeca.
-            balloonOffset: { x: 0, y: -55 },
-            alertInterval: 60000,
-            iconButtonKey: 'joaquim',
-            stop: () => stopJoaquimForInteraction(this),
-            resume: () => resumeJoaquimFromInteraction(this)
-        });
+        this.clickableCharacterManager = new ClickableCharacterManager(this);
+        this.npcs = [];
 
-        this.horizontalNPCs = [];
-        city1Characters.forEach((config) => {
-            createHorizontalCityCharacter(this, config);
+        allCity1Characters.forEach((config) => {
+            createCityCharacter(this, config);
         });
         rememberCityCharacters(this, 0);
     }
 
     update(time) {
-        // As cidades sem personagens nao atualizam movimento nem geram alertas.
-        if (this.currentCityIndex !== 0) {
-            updateCharacterIndicators(this, time);
-            this.horizontalNPCs.forEach((walker) => updateHorizontalWalker(walker));
-            return;
-        }
-
-        const joaquimInteraction = this.clickableCharacters && this.clickableCharacters[0];
         updateCharacterIndicators(this, time);
 
-        if (joaquimInteraction && joaquimInteraction.isStoppedByClick) {
-            this.joaquim.setVelocity(0, 0);
-
-            if (this.horizontalNPCs) {
-                this.horizontalNPCs.forEach((walker) => updateHorizontalWalker(walker));
-            }
-
-            return;
-        }
-
-        if (this.isPaused && time >= this.nextDirectionChange) {
-            this.currentDirection = this.currentDirection === 'up' ? 'down' : 'up';
-            startMove(this);
-        }
-
-        const body = this.joaquim.body;
-        if (!this.isPaused && body && (body.blocked.up || body.blocked.down)) {
-            startPause(this);
-            return;
-        }
-
-        if (!this.isPaused && Math.abs(this.joaquim.y - this.moveStartY) >= this.verticalDistance) {
-            startPause(this);
-            return;
-        }
-
-        this.isMoving = !this.isPaused;
-
-        if (this.horizontalNPCs) {
-            this.horizontalNPCs.forEach((walker) => updateHorizontalWalker(walker));
+        if (this.npcs) {
+            this.npcs.forEach((npc) => npc.update(time));
         }
     }
 

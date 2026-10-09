@@ -12,19 +12,33 @@ export const cities = [
 const layerKey = (city, layer) => `city-${city}-layer-${layer}`;
 
 export function preloadCities(scene) {
-    cities.forEach((city, cityIndex) => city.layers.forEach((file, layerIndex) => {
-        scene.load.image(layerKey(cityIndex, layerIndex), `assets/Mapas/${city.folder}/${file}.png`);
-    }));
-    scene.load.image('city-previous', 'assets/Telas/Botoes/cidade_anterior.png');
-    scene.load.image('city-next', 'assets/Telas/Botoes/cidade_posterior.png');
+    CityNavigation.preload(scene);
 }
 
 export class CityNavigation {
+    static cities = cities;
+
+    static preload(scene) {
+        cities.forEach((city, cityIndex) => city.layers.forEach((file, layerIndex) => {
+            scene.load.image(layerKey(cityIndex, layerIndex), `assets/Mapas/${city.folder}/${file}.png`);
+        }));
+        scene.load.image('city-previous', 'assets/Telas/Botoes/cidade_anterior.png');
+        scene.load.image('city-next', 'assets/Telas/Botoes/cidade_posterior.png');
+    }
+
     constructor(scene) {
         this.scene = scene;
         scene.currentCityIndex = 0;
         this.layers = cities[0].layers.map((_, index) =>
             scene.add.tileSprite(256, 256, 512, 512, layerKey(0, index)));
+    }
+
+    get currentCityIndex() {
+        return this.scene.currentCityIndex;
+    }
+
+    get totalCities() {
+        return cities.length;
     }
 
     createButtons(pauseButton) {

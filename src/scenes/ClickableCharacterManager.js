@@ -1,6 +1,14 @@
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
 import { Character } from './Character.js';
+import { AlertManager } from './AlertManager.js';
+
+function getAlertManager(scene) {
+    if (!scene.alertManager) {
+        scene.alertManager = new AlertManager(scene);
+    }
+    return scene.alertManager;
+}
 
 const maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
 const femaleCharacterIds = new Set(['yasmin', 'beatriz', 'marlene', 'aparecida']);
@@ -107,52 +115,11 @@ export function updateCharacterBalloonPosition(character) {
 }
 
 export function updateCharacterAlert(scene, character, time) {
-    if (!character.alertInterval) {
-        return;
-    }
-
-    // Quando o tempo configurado termina, cria o icone uma unica vez.
-    if (!character.alertIcon && time >= character.nextAlertTime) {
-        character.alertIcon = scene.add.image(0, 0, 'icone_alerta');
-        character.alertIcon.setDepth(character.sprite.depth + 1);
-        playAlertSound(scene);
-
-        if (character.iconButtonKey) {
-            scene.alertedIconKeys.add(character.iconButtonKey);
-            updateIconButtonTint(scene, character.iconButtonKey);
-        }
-    }
-
-    if (character.miniGameButton) {
-        updateMiniGameButtonState(character);
-    }
-
-    if (character.alertIcon) {
-        character.alertIcon.setVisible(true);
-        character.alertIcon.setPosition(
-            character.sprite.x + character.alertOffset.x,
-            character.sprite.y + character.alertOffset.y
-        );
-    }
+    getAlertManager(scene).updateCharacterAlert(character, time);
 }
 
 export function resetCharacterAlert(scene, character) {
-    if (!character.alertIcon) {
-        updateMiniGameButtonState(character);
-        return;
-    }
-
-    // Ao clicar no botao do minigame, remove o icone e reinicia a contagem.
-    character.alertIcon.destroy();
-    character.alertIcon = null;
-    character.nextAlertTime = scene.time.now + character.alertInterval;
-
-    if (character.iconButtonKey) {
-        scene.alertedIconKeys.delete(character.iconButtonKey);
-        updateIconButtonTint(scene, character.iconButtonKey);
-    }
-
-    updateMiniGameButtonState(character);
+    getAlertManager(scene).resetCharacterAlert(character);
 }
 
 export function updateCharacterIndicators(scene, time) {
@@ -167,62 +134,18 @@ export function updateCharacterIndicators(scene, time) {
 }
 
 export function triggerAllCharactersAlert(scene, time) {
-    // Metodo que ativa o alerta de todos os personagens do mapa simultaneamente.
-    // Ao chamar este metodo, todos os personagens receberao seu icone de alerta,
-    // e os botoes dos personagens serao destacados em vermelho.
-    
-    // Itera sobre cada personagem registrado na lista de personagens clicaveis.
-    if (!scene.clickableCharacters) {
-        return;
-    }
-
-    scene.clickableCharacters.forEach((character) => {
-        // Define o tempo do proximo alerta como o momento atual,
-        // forçando o alerta a ser criado imediatamente na proxima atualizacao.
-        character.nextAlertTime = scene.time.now;
-        
-        // Se o personagem ainda nao possui um icone de alerta, o metodo
-        // updateCharacterAlert criara um quando este metodo for chamado.
-        // Se ja possui, o metodo mantera o alerta visivel.
-    });
+    getAlertManager(scene).triggerAll();
 }
 
 function updateMiniGameButtonState(character) {
-    if (!character.miniGameButton) {
-        return;
-    }
-
-    if (character.alertIcon) {
-        character.miniGameButton.input.enabled = true;
-        character.miniGameButton.clearTint();
-        character.miniGameButton.setAlpha(1);
-        return;
-    }
-
-    character.miniGameButton.setTint(0x9ca3af);
-    character.miniGameButton.input.enabled = false;
-    character.miniGameButton.setAlpha(0.8);
+    if (!character || !character.scene) return;
+    getAlertManager(character.scene).updateMiniGameButtonState(character);
 }
 
 function playAlertSound(scene) {
-    if (!scene || !scene.sound || typeof scene.sound.play !== 'function') {
-        return;
-    }
-
-    scene.sound.play('alert-sound', { volume: 0.8 });
+    getAlertManager(scene).playAlertSound();
 }
 
-function updateIconButtonTint(scene, iconButtonKey) {
-    const iconButton = scene.characterIconButtons && scene.characterIconButtons[iconButtonKey];
-
-    if (!iconButton) {
-        return;
-    }
-
-    if (scene.alertedIconKeys.has(iconButtonKey)) {
-        iconButton.setTint(0xff5555);
-        return;
-    }
-
-    iconButton.clearTint();
+export function updateIconButtonTint(scene, iconButtonKey) {
+    getAlertManager(scene).updateIconButtonTint(iconButtonKey);
 }

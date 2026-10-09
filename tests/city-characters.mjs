@@ -36,6 +36,7 @@ const { GameMap } = await import('../src/scenes/GameMap.js');
 const { closeCharacterDescription } = await import('../src/scenes/CharacterDescriptionPanel.js');
 const { triggerAllCharactersAlert } = await import('../src/scenes/ClickableCharacterManager.js');
 const { city1Characters, city2Characters, city3Characters } = await import('../src/scenes/CityCharacters.js');
+const { CharacterMovement } = await import('../src/scenes/CharacterMovement.js');
 const scene = new GameMap();
 const create = (...args) => new DisplayObject(...args);
 const soundsPlayed = [];
@@ -136,6 +137,7 @@ assert.equal(scene.input.listenerCount('wheel'), 0);
 
 city2Characters.forEach((config, index) => {
     const walker = scene.horizontalNPCs[index];
+    assert.ok(walker instanceof CharacterMovement);
     walker.sprite.x = config.maxX; walker.direction = 'right'; scene.update(100);
     assert.ok(walker.sprite.body.velocity.x < 0);
     walker.sprite.x = config.minX; scene.update(100);

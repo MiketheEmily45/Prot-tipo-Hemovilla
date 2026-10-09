@@ -1,4 +1,4 @@
-import { CharacterMovement, stopHorizontalWalkerForInteraction, resumeHorizontalWalkerFromInteraction } from './CharacterMovement.js';
+import { CharacterMovement } from './CharacterMovement.js';
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 
@@ -162,7 +162,6 @@ export function createCityCharacter(scene, config) {
 
     if (id === 'joaquim') {
         scene.joaquim = sprite;
-        scene.joaquimMovement = movement;
     }
 
     if (!scene.horizontalNPCs) scene.horizontalNPCs = [];

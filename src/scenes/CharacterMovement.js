@@ -17,7 +17,7 @@ export class CharacterMovement {
         this.verticalDistance = config.verticalDistance ?? 120;
         this.moveStartY = config.y ?? (sprite ? sprite.y : 0);
 
-        // Pausas autônomas periódicas (ex.: Seu Joaquim)
+        // Pausas autônomas periódicas
         this.hasPause = Boolean(config.hasPause || config.pauseTime);
         this.pauseTime = config.pauseTime ?? 700;
         this.isPaused = false;
@@ -26,14 +26,14 @@ export class CharacterMovement {
         this.isMoving = false;
 
         // Nomes de animações
-        this.walkLeftAnim = config.walkLeftAnim || `walk_${config.id}_left`;
-        this.walkRightAnim = config.walkRightAnim || `walk_${config.id}_right`;
-        this.walkUpAnim = config.walkUpAnim || `walk_${config.id}_up` || 'walk_Joaquim_up';
-        this.walkDownAnim = config.walkDownAnim || `walk_${config.id}_down` || 'walk_Joaquim_down';
+        this.walkLeftAnim = config.walkLeftAnim || (config.id ? `walk_${config.id}_left` : '');
+        this.walkRightAnim = config.walkRightAnim || (config.id ? `walk_${config.id}_right` : '');
+        this.walkUpAnim = config.walkUpAnim || (config.id ? `walk_${config.id}_up` : '');
+        this.walkDownAnim = config.walkDownAnim || (config.id ? `walk_${config.id}_down` : '');
 
         // Texturas idle
-        this.idleLeft = config.idleLeft || `${config.id}-idle-left`;
-        this.idleRight = config.idleRight || `${config.id}-idle-right`;
+        this.idleLeft = config.idleLeft || (config.id ? `${config.id}-idle-left` : '');
+        this.idleRight = config.idleRight || (config.id ? `${config.id}-idle-right` : '');
         this.idleTextures = config.idleTextures || {
             up: config.idleUp || this.idleLeft,
             down: config.idleDown || this.idleRight,
@@ -196,7 +196,6 @@ export class CharacterMovement {
 
     syncScene() {
         if (!this.scene || this.axis !== 'vertical') return;
-        this.scene.joaquim = this.sprite;
         this.scene.isMoving = this.isMoving;
         this.scene.isPaused = this.isPaused;
         this.scene.lastDirection = this.lastDirection;
@@ -208,71 +207,5 @@ export class CharacterMovement {
         this.scene.nextDirectionChange = this.nextDirectionChange;
         this.scene.remainingPauseTime = this.remainingPauseTime;
         this.scene.idleTextures = this.idleTextures;
-    }
-}
-
-// ========== Fachadas de compatibilidade para código legado e testes ==========
-
-export class HorizontalMovement extends CharacterMovement {
-    constructor(scene, config) {
-        super(scene, config.sprite, { ...config, axis: 'horizontal' });
-    }
-}
-
-export class JoaquimMovement extends CharacterMovement {
-    constructor(scene) {
-        super(scene, scene.joaquim, {
-            axis: 'vertical',
-            speed: scene.playerSpeed ?? 30,
-            verticalDistance: scene.verticalDistance ?? 120,
-            pauseTime: scene.pauseTime ?? 700,
-            hasPause: true
-        });
-    }
-}
-
-export function createHorizontalWalker(scene, config) {
-    return new CharacterMovement(scene, config.sprite, { ...config, axis: 'horizontal' });
-}
-
-export function updateHorizontalWalker(walker) {
-    if (walker && typeof walker.update === 'function') {
-        walker.update();
-    }
-}
-
-export function stopHorizontalWalkerForInteraction(walker) {
-    if (walker && typeof walker.stop === 'function') {
-        walker.stop();
-    }
-}
-
-export function resumeHorizontalWalkerFromInteraction(scene, walker) {
-    if (walker && typeof walker.resume === 'function') {
-        walker.resume();
-    }
-}
-
-export function startMove(scene, resetMoveStart = true) {
-    if (scene.joaquimMovement) {
-        scene.joaquimMovement.startMove(resetMoveStart);
-    }
-}
-
-export function startPause(scene) {
-    if (scene.joaquimMovement) {
-        scene.joaquimMovement.startPause();
-    }
-}
-
-export function stopJoaquimForInteraction(scene) {
-    if (scene.joaquimMovement) {
-        scene.joaquimMovement.stop();
-    }
-}
-
-export function resumeJoaquimFromInteraction(scene) {
-    if (scene.joaquimMovement) {
-        scene.joaquimMovement.resume();
     }
 }

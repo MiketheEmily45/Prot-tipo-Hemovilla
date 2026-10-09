@@ -2,15 +2,14 @@ import {
     preloadCityCharacters,
     rememberCityCharacters,
     city1Characters,
-    createHorizontalCityCharacter,
+    joaquimCharacter,
+    createCityCharacter,
     preloadJoaquim
 } from './CityCharacters.js';
-import { updateHorizontalWalker } from './CharacterMovement.js';
 import { ClickableCharacterManager, updateCharacterIndicators } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
-import { JoaquimController } from './JoaquimController.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -58,12 +57,12 @@ export class GameMap extends Phaser.Scene {
 
         this.clickableCharacters = [];
         this.clickableCharacterManager = new ClickableCharacterManager(this);
-        this.joaquimController = new JoaquimController(this);
-        this.joaquimController.create();
-
         this.horizontalNPCs = [];
+        this.npcMovements = [];
+
+        createCityCharacter(this, joaquimCharacter);
         city1Characters.forEach((config) => {
-            createHorizontalCityCharacter(this, config);
+            createCityCharacter(this, config);
         });
         rememberCityCharacters(this, 0);
     }
@@ -71,12 +70,8 @@ export class GameMap extends Phaser.Scene {
     update(time) {
         updateCharacterIndicators(this, time);
 
-        if (this.currentCityIndex === 0 && this.joaquimController) {
-            this.joaquimController.update(time);
-        }
-
-        if (this.horizontalNPCs) {
-            this.horizontalNPCs.forEach((walker) => updateHorizontalWalker(walker));
+        if (this.npcMovements) {
+            this.npcMovements.forEach((movement) => movement.update(time));
         }
     }
 

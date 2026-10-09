@@ -1,6 +1,31 @@
-import { createHorizontalWalker, stopHorizontalWalkerForInteraction, resumeHorizontalWalkerFromInteraction } from './CharacterMovement.js';
+import { CharacterMovement, stopHorizontalWalkerForInteraction, resumeHorizontalWalkerFromInteraction } from './CharacterMovement.js';
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
+
+export const joaquimCharacter = {
+    id: 'joaquim',
+    asset: 'SeuJoaquim',
+    idle: 'Parado',
+    x: 120,
+    y: 480,
+    axis: 'vertical',
+    direction: 'up',
+    speed: 30,
+    verticalDistance: 120,
+    pauseTime: 700,
+    hasPause: true,
+    alertInterval: 60000,
+    balloonOffset: { x: 0, y: -55 },
+    animFrameRate: 2,
+    idleTextures: {
+        up: 'joaquim-idle-left',
+        down: 'joaquim-idle-right',
+        left: 'joaquim-idle-left',
+        right: 'joaquim-idle-right'
+    },
+    walkUpAnim: 'walk_Joaquim_up',
+    walkDownAnim: 'walk_Joaquim_down'
+};
 
 export const city1Characters = [
     { id: 'marlene', asset: 'DonaMarlene', idle: 'Parada', x: 280, y: 290, minX: 280, maxX: 480, speed: 25, direction: 'left', balloonOffset: { x: -55, y: -15 }, alertInterval: 120000 },
@@ -28,7 +53,7 @@ export const city3Characters = [
 export const charactersByCity = [[], city2Characters, city3Characters];
 
 export function preloadCityCharacters(scene) {
-    [...city1Characters, ...charactersByCity.flat()].forEach(({ id, asset, idle }) => {
+    [joaquimCharacter, ...city1Characters, ...charactersByCity.flat()].forEach(({ id, asset, idle }) => {
         const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
         load(`${id}-icon`, 'Icone');
         ['Direita', 'Esquerda'].forEach((side, index) => {
@@ -40,9 +65,7 @@ export function preloadCityCharacters(scene) {
 }
 
 export function preloadJoaquim(scene) {
-    const id = 'joaquim';
-    const asset = 'SeuJoaquim';
-    const idle = 'Parado';
+    const { id, asset, idle } = joaquimCharacter;
     const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
     load(`${id}-icon`, 'Icone');
     ['Direita', 'Esquerda'].forEach((side, index) => {
@@ -78,59 +101,105 @@ export function createJoaquimAnimations(scene) {
     }
 }
 
-export function createHorizontalCityCharacter(scene, config) {
+export function createCityCharacter(scene, config) {
     const {
         id,
-        direction = 'right',
+        direction = (config.axis === 'vertical' ? 'up' : 'right'),
         balloonOffset = { x: 0, y: -55 },
-        animFrameRate = 4
+        animFrameRate = config.animFrameRate || 4,
+        axis = config.axis || 'horizontal'
     } = config;
 
-    ['left', 'right'].forEach((dir) => {
-        const key = `walk_${id}_${dir}`;
-        if (!scene.anims.exists(key)) {
+    if (axis === 'vertical') {
+        const animDown = config.walkDownAnim || `walk_${id}_down`;
+        const animUp = config.walkUpAnim || `walk_${id}_up`;
+        if (!scene.anims.exists(animDown)) {
             scene.anims.create({
-                key,
-                frames: [1, 2].map((frame) => ({ key: `${id}-${dir}-${frame}` })),
+                key: animDown,
+                frames: [{ key: `${id}-right-1` }, { key: `${id}-right-2` }],
                 frameRate: animFrameRate,
                 repeat: -1
             });
         }
-    });
+        if (!scene.anims.exists(animUp)) {
+            scene.anims.create({
+                key: animUp,
+                frames: [{ key: `${id}-left-1` }, { key: `${id}-left-2` }],
+                frameRate: animFrameRate,
+                repeat: -1
+            });
+        }
+    } else {
+        ['left', 'right'].forEach((dir) => {
+            const key = `walk_${id}_${dir}`;
+            if (!scene.anims.exists(key)) {
+                scene.anims.create({
+                    key,
+                    frames: [1, 2].map((frame) => ({ key: `${id}-${dir}-${frame}` })),
+                    frameRate: animFrameRate,
+                    repeat: -1
+                });
+            }
+        });
+    }
 
-    const walker = createHorizontalWalker(scene, {
+    const initialTexture = axis === 'vertical'
+        ? (config.idleTextures?.down || `${id}-idle-right`)
+        : `${id}-idle-${direction}`;
+
+    const sprite = scene.physics.add.sprite(config.x, config.y, initialTexture);
+
+    const movement = new CharacterMovement(scene, sprite, {
         ...config,
-        sprite: scene.physics.add.sprite(config.x, config.y, `${id}-idle-${direction}`),
         direction,
         walkLeftAnim: `walk_${id}_left`,
         walkRightAnim: `walk_${id}_right`,
+        walkUpAnim: config.walkUpAnim || `walk_${id}_up`,
+        walkDownAnim: config.walkDownAnim || `walk_${id}_down`,
         idleLeft: `${id}-idle-left`,
         idleRight: `${id}-idle-right`
     });
 
+    if (id === 'joaquim') {
+        scene.joaquim = sprite;
+        scene.joaquimMovement = movement;
+    }
+
     if (!scene.horizontalNPCs) scene.horizontalNPCs = [];
-    scene.horizontalNPCs.push(walker);
+    if (axis === 'horizontal') {
+        scene.horizontalNPCs.push(movement);
+    }
+
+    if (!scene.npcMovements) scene.npcMovements = [];
+    scene.npcMovements.push(movement);
 
     if (!scene.clickableCharacters) scene.clickableCharacters = [];
-    registerClickableCharacter(scene, {
-        sprite: walker.sprite,
+    const character = registerClickableCharacter(scene, {
+        sprite: movement.sprite,
         iconButtonKey: id,
         alertInterval: config.alertInterval,
         balloonOffset,
-        stop: () => stopHorizontalWalkerForInteraction(walker),
-        resume: () => resumeHorizontalWalkerFromInteraction(scene, walker)
+        movement,
+        stop: () => movement.stop(),
+        resume: () => movement.resume()
     });
 
-    return walker;
+    return { movement, character };
+}
+
+export function createHorizontalCityCharacter(scene, config) {
+    const { movement } = createCityCharacter(scene, config);
+    return movement;
 }
 
 function createCityCharacters(scene, characters) {
     scene.clickableCharacters = [];
     scene.horizontalNPCs = [];
+    scene.npcMovements = [];
     scene.alertedIconKeys = new Set();
     createCharacterIconButtons(scene, characters.map(({ id }) => id));
     characters.forEach((config) => {
-        createHorizontalCityCharacter(scene, config);
+        createCityCharacter(scene, config);
     });
 }
 
@@ -144,6 +213,7 @@ export class CityCharacterGroupManager {
         this.scene.cityCharacterGroups[index] = {
             characters: this.scene.clickableCharacters,
             walkers: this.scene.horizontalNPCs,
+            movements: this.scene.npcMovements,
             icons: this.scene.characterIconButtons,
             alerts: this.scene.alertedIconKeys,
             suspendedAt: this.scene.time.now
@@ -194,6 +264,7 @@ export class CityCharacterGroupManager {
         if (index === 0) scene.nextDirectionChange += elapsed;
         scene.clickableCharacters = group.characters;
         scene.horizontalNPCs = group.walkers;
+        scene.npcMovements = group.movements;
         scene.characterIconButtons = group.icons;
         scene.alertedIconKeys = group.alerts;
         this.setGroupVisible(group, true);

@@ -13,39 +13,66 @@ export class Start extends Phaser.Scene {
     }
 
     create() {
+        this.playMusic();
+        this.setupViewport();
+        this.setupBackground();
+        this.setupTitle();
+        this.setupStartButton();
+        this.setupConfigButton();
+    }
+
+    playMusic() {
         const menuMusic = this.sound.get('start-music');
         if (menuMusic && !menuMusic.isPlaying) {
             menuMusic.play();
         } else if (!menuMusic) {
             this.sound.play('start-music', { loop: true });
         }
+    }
+
+    setupViewport() {
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
+    }
+
+    setupBackground() {
         this.background = this.add.tileSprite(256, 256, 512, 512, 'background');
+    }
+
+    setupTitle() {
         const title = this.add.image(this.background.width / 2, this.background.height / 2 - 100, 'title');
         title.setOrigin(0.5);
         title.setScale(2);
+        this.title = title;
+    }
+
+    setupStartButton() {
         const startButton = this.add.tileSprite(this.background.width / 2, this.background.height / 2 + 120, 216, 86, 'start-button');
         startButton.setInteractive();
         startButton.setOrigin(0.5);
         startButton.on('pointerdown', () => {
             startButton.setTint(0x8B2E40);
-        })
+        });
         startButton.on('pointerup', () => {            
             startButton.clearTint();
             this.sound.stopByKey('start-music');
             this.scene.start('GameMap');
-        })
+        });
+        this.startButton = startButton;
+    }
+
+    setupConfigButton() {
         const configButton = this.add.tileSprite(this.background.width / 2 + 200, this.background.height / 2 + 200, 84, 80, 'config-button');
         configButton.setInteractive();
         configButton.setOrigin(0.5);
         configButton.on('pointerdown', () => {
             configButton.setTint(0x8B2E40);
-        })
+        });
         configButton.on('pointerup', () => {            
             configButton.clearTint();
             this.scene.start('ConfigMenu');
-        })
+        });
+        this.configButton = configButton;
     }
 
     update() {

@@ -12,11 +12,21 @@ export class Minigame extends Phaser.Scene {
     }
 
     create() {
+        this.setupViewport();
+        this.setupBackground();
+        this.setupPauseButton();
+    }
+
+    setupViewport() {
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
+    }
 
+    setupBackground() {
         this.background = this.add.tileSprite(256, 256, 512, 512, 'minigame-background');
+    }
 
+    setupPauseButton() {
         const pauseButton = this.add.image(8, 8, 'pause-button');
         pauseButton.setOrigin(0);
         pauseButton.setDepth(100);
@@ -30,6 +40,7 @@ export class Minigame extends Phaser.Scene {
             pauseButton.clearTint();
             this.scene.start('Start');
         });
+        this.pauseButton = pauseButton;
     }
 
     update() {

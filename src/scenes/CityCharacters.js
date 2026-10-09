@@ -135,61 +135,78 @@ function createCityCharacters(scene, characters) {
 }
 
 // Cada cidade guarda suas listas e seus alertas, sem recriar personagens ao voltar.
-export function rememberCityCharacters(scene, index) {
-    scene.cityCharacterGroups[index] = {
-        characters: scene.clickableCharacters, walkers: scene.horizontalNPCs,
-        icons: scene.characterIconButtons, alerts: scene.alertedIconKeys,
-        suspendedAt: scene.time.now
-    };
+export class CityCharacterGroupManager {
+    constructor(scene) {
+        this.scene = scene;
+    }
+
+    remember(index) {
+        this.scene.cityCharacterGroups[index] = {
+            characters: this.scene.clickableCharacters,
+            walkers: this.scene.horizontalNPCs,
+            icons: this.scene.characterIconButtons,
+            alerts: this.scene.alertedIconKeys,
+            suspendedAt: this.scene.time.now
+        };
+    }
+
+    setGroupVisible(group, visible) {
+        group.characters.forEach(({ sprite, balloon, alertIcon, miniGameButton, descriptionButton }) => {
+            sprite.setVisible(visible);
+            sprite.body.enable = visible;
+            sprite.input.enabled = visible;
+            if (visible) sprite.anims.resume();
+            else sprite.anims.pause();
+            balloon?.setVisible(visible);
+            if (descriptionButton) {
+                descriptionButton.setVisible(visible);
+                descriptionButton.input.enabled = visible;
+            }
+            if (miniGameButton) {
+                miniGameButton.setVisible(visible);
+                miniGameButton.input.enabled = visible && !!alertIcon;
+            }
+            alertIcon?.setVisible(visible);
+        });
+        Object.values(group.icons).forEach((icon) => {
+            icon.setVisible(visible);
+            icon.input.enabled = visible;
+        });
+    }
+
+    switchTo(index) {
+        const scene = this.scene;
+        const previous = scene.cityCharacterGroups[scene.currentCityIndex];
+        previous.suspendedAt = scene.time.now;
+        this.setGroupVisible(previous, false);
+        let group = scene.cityCharacterGroups[index];
+        if (!group) {
+            // O registro comum mostra o balao com o botao do minigame no clique do sprite.
+            // Os icones continuam abrindo as descricoes, sem consumir alertas.
+            createCityCharacters(scene, charactersByCity[index] ?? []);
+            this.remember(index);
+            group = scene.cityCharacterGroups[index];
+        }
+        const elapsed = scene.time.now - group.suspendedAt;
+        group.characters.forEach((character) => {
+            if (character.nextAlertTime !== null) character.nextAlertTime += elapsed;
+        });
+        if (index === 0) scene.nextDirectionChange += elapsed;
+        scene.clickableCharacters = group.characters;
+        scene.horizontalNPCs = group.walkers;
+        scene.characterIconButtons = group.icons;
+        scene.alertedIconKeys = group.alerts;
+        this.setGroupVisible(group, true);
+        const hasCharacters = group.characters.length > 0;
+        scene.alertButton.setVisible(hasCharacters);
+        scene.alertButton.input.enabled = hasCharacters;
+    }
 }
 
-function setGroupVisible(group, visible) {
-    group.characters.forEach(({ sprite, balloon, alertIcon, miniGameButton, descriptionButton }) => {
-        sprite.setVisible(visible);
-        sprite.body.enable = visible;
-        sprite.input.enabled = visible;
-        if (visible) sprite.anims.resume();
-        else sprite.anims.pause();
-        balloon?.setVisible(visible);
-        if (descriptionButton) {
-            descriptionButton.setVisible(visible);
-            descriptionButton.input.enabled = visible;
-        }
-        if (miniGameButton) {
-            miniGameButton.setVisible(visible);
-            miniGameButton.input.enabled = visible && !!alertIcon;
-        }
-        alertIcon?.setVisible(visible);
-    });
-    Object.values(group.icons).forEach((icon) => {
-        icon.setVisible(visible);
-        icon.input.enabled = visible;
-    });
+export function rememberCityCharacters(scene, index) {
+    new CityCharacterGroupManager(scene).remember(index);
 }
 
 export function switchCityCharacters(scene, index) {
-    const previous = scene.cityCharacterGroups[scene.currentCityIndex];
-    previous.suspendedAt = scene.time.now;
-    setGroupVisible(previous, false);
-    let group = scene.cityCharacterGroups[index];
-    if (!group) {
-        // O registro comum mostra o balao com o botao do minigame no clique do sprite.
-        // Os icones continuam abrindo as descricoes, sem consumir alertas.
-        createCityCharacters(scene, charactersByCity[index] ?? []);
-        rememberCityCharacters(scene, index);
-        group = scene.cityCharacterGroups[index];
-    }
-    const elapsed = scene.time.now - group.suspendedAt;
-    group.characters.forEach((character) => {
-        if (character.nextAlertTime !== null) character.nextAlertTime += elapsed;
-    });
-    if (index === 0) scene.nextDirectionChange += elapsed;
-    scene.clickableCharacters = group.characters;
-    scene.horizontalNPCs = group.walkers;
-    scene.characterIconButtons = group.icons;
-    scene.alertedIconKeys = group.alerts;
-    setGroupVisible(group, true);
-    const hasCharacters = group.characters.length > 0;
-    scene.alertButton.setVisible(hasCharacters);
-    scene.alertButton.input.enabled = hasCharacters;
+    new CityCharacterGroupManager(scene).switchTo(index);
 }

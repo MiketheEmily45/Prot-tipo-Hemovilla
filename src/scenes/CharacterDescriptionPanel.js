@@ -1,6 +1,16 @@
 // Gerencia o painel de descricao de personagens com overlay, moldura, 
 // texto com scroll/mascara e botao de fechar.
 
+export const DESCRIPTION_PANEL_CONFIG = {
+    panelWidth: 448,
+    panelHeight: 448,
+    panelX: 256,
+    contentWidth: 390,
+    fontSize: 18,
+    titleFontSize: 22,
+    lineSpacing: 2
+};
+
 export class CharacterDescriptionPanel {
     constructor(scene, characterData = {}) {
         this.scene = scene;
@@ -34,67 +44,54 @@ export class CharacterDescriptionPanel {
             ...(data.condicao ? [`Condição: ${data.condicao}`] : [])
         ].join('\n\n');
 
+        const {
+            panelWidth,
+            panelHeight,
+            panelX,
+            contentWidth,
+            fontSize,
+            titleFontSize,
+            lineSpacing
+        } = DESCRIPTION_PANEL_CONFIG;
+
         // Escurece somente o mapa para manter a faixa de icones clicavel.
         const overlay = scene.add.rectangle(256, 256, 512, 512, 0x000000, 0.68);
         overlay.setDepth(200);
         overlay.setInteractive({ useHandCursor: true });
         overlay.on('pointerdown', () => this.close());
 
-        const panelWidth = 448;
-        const panelHeight = 448;
-        const panelX = 256;
-        const contentWidth = 390;
-        const fontSizes = [18, 16, 14];
         let descriptionX = panelX;
-        let description;
-        let title;
 
-        // Usa sempre Seu Joaquim como referencia para escolher a fonte de todos
-        // os paineis. Textos maiores continuam acessiveis pela rolagem existente.
-        const reference = characterData.joaquim;
-        const referenceContent = [
-            `Tipo sanguíneo: ${reference.tipoSanguineo ?? 'A definir'}`,
-            reference.descricao,
-            ...(reference.condicao ? [`Condição: ${reference.condicao}`] : [])
-        ].join('\n\n');
-        for (const fontSize of fontSizes) {
-            const lineHeight = Math.round(fontSize * 1.25);
-            const candidate = scene.add.text(panelX, 0, referenceContent, {
-                fontFamily: 'monospace',
-                fontSize: `${fontSize}px`,
-                color: '#3b2a20',
-                lineSpacing: 2,
-                wordWrap: { width: contentWidth, useAdvancedWrap: true }
-            }).setOrigin(0.5, 0);
-            const candidateTitle = scene.add.text(panelX, 0, reference.nome, {
-                fontFamily: 'monospace',
-                fontSize: `${fontSize + 4}px`,
-                fontStyle: 'bold',
-                color: '#3b2a20'
-            }).setOrigin(0.5, 0);
-            const requiredHeight = 32 + lineHeight + candidateTitle.height + candidate.height;
+        const title = scene.add.text(panelX, 0, data.nome, {
+            fontFamily: 'monospace',
+            fontSize: `${titleFontSize}px`,
+            fontStyle: 'bold',
+            color: '#3b2a20'
+        }).setOrigin(0.5, 0);
 
-            if (requiredHeight <= panelHeight - 24 || fontSize === fontSizes[fontSizes.length - 1]) {
-                if (scene.currentCityIndex === 1 || scene.currentCityIndex === 2) {
-                    // Fixa a margem esquerda usando Bruno na Cidade2 e Yasmin na
-                    // Cidade3. Textos mais curtos, como o de Caue, nao ficam deslocados.
-                    const alignmentReference = scene.currentCityIndex === 1
-                        ? characterData.bruno : characterData.yasmin;
-                    candidate.setText([
-                        `Tipo sanguíneo: ${alignmentReference.tipoSanguineo ?? 'A definir'}`,
-                        alignmentReference.descricao,
-                        ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
-                    ].join('\n\n'));
-                    descriptionX = panelX - candidate.width / 2;
-                    candidate.setOrigin(0, 0);
-                }
-                description = candidate.setText(content);
-                title = candidateTitle.setText(data.nome);
-                break;
+        const description = scene.add.text(panelX, 0, content, {
+            fontFamily: 'monospace',
+            fontSize: `${fontSize}px`,
+            color: '#3b2a20',
+            lineSpacing: lineSpacing,
+            wordWrap: { width: contentWidth, useAdvancedWrap: true }
+        }).setOrigin(0.5, 0);
+
+        if (scene.currentCityIndex === 1 || scene.currentCityIndex === 2) {
+            // Fixa a margem esquerda usando Bruno na Cidade2 e Yasmin na
+            // Cidade3. Textos mais curtos, como o de Caue, nao ficam deslocados.
+            const alignmentReference = scene.currentCityIndex === 1
+                ? characterData.bruno : characterData.yasmin;
+            if (alignmentReference) {
+                description.setText([
+                    `Tipo sanguíneo: ${alignmentReference.tipoSanguineo ?? 'A definir'}`,
+                    alignmentReference.descricao,
+                    ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
+                ].join('\n\n'));
+                descriptionX = panelX - description.width / 2;
+                description.setOrigin(0, 0);
+                description.setText(content);
             }
-
-            candidate.destroy();
-            candidateTitle.destroy();
         }
 
         // O painel fica 20 pixels acima do centro vertical da tela.

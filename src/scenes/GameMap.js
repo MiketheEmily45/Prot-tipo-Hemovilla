@@ -1,10 +1,8 @@
 import {
     preloadCityCharacters,
     rememberCityCharacters,
-    city1Characters,
-    joaquimCharacter,
-    createCityCharacter,
-    preloadJoaquim
+    allCity1Characters,
+    createCityCharacter
 } from './CityCharacters.js';
 import { ClickableCharacterManager, updateCharacterIndicators } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
@@ -20,7 +18,6 @@ export class GameMap extends Phaser.Scene {
     preload() {
         preloadCities(this);
         preloadCityCharacters(this);
-        preloadJoaquim(this);
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
         this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         // Moldura usada como painel da descricao dos personagens.
@@ -59,8 +56,7 @@ export class GameMap extends Phaser.Scene {
         this.clickableCharacterManager = new ClickableCharacterManager(this);
         this.npcs = [];
 
-        createCityCharacter(this, joaquimCharacter);
-        city1Characters.forEach((config) => {
+        allCity1Characters.forEach((config) => {
             createCityCharacter(this, config);
         });
         rememberCityCharacters(this, 0);

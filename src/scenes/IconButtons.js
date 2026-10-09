@@ -1,6 +1,6 @@
-// Cria e gerencia os botoes de icone dos personagens na parte inferior da tela e as setas de navegacao.
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
+import { allCity1Characters } from './CityCharacters.js';
 
 export class CityNavigationButtons {
     constructor(scene, pauseButton, onNavigate) {
@@ -30,7 +30,7 @@ export class CityNavigationButtons {
 }
 
 export class CharacterIconButtonBar {
-    constructor(scene, ids = ['joaquim', 'marlene', 'aparecida']) {
+    constructor(scene, ids = allCity1Characters.map(({ id }) => id)) {
         this.scene = scene;
         this.ids = ids;
     }
@@ -83,7 +83,7 @@ export function createCityNavigationButtons(scene, pauseButton, onNavigate) {
     return new CityNavigationButtons(scene, pauseButton, onNavigate).create();
 }
 
-export function createCharacterIconButtons(scene, ids = ['joaquim', 'marlene', 'aparecida']) {
+export function createCharacterIconButtons(scene, ids = allCity1Characters.map(({ id }) => id)) {
     return new CharacterIconButtonBar(scene, ids).create();
 }
 

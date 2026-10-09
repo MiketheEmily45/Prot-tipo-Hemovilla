@@ -4,6 +4,7 @@ export class CharacterMovement {
     constructor(scene, sprite, config = {}) {
         this.scene = scene;
         this.sprite = sprite;
+        this.config = config;
         this.id = config.id;
         this.axis = config.axis || 'horizontal';
         this.speed = config.speed ?? (this.axis === 'vertical' ? 30 : 20);
@@ -64,7 +65,8 @@ export class CharacterMovement {
     init() {
         if (!this.sprite) return;
         this.sprite.setCollideWorldBounds(true);
-        if (this.axis === 'horizontal') {
+        const shouldBeImmovable = this.config?.immovable ?? (this.axis === 'horizontal');
+        if (shouldBeImmovable) {
             this.sprite.setImmovable(true);
         }
         this.startMove(true);

@@ -17,6 +17,9 @@ export const joaquimCharacter = {
     alertInterval: 60000,
     balloonOffset: { x: 0, y: -55 },
     animFrameRate: 2,
+    gender: 'male',
+    sceneProperty: 'joaquim',
+    immovable: false,
     idleTextures: {
         up: 'joaquim-idle-left',
         down: 'joaquim-idle-right',
@@ -28,32 +31,33 @@ export const joaquimCharacter = {
 };
 
 export const city1Characters = [
-    { id: 'marlene', asset: 'DonaMarlene', idle: 'Parada', x: 280, y: 290, minX: 280, maxX: 480, speed: 25, direction: 'left', balloonOffset: { x: -55, y: -15 }, alertInterval: 120000 },
-    { id: 'aparecida', asset: 'DonaAparecida', idle: 'PosiçãoParada', x: 300, y: 100, minX: 300, maxX: 480, speed: 20, direction: 'right', balloonOffset: { x: -55, y: -15 }, alertInterval: 240000 }
+    { id: 'marlene', asset: 'DonaMarlene', idle: 'Parada', x: 280, y: 290, minX: 280, maxX: 480, speed: 25, direction: 'left', balloonOffset: { x: -55, y: -15 }, alertInterval: 120000, gender: 'female', immovable: true },
+    { id: 'aparecida', asset: 'DonaAparecida', idle: 'PosiçãoParada', x: 300, y: 100, minX: 300, maxX: 480, speed: 20, direction: 'right', balloonOffset: { x: -55, y: -15 }, alertInterval: 240000, gender: 'female', immovable: true }
 ];
+
+export const allCity1Characters = [joaquimCharacter, ...city1Characters];
 
 // Coordenadas do centro dos sprites; os pes ficam sobre a rua/calcada.
 // Cada percurso horizontal permanece junto ao respectivo estabelecimento.
 export const city2Characters = [
-    { id: 'bruno', asset: 'Bruno', idle: 'Parado', x: 300, y: 94, minX: 300, maxX: 390, speed: 25, alertInterval: 60000 },
-    { id: 'beatriz', asset: 'Beatriz', idle: 'Parada', x: 360, y: 466, minX: 345, maxX: 465, speed: 25, alertInterval: 120000 },
-    { id: 'carlos', asset: 'Carlos', idle: 'Parado', x: 390, y: 290, minX: 360, maxX: 460, speed: 20, alertInterval: 240000 }
+    { id: 'bruno', asset: 'Bruno', idle: 'Parado', x: 300, y: 94, minX: 300, maxX: 390, speed: 25, alertInterval: 60000, gender: 'male', immovable: true },
+    { id: 'beatriz', asset: 'Beatriz', idle: 'Parada', x: 360, y: 466, minX: 345, maxX: 465, speed: 25, alertInterval: 120000, gender: 'female', immovable: true },
+    { id: 'carlos', asset: 'Carlos', idle: 'Parado', x: 390, y: 290, minX: 360, maxX: 460, speed: 20, alertInterval: 240000, gender: 'male', immovable: true }
 ];
 
 export const city3Characters = [
     // Grama entre a pista e os instrumentos, sem passar sobre o teclado.
-    { id: 'caue', asset: 'Caue', idle: 'Parado', x: 370, y: 270, minX: 355, maxX: 410, speed: 20, alertInterval: 60000 },
+    { id: 'caue', asset: 'Caue', idle: 'Parado', x: 370, y: 270, minX: 355, maxX: 410, speed: 20, alertInterval: 60000, gender: 'male', immovable: true },
     // Calcada do muro, mantendo o percurso a esquerda da escada.
-    { id: 'yasmin', asset: 'Yasmin', idle: 'Parada', x: 190, y: 150, minX: 150, maxX: 265, speed: 20, alertInterval: 120000 },
+    { id: 'yasmin', asset: 'Yasmin', idle: 'Parada', x: 190, y: 150, minX: 150, maxX: 265, speed: 20, alertInterval: 120000, gender: 'female', immovable: true },
     // Interior da pista; o asset do artista usa a grafia Theo.
-    { id: 'teo', asset: 'Theo', idle: 'Parado', x: 150, y: 375, minX: 85, maxX: 265, speed: 25, alertInterval: 240000 }
+    { id: 'teo', asset: 'Theo', idle: 'Parado', x: 150, y: 375, minX: 85, maxX: 265, speed: 25, alertInterval: 240000, gender: 'male', immovable: true }
 ];
 
-// A Cidade 1 mantem sua criacao original; as demais compartilham este cadastro.
-export const charactersByCity = [[], city2Characters, city3Characters];
+export const charactersByCity = [allCity1Characters, city2Characters, city3Characters];
 
 export function preloadCityCharacters(scene) {
-    [joaquimCharacter, ...city1Characters, ...charactersByCity.flat()].forEach(({ id, asset, idle }) => {
+    charactersByCity.flat().forEach(({ id, asset, idle }) => {
         const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
         load(`${id}-icon`, 'Icone');
         ['Direita', 'Esquerda'].forEach((side, index) => {
@@ -64,42 +68,6 @@ export function preloadCityCharacters(scene) {
     });
 }
 
-export function preloadJoaquim(scene) {
-    const { id, asset, idle } = joaquimCharacter;
-    const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);
-    load(`${id}-icon`, 'Icone');
-    ['Direita', 'Esquerda'].forEach((side, index) => {
-        const direction = index === 0 ? 'right' : 'left';
-        load(`${id}-idle-${direction}`, `${idle}${side}`);
-        [1, 2].forEach((frame) => load(`${id}-${direction}-${frame}`, `Andar${side}${frame}`));
-    });
-}
-
-export function createJoaquimAnimations(scene) {
-    if (!scene.anims.exists('walk_Joaquim_down')) {
-        scene.anims.create({
-            key: 'walk_Joaquim_down',
-            frames: [
-                { key: 'joaquim-right-1' },
-                { key: 'joaquim-right-2' }
-            ],
-            frameRate: 2,
-            repeat: -1
-        });
-    }
-
-    if (!scene.anims.exists('walk_Joaquim_up')) {
-        scene.anims.create({
-            key: 'walk_Joaquim_up',
-            frames: [
-                { key: 'joaquim-left-1' },
-                { key: 'joaquim-left-2' }
-            ],
-            frameRate: 2,
-            repeat: -1
-        });
-    }
-}
 
 export function createCityCharacter(scene, config) {
     const {
@@ -116,7 +84,7 @@ export function createCityCharacter(scene, config) {
         if (!scene.anims.exists(animDown)) {
             scene.anims.create({
                 key: animDown,
-                frames: [{ key: `${id}-right-1` }, { key: `${id}-right-2` }],
+                frames: config.downFrames || [1, 2].map((frame) => ({ key: `${id}-right-${frame}` })),
                 frameRate: animFrameRate,
                 repeat: -1
             });
@@ -124,7 +92,7 @@ export function createCityCharacter(scene, config) {
         if (!scene.anims.exists(animUp)) {
             scene.anims.create({
                 key: animUp,
-                frames: [{ key: `${id}-left-1` }, { key: `${id}-left-2` }],
+                frames: config.upFrames || [1, 2].map((frame) => ({ key: `${id}-left-${frame}` })),
                 frameRate: animFrameRate,
                 repeat: -1
             });
@@ -160,8 +128,8 @@ export function createCityCharacter(scene, config) {
         idleRight: `${id}-idle-right`
     });
 
-    if (id === 'joaquim') {
-        scene.joaquim = sprite;
+    if (config.sceneProperty) {
+        scene[config.sceneProperty] = sprite;
     }
 
     if (!scene.npcs) scene.npcs = [];
@@ -174,6 +142,7 @@ export function createCityCharacter(scene, config) {
         alertInterval: config.alertInterval,
         balloonOffset,
         movement,
+        gender: config.gender,
         stop: () => movement.stop(),
         resume: () => movement.resume()
     });

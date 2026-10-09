@@ -24,6 +24,10 @@ export class ClickableCharacterManager {
     }
 
     getCharacterGender(character) {
+        if (character?.gender) {
+            return character.gender;
+        }
+
         const key = character?.iconButtonKey ?? character?.name ?? character?.sprite?.texture?.key ?? '';
 
         if (ClickableCharacterManager.maleCharacterIds.has(key)) {

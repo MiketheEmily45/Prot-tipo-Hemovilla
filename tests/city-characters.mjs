@@ -136,7 +136,7 @@ city2.forEach((character) => {
 assert.equal(scene.input.listenerCount('wheel'), 0);
 
 city2Characters.forEach((config, index) => {
-    const walker = scene.horizontalNPCs[index];
+    const walker = scene.npcs[index];
     assert.ok(walker instanceof CharacterMovement);
     walker.sprite.x = config.maxX; walker.direction = 'right'; scene.update(100);
     assert.ok(walker.sprite.body.velocity.x < 0);
@@ -181,7 +181,7 @@ city3.forEach((character, index) => {
     assert.equal(character.sprite.body.velocity.x, 0);
     character.sprite.emit('pointerdown');
     assert.equal(character.balloon, null);
-    const walker = scene.horizontalNPCs[index];
+    const walker = scene.npcs[index];
     walker.sprite.x = city3Characters[index].maxX;
     walker.direction = 'right'; scene.update(100);
     assert.ok(walker.sprite.body.velocity.x < 0);
@@ -208,7 +208,7 @@ assert.deepEqual(Object.keys(scene.characterIconButtons), ['joaquim', 'marlene',
 assert.equal(scene.nextDirectionChange, 1800);
 scene.update(1100);
 city1Characters.forEach((config, index) => {
-    const walker = scene.horizontalNPCs[index];
+    const walker = scene.npcs.find(npc => npc.id === config.id);
     walker.sprite.x = config.maxX; walker.direction = 'right'; scene.update(1100);
     assert.ok(walker.sprite.body.velocity.x < 0);
     walker.sprite.x = config.minX; scene.update(1100);

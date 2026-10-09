@@ -57,8 +57,7 @@ export class GameMap extends Phaser.Scene {
 
         this.clickableCharacters = [];
         this.clickableCharacterManager = new ClickableCharacterManager(this);
-        this.horizontalNPCs = [];
-        this.npcMovements = [];
+        this.npcs = [];
 
         createCityCharacter(this, joaquimCharacter);
         city1Characters.forEach((config) => {
@@ -70,8 +69,8 @@ export class GameMap extends Phaser.Scene {
     update(time) {
         updateCharacterIndicators(this, time);
 
-        if (this.npcMovements) {
-            this.npcMovements.forEach((movement) => movement.update(time));
+        if (this.npcs) {
+            this.npcs.forEach((npc) => npc.update(time));
         }
     }
 

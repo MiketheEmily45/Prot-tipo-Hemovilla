@@ -4,6 +4,7 @@ export class CharacterMovement {
     constructor(scene, sprite, config = {}) {
         this.scene = scene;
         this.sprite = sprite;
+        this.id = config.id;
         this.axis = config.axis || 'horizontal';
         this.speed = config.speed ?? (this.axis === 'vertical' ? 30 : 20);
         this.direction = config.direction || (this.axis === 'vertical' ? 'up' : 'left');

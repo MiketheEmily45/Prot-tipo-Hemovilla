@@ -164,13 +164,8 @@ export function createCityCharacter(scene, config) {
         scene.joaquim = sprite;
     }
 
-    if (!scene.horizontalNPCs) scene.horizontalNPCs = [];
-    if (axis === 'horizontal') {
-        scene.horizontalNPCs.push(movement);
-    }
-
-    if (!scene.npcMovements) scene.npcMovements = [];
-    scene.npcMovements.push(movement);
+    if (!scene.npcs) scene.npcs = [];
+    scene.npcs.push(movement);
 
     if (!scene.clickableCharacters) scene.clickableCharacters = [];
     const character = registerClickableCharacter(scene, {
@@ -193,8 +188,7 @@ export function createHorizontalCityCharacter(scene, config) {
 
 function createCityCharacters(scene, characters) {
     scene.clickableCharacters = [];
-    scene.horizontalNPCs = [];
-    scene.npcMovements = [];
+    scene.npcs = [];
     scene.alertedIconKeys = new Set();
     createCharacterIconButtons(scene, characters.map(({ id }) => id));
     characters.forEach((config) => {
@@ -211,8 +205,7 @@ export class CityCharacterGroupManager {
     remember(index) {
         this.scene.cityCharacterGroups[index] = {
             characters: this.scene.clickableCharacters,
-            walkers: this.scene.horizontalNPCs,
-            movements: this.scene.npcMovements,
+            npcs: this.scene.npcs,
             icons: this.scene.characterIconButtons,
             alerts: this.scene.alertedIconKeys,
             suspendedAt: this.scene.time.now
@@ -262,8 +255,7 @@ export class CityCharacterGroupManager {
         });
         if (index === 0) scene.nextDirectionChange += elapsed;
         scene.clickableCharacters = group.characters;
-        scene.horizontalNPCs = group.walkers;
-        scene.npcMovements = group.movements;
+        scene.npcs = group.npcs;
         scene.characterIconButtons = group.icons;
         scene.alertedIconKeys = group.alerts;
         this.setGroupVisible(group, true);

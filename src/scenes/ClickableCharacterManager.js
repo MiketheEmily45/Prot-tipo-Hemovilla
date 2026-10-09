@@ -1,7 +1,6 @@
-// Gerencia personagens clicaveis: baloes temporarios, icones de alerta,
-// interacoes ao clicar e atualizacoes de posicao.
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
+import { Character } from './Character.js';
 
 const maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
 const femaleCharacterIds = new Set(['yasmin', 'beatriz', 'marlene', 'aparecida']);
@@ -35,17 +34,7 @@ function playCharacterClickSound(scene, character) {
 }
 
 export function registerClickableCharacter(scene, config) {
-    const character = {
-        ...config,
-        isStoppedByClick: false,
-        balloon: null,
-        miniGameButton: null,
-        descriptionButton: null,
-        // Cada personagem controla seu proprio alerta e quando ele deve aparecer.
-        alertIcon: null,
-        alertOffset: config.alertOffset || { x: -13, y: -35 },
-        nextAlertTime: config.alertInterval ? scene.time.now + config.alertInterval : null
-    };
+    const character = new Character(scene, config);
 
     character.sprite.setInteractive({ useHandCursor: true });
     character.sprite.on('pointerdown', () => {
@@ -53,6 +42,7 @@ export function registerClickableCharacter(scene, config) {
         toggleCharacterInteraction(scene, character);
     });
     scene.clickableCharacters.push(character);
+    return character;
 }
 
 export function toggleCharacterInteraction(scene, character) {

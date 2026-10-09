@@ -1,10 +1,11 @@
 import { createJoaquimAnimations } from './CityCharacters.js';
-import { startMove, startPause, stopJoaquimForInteraction, resumeJoaquimFromInteraction } from './CharacterMovement.js';
+import { JoaquimMovement } from './CharacterMovement.js';
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 
 export class JoaquimController {
     constructor(scene) {
         this.scene = scene;
+        this.movement = new JoaquimMovement(scene);
     }
 
     create() {
@@ -32,15 +33,15 @@ export class JoaquimController {
         scene.nextDirectionChange = scene.time.now + scene.pauseTime;
         scene.remainingPauseTime = scene.pauseTime;
 
-        startMove(scene);
+        this.movement.startMove();
 
         registerClickableCharacter(scene, {
             sprite: scene.joaquim,
             balloonOffset: { x: 0, y: -55 },
             alertInterval: 60000,
             iconButtonKey: 'joaquim',
-            stop: () => stopJoaquimForInteraction(scene),
-            resume: () => resumeJoaquimFromInteraction(scene)
+            stop: () => this.movement.stopForInteraction(),
+            resume: () => this.movement.resumeFromInteraction()
         });
     }
 
@@ -54,17 +55,17 @@ export class JoaquimController {
 
         if (scene.isPaused && time >= scene.nextDirectionChange) {
             scene.currentDirection = scene.currentDirection === 'up' ? 'down' : 'up';
-            startMove(scene);
+            this.movement.startMove();
         }
 
         const body = scene.joaquim.body;
         if (!scene.isPaused && body && (body.blocked.up || body.blocked.down)) {
-            startPause(scene);
+            this.movement.startPause();
             return;
         }
 
         if (!scene.isPaused && Math.abs(scene.joaquim.y - scene.moveStartY) >= scene.verticalDistance) {
-            startPause(scene);
+            this.movement.startPause();
             return;
         }
 

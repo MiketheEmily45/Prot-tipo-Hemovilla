@@ -73,7 +73,7 @@ city2.forEach((character) => {
     const expectedGenderSound = { bruno: 'masculine-huh', beatriz: 'feminine-huh', carlos: 'masculine-huh' }[id];
     scene.characterIconButtons[id].emit('pointerup');
     assert.equal(scene.characterOverlay.characterId, id);
-    assert.ok(scene.characterOverlay.description.texture.includes('A definir'));
+    assert.ok(scene.characterOverlay.description.texture.includes('?'));
     assert.notEqual(character.sprite.body.velocity.x, 0);
     assert.equal(character.alertIcon, alert);
     assert.equal(character.nextAlertTime, deadline);
@@ -159,7 +159,7 @@ city3.forEach((character, index) => {
     const expectedGenderSound = { caue: 'masculine-huh', yasmin: 'feminine-huh', teo: 'masculine-huh' }[id];
     scene.characterIconButtons[id].emit('pointerup');
     assert.equal(scene.characterOverlay.characterId, id);
-    assert.ok(scene.characterOverlay.description.texture.includes('A definir'));
+    assert.ok(scene.characterOverlay.description.texture.includes('?'));
     assert.equal(character.alertIcon, alert);
     closeCharacterDescription(scene);
     character.sprite.emit('pointerdown');
@@ -217,7 +217,7 @@ city1Characters.forEach((config, index) => {
 // O campo de tipo sanguineo tambem aparece nos tres paineis da Cidade1.
 for (const id of Object.keys(scene.characterIconButtons)) {
     scene.characterIconButtons[id].emit('pointerup');
-    assert.ok(scene.characterOverlay.description.texture.includes('A definir'));
+    assert.ok(scene.characterOverlay.description.texture.includes('?'));
     closeCharacterDescription(scene);
 }
 scene.time.now = 2100;

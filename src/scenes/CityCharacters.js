@@ -32,7 +32,7 @@ export const joaquimCharacter = {
 
 export const city1Characters = [
     { id: 'marlene', asset: 'DonaMarlene', idle: 'Parada', x: 280, y: 290, minX: 280, maxX: 480, speed: 25, direction: 'left', balloonOffset: { x: -55, y: -15 }, alertInterval: 120000, gender: 'female', immovable: true },
-    { id: 'aparecida', asset: 'DonaAparecida', idle: 'PosiçãoParada', x: 300, y: 100, minX: 300, maxX: 480, speed: 20, direction: 'right', balloonOffset: { x: -55, y: -15 }, alertInterval: 240000, gender: 'female', immovable: true }
+    { id: 'aparecida', asset: 'DonaAparecida', idle: 'PosicaoParada', x: 300, y: 100, minX: 300, maxX: 480, speed: 20, direction: 'right', balloonOffset: { x: -55, y: -15 }, alertInterval: 240000, gender: 'female', immovable: true }
 ];
 
 export const allCity1Characters = [joaquimCharacter, ...city1Characters];

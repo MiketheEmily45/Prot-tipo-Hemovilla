@@ -17,7 +17,26 @@ export const MINIGAME_ASSETS = {
     'bancada-resultado-5': 'assets/Minigame/Cenario/SalaAnalise/pixil-frame-0 (5).png',
     'bancada-resultado-6': 'assets/Minigame/Cenario/SalaAnalise/pixil-frame-0 (6).png',
     'bancada-resultado-8': 'assets/Minigame/Cenario/SalaAnalise/pixil-frame-0 (8).png',
-    'bancada-resultado-9': 'assets/Minigame/Cenario/SalaAnalise/pixil-frame-0 (9).png'
+    'bancada-resultado-9': 'assets/Minigame/Cenario/SalaAnalise/pixil-frame-0 (9).png',
+    'bolsa-A+': 'assets/Minigame/Bolsas de Sangue/A+.png',
+    'bolsa-A-': 'assets/Minigame/Bolsas de Sangue/A-.png',
+    'bolsa-AB+': 'assets/Minigame/Bolsas de Sangue/AB+.png',
+    'bolsa-AB-': 'assets/Minigame/Bolsas de Sangue/AB-.png',
+    'bolsa-B+': 'assets/Minigame/Bolsas de Sangue/B+.png',
+    'bolsa-B-': 'assets/Minigame/Bolsas de Sangue/B-.png',
+    'bolsa-C+': 'assets/Minigame/Bolsas de Sangue/C+.png',
+    'bolsa-C-': 'assets/Minigame/Bolsas de Sangue/C-.png',
+    'bolsa-O+': 'assets/Minigame/Bolsas de Sangue/O+.png',
+    'bolsa-O-': 'assets/Minigame/Bolsas de Sangue/O-.png',
+    'joaquim-icon': 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png',
+    'marlene-icon': 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png',
+    'aparecida-icon': 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png',
+    'bruno-icon': 'assets/Personagens/Bruno/Bruno.Icone.png',
+    'beatriz-icon': 'assets/Personagens/Beatriz/Beatriz.Icone.png',
+    'carlos-icon': 'assets/Personagens/Carlos/Carlos.Icone.png',
+    'caue-icon': 'assets/Personagens/Caue/Caue.Icone.png',
+    'yasmin-icon': 'assets/Personagens/Yasmin/Yasmin.Icone.png',
+    'teo-icon': 'assets/Personagens/Theo/Theo.Icone.png'
 };
 
 // Tipo ABO -> chave da imagem de resultado da bancada.

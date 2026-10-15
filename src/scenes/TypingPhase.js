@@ -2,6 +2,7 @@
 import { BENCH_RESULT_FRAMES } from './minigameAssets.js';
 import { characterData } from './characterData.js';
 import { setDiscoveredType } from './discoveredTypes.js';
+import { HeartsDisplay } from './HeartsDisplay.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -169,13 +170,14 @@ export class TypingPhase {
 
     createTexts() {
         // Corações provisorios: virao de arte depois.
-        this.heartsText = this.scene.add.text(HEARTS_POSITION.x, HEARTS_POSITION.y, '', {
-            fontSize: '22px',
-            color: '#ff4d6d',
-            backgroundColor: '#000000'
+        this.heartsDisplay = new HeartsDisplay(this.scene, this.state, {
+            x: HEARTS_POSITION.x,
+            y: HEARTS_POSITION.y,
+            originX: 1,
+            originY: 0,
+            depth: 100
         });
-        this.heartsText.setOrigin(1, 0);
-        this.heartsText.setDepth(100);
+        this.heartsText = this.heartsDisplay.text;
 
         this.hintText = this.scene.add.text(HINT_POSITION.x, HINT_POSITION.y, '', {
             fontSize: '16px',
@@ -325,8 +327,9 @@ export class TypingPhase {
     }
 
     updateHearts() {
-        const hearts = this.state.hearts;
-        this.heartsText.setText(hearts > 0 ? Array(hearts).fill('♥').join(' ') : '—');
+        if (this.heartsDisplay) {
+            this.heartsDisplay.update();
+        }
     }
 
     // Aglutinacao: poco 1 (Anti-A) reage em A e AB; poco 2 (Anti-B) reage em B e AB.
@@ -353,15 +356,38 @@ export class TypingPhase {
 
         this.scene.time.delayedCall(CONFIRM_MS, () => {
             this.hintText.setText('');
-            // Texto provisorio ate a Fase 3 existir.
-            this.phaseText.setText('Fase 3 em breve');
             this.isActive = false;
             this.debugGraphics.setVisible(false);
 
             if (typeof this.onComplete === 'function') {
+                this.destroy();
                 this.onComplete(type);
+            } else {
+                this.phaseText.setText('Fase 3 em breve');
             }
         });
+    }
+
+    destroy() {
+        this.isActive = false;
+        if (this.debugKey) {
+            this.debugKey.removeAllListeners();
+        }
+        this.wells.forEach((well) => well.image.destroy());
+        Object.values(this.items).forEach((item) => item.sprite.destroy());
+        this.diagnosisButtons.forEach(({ rect, label }) => {
+            rect.destroy();
+            label.destroy();
+        });
+        this.retryButton.destroy();
+        this.retryLabel.destroy();
+        if (this.heartsDisplay) {
+            this.heartsDisplay.destroy();
+        }
+        this.hintText.destroy();
+        this.phaseText.destroy();
+        this.progressBar.destroy();
+        this.debugGraphics.destroy();
     }
 
     handleWrong() {

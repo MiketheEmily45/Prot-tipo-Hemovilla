@@ -2,13 +2,14 @@
 import { MINIGAME_ASSETS } from './minigameAssets.js';
 import { AttendanceState } from './AttendanceState.js';
 import { TypingPhase } from './TypingPhase.js';
+import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
 const SYRINGE_START = { x: 96, y: 448 };
 // Retangulo da poltrona central onde a seringa deve ser solta.
-const CHAIR_AREA = { x: 180, y: 90, width: 200, height: 200 };
+export const CHAIR_AREA = { x: 180, y: 90, width: 200, height: 200 };
 // Posicao do tubo de coleta (sobre a mesinha da direita) e distancia aceita para soltar a seringa.
 const TUBE_POSITION = { x: 440, y: 190 };
 const TUBE_DROP_RADIUS = 70;
@@ -26,6 +27,7 @@ export class Minigame extends Phaser.Scene {
     init(data) {
         this.characterId = data && data.characterId ? data.characterId : null;
         this.typingPhase = null;
+        this.transfusionPhase = null;
         this.collectionHidden = false;
     }
 
@@ -155,14 +157,9 @@ export class Minigame extends Phaser.Scene {
             return;
         }
 
-        // Texto provisorio ate a Fase 3 existir (tipo ja conhecido pula a tipagem).
-        this.phaseText = this.add.text(256, 40, 'Fase 3 em breve', {
-            fontSize: '24px',
-            color: '#ffffff',
-            backgroundColor: '#000000'
-        });
-        this.phaseText.setOrigin(0.5);
-        this.phaseText.setDepth(100);
+        if (this.attendanceState.phase === 'TRANSFUSAO') {
+            this.startTransfusionPhase();
+        }
     }
 
     startTypingPhase() {
@@ -174,6 +171,27 @@ export class Minigame extends Phaser.Scene {
         this.debugGraphics.setVisible(false);
 
         this.typingPhase = new TypingPhase(this, this.attendanceState, {
+            characterId: this.characterId,
+            onComplete: () => {
+                this.startTransfusionPhase();
+            }
+        });
+    }
+
+    startTransfusionPhase() {
+        // Esconde os objetos das fases anteriores e inicia a transfusao.
+        this.collectionHidden = true;
+        this.tube.setVisible(false);
+        this.syringe.setVisible(false);
+        this.progressBar.clear();
+        this.debugGraphics.setVisible(false);
+
+        if (this.typingPhase) {
+            this.typingPhase.destroy?.();
+            this.typingPhase = null;
+        }
+
+        this.transfusionPhase = new TransfusionPhase(this, this.attendanceState, {
             characterId: this.characterId
         });
     }
@@ -243,6 +261,10 @@ export class Minigame extends Phaser.Scene {
 
         if (this.typingPhase) {
             this.typingPhase.update();
+        }
+
+        if (this.transfusionPhase) {
+            this.transfusionPhase.update();
         }
 
         if (this.collectionStep !== 'FILLING') {

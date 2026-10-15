@@ -1,4 +1,4 @@
-// Tela do mini-game
+﻿// Tela do mini-game
 
 export class Minigame extends Phaser.Scene {
 
@@ -7,7 +7,7 @@ export class Minigame extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('minigame-background', 'assets/Mini-game/Cenario/SalaHospital.png');
+        this.load.image('minigame-background', 'assets/Minigame/Cenario/SalaHospital.png');
         this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
     }
 

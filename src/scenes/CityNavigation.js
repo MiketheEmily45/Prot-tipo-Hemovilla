@@ -6,7 +6,7 @@ import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 export const cities = [
     { folder: 'Cidade 1', layers: ['BaseCidade1', 'ComplementosCidade1', 'ConstrucoesPrincipaisCidade1', 'ConstrucoesSecundariasCidade1'] },
     { folder: 'Cidade 2', layers: ['BaseCidade2', 'ComplementosCidade2', 'ConstrucoesPrincipaisCidade2', 'ConstrucoesSecundariasCidade2'] },
-    { folder: 'Cidade 3', layers: ['BaseCidade3', 'ComplementosCidade3', 'ConstruçõesPrincipaisCidade3'] }
+    { folder: 'Cidade 3', layers: ['BaseCidade3', 'ComplementosCidade3', 'ConstrucoesPrincipaisCidade3'] }
 ];
 
 const layerKey = (city, layer) => `city-${city}-layer-${layer}`;

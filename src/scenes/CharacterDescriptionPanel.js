@@ -1,6 +1,8 @@
 // Gerencia o painel de descricao de personagens com overlay, moldura, 
 // texto com scroll/mascara e botao de fechar.
 
+import { getDiscoveredType } from './discoveredTypes.js';
+
 export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
     panelHeight: 448,
@@ -37,9 +39,9 @@ export class CharacterDescriptionPanel {
             this.close();
         }
 
-        // Todas as cidades exibem o tipo, mesmo enquanto o roteiro nao o definiu.
+        // O tipo so aparece depois de descoberto no minigame; antes disso mostra "?".
         const content = [
-            `Tipo sanguíneo: ${data.tipoSanguineo ?? 'A definir'}`,
+            `Tipo sanguíneo: ${getDiscoveredType(characterId) ?? '?'}`,
             data.descricao,
             ...(data.condicao ? [`Condição: ${data.condicao}`] : [])
         ].join('\n\n');
@@ -84,7 +86,7 @@ export class CharacterDescriptionPanel {
                 ? characterData.bruno : characterData.yasmin;
             if (alignmentReference) {
                 description.setText([
-                    `Tipo sanguíneo: ${alignmentReference.tipoSanguineo ?? 'A definir'}`,
+                    `Tipo sanguíneo: ${getDiscoveredType(scene.currentCityIndex === 1 ? 'bruno' : 'yasmin') ?? '?'}`,
                     alignmentReference.descricao,
                     ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
                 ].join('\n\n'));

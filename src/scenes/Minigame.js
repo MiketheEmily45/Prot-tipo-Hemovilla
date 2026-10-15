@@ -1,6 +1,8 @@
 // Tela do mini-game
 import { MINIGAME_ASSETS } from './minigameAssets.js';
 import { AttendanceState } from './AttendanceState.js';
+import { TypingPhase } from './TypingPhase.js';
+import { getDiscoveredType } from './discoveredTypes.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -23,6 +25,8 @@ export class Minigame extends Phaser.Scene {
 
     init(data) {
         this.characterId = data && data.characterId ? data.characterId : null;
+        this.typingPhase = null;
+        this.collectionHidden = false;
     }
 
     preload() {
@@ -67,10 +71,9 @@ export class Minigame extends Phaser.Scene {
     }
 
     setupAttendanceState() {
-        // TODO: receber typeKnown da cena anterior quando o tipo sanguineo descoberto for salvo.
         this.attendanceState = new AttendanceState({
             characterId: this.characterId,
-            typeKnown: false
+            typeKnown: getDiscoveredType(this.characterId) !== null
         });
     }
 
@@ -147,14 +150,32 @@ export class Minigame extends Phaser.Scene {
 
         this.attendanceState.advance();
 
-        // Texto provisorio ate a Fase 2 existir.
-        this.phaseText = this.add.text(256, 40, 'Fase 2 em breve', {
+        if (this.attendanceState.phase === 'TIPAGEM') {
+            this.startTypingPhase();
+            return;
+        }
+
+        // Texto provisorio ate a Fase 3 existir (tipo ja conhecido pula a tipagem).
+        this.phaseText = this.add.text(256, 40, 'Fase 3 em breve', {
             fontSize: '24px',
             color: '#ffffff',
             backgroundColor: '#000000'
         });
         this.phaseText.setOrigin(0.5);
         this.phaseText.setDepth(100);
+    }
+
+    startTypingPhase() {
+        // Esconde os objetos da Fase 1 e entrega a cena para a tipagem.
+        this.collectionHidden = true;
+        this.tube.setVisible(false);
+        this.syringe.setVisible(false);
+        this.progressBar.clear();
+        this.debugGraphics.setVisible(false);
+
+        this.typingPhase = new TypingPhase(this, this.attendanceState, {
+            characterId: this.characterId
+        });
     }
 
     setupDebugOutline() {
@@ -168,6 +189,9 @@ export class Minigame extends Phaser.Scene {
         // Tecla D liga e desliga o contorno de depuracao.
         this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.debugKey.on('down', () => {
+            if (this.collectionHidden) {
+                return;
+            }
             this.debugGraphics.setVisible(!this.debugGraphics.visible);
         });
     }
@@ -216,6 +240,10 @@ export class Minigame extends Phaser.Scene {
     update(time, delta) {
         this.attendanceState.update(delta);
         this.updateFilling(delta);
+
+        if (this.typingPhase) {
+            this.typingPhase.update();
+        }
 
         if (this.collectionStep !== 'FILLING') {
             this.progressBar.clear();

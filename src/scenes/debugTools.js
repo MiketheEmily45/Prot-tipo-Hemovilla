@@ -141,6 +141,7 @@ export function initDebugTools(game) {
     }
 
     currentGame = game;
+    window.__PHASER_GAME__ = game;
 
     window.addEventListener('keydown', (event) => {
         if (!isDebugEnabled()) return;

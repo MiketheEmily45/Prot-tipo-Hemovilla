@@ -6,6 +6,7 @@ export class Character {
         this.balloon = null;
         this.miniGameButton = null;
         this.descriptionButton = null;
+        this.balloonTitle = null;
         this.alertIcon = null;
         this.alertOffset = config.alertOffset || { x: -13, y: -35 };
         this.nextAlertTime = config.alertInterval ? scene.time.now + config.alertInterval : null;

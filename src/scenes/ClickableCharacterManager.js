@@ -75,6 +75,8 @@ export class ClickableCharacterManager {
             character.isStoppedByClick = false;
             character.balloon.destroy();
             character.balloon = null;
+            character.balloonTitle?.destroy();
+            character.balloonTitle = null;
             character.miniGameButton.destroy();
             character.miniGameButton = null;
             character.descriptionButton.destroy();
@@ -87,6 +89,16 @@ export class ClickableCharacterManager {
         character.stop();
         character.balloon = scene.add.image(0, 0, 'balao_temporario');
         character.balloon.setDepth(character.sprite.depth + 2);
+
+        const characterName = characterData[character.iconButtonKey]?.nome || '';
+        character.balloonTitle = scene.add.text(0, 0, characterName, {
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: '#ffffff'
+        });
+        character.balloonTitle.setOrigin(0.5, 0.5);
+        character.balloonTitle.setDepth(character.balloon.depth + 1);
         this.createMinigameBalloonButton(character);
         character.descriptionButton = scene.add.image(0, 0, 'botao_descricao');
         character.descriptionButton.setDepth(character.balloon.depth + 1);
@@ -128,8 +140,9 @@ export class ClickableCharacterManager {
             character.sprite.x + character.balloonOffset.x,
             character.sprite.y + character.balloonOffset.y
         );
-        character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y);
-        character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y);
+        character.balloonTitle?.setPosition(character.balloon.x, character.balloon.y - 32);
+        character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y + 15);
+        character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y + 15);
     }
 
     updateIndicators(time) {
@@ -169,8 +182,9 @@ export function updateCharacterBalloonPosition(character) {
             character.sprite.x + character.balloonOffset.x,
             character.sprite.y + character.balloonOffset.y
         );
-        character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y);
-        character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y);
+        character.balloonTitle?.setPosition(character.balloon.x, character.balloon.y - 32);
+        character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y + 15);
+        character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y + 15);
     }
 }
 

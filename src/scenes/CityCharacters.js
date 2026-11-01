@@ -182,13 +182,14 @@ export class CityCharacterGroupManager {
     }
 
     setGroupVisible(group, visible) {
-        group.characters.forEach(({ sprite, balloon, alertIcon, miniGameButton, descriptionButton }) => {
+        group.characters.forEach(({ sprite, balloon, alertIcon, miniGameButton, descriptionButton, balloonTitle }) => {
             sprite.setVisible(visible);
             sprite.body.enable = visible;
             sprite.input.enabled = visible;
             if (visible) sprite.anims.resume();
             else sprite.anims.pause();
             balloon?.setVisible(visible);
+            balloonTitle?.setVisible(visible);
             if (descriptionButton) {
                 descriptionButton.setVisible(visible);
                 descriptionButton.input.enabled = visible;

@@ -1,4 +1,3 @@
-import { isCharacterAttended } from './atpStore.js';
 export class AlertManager {
     constructor(scene) {
         this.scene = scene;
@@ -15,7 +14,7 @@ export class AlertManager {
     }
 
     updateCharacterAlert(character, time, silent = false) {
-        if (!character.alertInterval || isCharacterAttended(character.iconButtonKey)) {
+        if (!character.alertInterval) {
             return;
         }
 

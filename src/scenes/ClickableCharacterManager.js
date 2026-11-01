@@ -128,7 +128,10 @@ export class ClickableCharacterManager {
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.clearTint();
             this.getAlertManager().resetCharacterAlert(character);
-            scene.scene.start('Minigame', { characterId: character.iconButtonKey });
+            scene.scene.start('Minigame', {
+                characterId: character.iconButtonKey,
+                cityIndex: scene.currentCityIndex
+            });
         });
     }
 

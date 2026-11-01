@@ -35,9 +35,10 @@ const BAG_SLOTS = [
 
 const TRANSFUSION_BAR = { x: 180, y: 310, width: 152, height: 10 };
 const MESSAGE_BOX = { x: 256, y: 365 };
-const RETRY_BUTTON = { x: 256, y: 400, width: 160, height: 32 };
+const FAILURE_RETRY_BUTTON = { x: 176, y: 400, width: 144, height: 32 };
+const FAILURE_RETURN_BUTTON = { x: 336, y: 400, width: 144, height: 32 };
 const RESULT_PANEL = { x: 256, y: 256, width: 380, height: 240 };
-const RETURN_BUTTON = { x: 256, y: 320, width: 180, height: 40 };
+const RESULT_RETURN_BUTTON = { x: 256, y: 340, width: 180, height: 40 };
 
 export class TransfusionPhase {
     constructor(scene, state, { characterId } = {}) {
@@ -168,26 +169,60 @@ export class TransfusionPhase {
         this.messageText.setVisible(false);
 
         this.retryButton = this.scene.add.rectangle(
-            RETRY_BUTTON.x,
-            RETRY_BUTTON.y,
-            RETRY_BUTTON.width,
-            RETRY_BUTTON.height,
+            FAILURE_RETRY_BUTTON.x,
+            FAILURE_RETRY_BUTTON.y,
+            FAILURE_RETRY_BUTTON.width,
+            FAILURE_RETRY_BUTTON.height,
             0xc0392b
         );
         this.retryButton.setDepth(45);
         this.retryButton.setStrokeStyle(2, 0xffffff);
         this.retryButton.setInteractive({ useHandCursor: true });
         this.retryButton.setVisible(false);
-        this.retryButton.on('pointerup', () => this.retry());
+        this.retryButton.on('pointerdown', () => this.retryButton.setFillStyle(0x8B2E40));
+        this.retryButton.on('pointerout', () => this.retryButton.setFillStyle(0xc0392b));
+        this.retryButton.on('pointerup', () => {
+            this.retryButton.setFillStyle(0xc0392b);
+            this.retry();
+        });
 
-        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
+        this.retryLabel = this.scene.add.text(FAILURE_RETRY_BUTTON.x, FAILURE_RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '16px',
+            fontSize: '14px',
+            fontStyle: 'bold',
             color: '#ffffff'
         }));
         this.retryLabel.setOrigin(0.5);
         this.retryLabel.setDepth(46);
         this.retryLabel.setVisible(false);
+
+        this.returnButton = this.scene.add.rectangle(
+            FAILURE_RETURN_BUTTON.x,
+            FAILURE_RETURN_BUTTON.y,
+            FAILURE_RETURN_BUTTON.width,
+            FAILURE_RETURN_BUTTON.height,
+            0x16a34a
+        );
+        this.returnButton.setDepth(45);
+        this.returnButton.setStrokeStyle(2, 0xffffff);
+        this.returnButton.setInteractive({ useHandCursor: true });
+        this.returnButton.setVisible(false);
+        this.returnButton.on('pointerdown', () => this.returnButton.setFillStyle(0x0e7490));
+        this.returnButton.on('pointerout', () => this.returnButton.setFillStyle(0x16a34a));
+        this.returnButton.on('pointerup', () => {
+            this.returnButton.setFillStyle(0x16a34a);
+            this.scene.returnToMap({ failed: true });
+        });
+
+        this.returnLabel = this.scene.add.text(FAILURE_RETURN_BUTTON.x, FAILURE_RETURN_BUTTON.y, 'Voltar ao mapa', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontStyle: 'bold',
+            color: '#ffffff'
+        }));
+        this.returnLabel.setOrigin(0.5);
+        this.returnLabel.setDepth(46);
+        this.returnLabel.setVisible(false);
     }
 
     showMessage(text) {
@@ -388,14 +423,22 @@ export class TransfusionPhase {
 
         this.showMessage(`Atendimento falhou!\nBolsas compatíveis nesta rodada: ${compatibleBags.join(', ')}`);
         this.retryButton.setVisible(true);
+        this.retryButton.input.enabled = true;
         this.retryLabel.setVisible(true);
+        this.returnButton.setVisible(true);
+        this.returnButton.input.enabled = true;
+        this.returnLabel.setVisible(true);
     }
 
     retry() {
         this.state.retry();
         this.heartsDisplay.update();
         this.retryButton.setVisible(false);
+        this.retryButton.input.enabled = false;
         this.retryLabel.setVisible(false);
+        this.returnButton.setVisible(false);
+        this.returnButton.input.enabled = false;
+        this.returnLabel.setVisible(false);
         this.clearMessage();
         this.compatibleCount = 0;
         this.drawTransfusionBar();
@@ -462,25 +505,25 @@ export class TransfusionPhase {
         ).setOrigin(0.5).setDepth(152);
 
         const returnBtn = this.scene.add.rectangle(
-            RETURN_BUTTON.x,
-            RETURN_BUTTON.y,
-            RETURN_BUTTON.width,
-            RETURN_BUTTON.height,
+            RESULT_RETURN_BUTTON.x,
+            RESULT_RETURN_BUTTON.y,
+            RESULT_RETURN_BUTTON.width,
+            RESULT_RETURN_BUTTON.height,
             0x16a34a
         );
         returnBtn.setStrokeStyle(2, 0xffffff);
         returnBtn.setDepth(152);
         returnBtn.setInteractive({ useHandCursor: true });
 
-        const returnLabel = this.scene.add.text(RETURN_BUTTON.x, RETURN_BUTTON.y, 'Voltar ao mapa', createTextStyle({
+        const returnLabel = this.scene.add.text(RESULT_RETURN_BUTTON.x, RESULT_RETURN_BUTTON.y, 'Voltar ao mapa', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '16px',
             fontStyle: 'bold',
             color: '#ffffff'
         })).setOrigin(0.5).setDepth(153);
 
-        returnBtn.on('pointerdown', () => returnBtn.setTint(0x0e7490));
-        returnBtn.on('pointerout', () => returnBtn.clearTint());
+        returnBtn.on('pointerdown', () => returnBtn.setFillStyle(0x0e7490));
+        returnBtn.on('pointerout', () => returnBtn.setFillStyle(0x16a34a));
         returnBtn.on('pointerup', () => {
             // Credita o ATP e marca personagem como atendido
             addATP(result.atp);
@@ -489,7 +532,7 @@ export class TransfusionPhase {
             // TODO: Integracao com GameMap: o GameMap atualmente e recriado do zero no scene.start('GameMap').
             // Para persistir o personagem como atendido e desativar alertas/retomar movimento no mapa,
             // o GameMap deve consultar isCharacterAttended(character.id) ao inicializar ou atualizar os alertas.
-            this.scene.scene.start('GameMap');
+            this.scene.returnToMap();
         });
     }
 
@@ -539,6 +582,8 @@ export class TransfusionPhase {
         if (this.messageText) this.messageText.destroy();
         if (this.retryButton) this.retryButton.destroy();
         if (this.retryLabel) this.retryLabel.destroy();
+        if (this.returnButton) this.returnButton.destroy();
+        if (this.returnLabel) this.returnLabel.destroy();
         this.clearBags();
         this.clearXMarkers();
         if (this.debugGraphics) this.debugGraphics.destroy();

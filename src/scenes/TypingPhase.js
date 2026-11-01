@@ -25,7 +25,8 @@ const MIX_BAR = { height: 4, offsetY: 4 };
 // Botoes de diagnostico, na base da tela.
 const DIAGNOSIS_TYPES = ['A', 'B', 'AB', 'O'];
 const DIAGNOSIS_BUTTONS = { startX: 112, spacing: 96, y: 485, width: 80, height: 36 };
-const RETRY_BUTTON = { x: 256, y: 452, width: 160, height: 28 };
+const RETRY_BUTTON = { x: 176, y: 452, width: 144, height: 30 };
+const RETURN_BUTTON = { x: 336, y: 452, width: 144, height: 30 };
 const HINT_POSITION = { x: 256, y: 415 };
 const HEARTS_POSITION = { x: 504, y: 8 };
 // Tempo mostrando o texto de acerto e a dica, em ms.
@@ -157,17 +158,46 @@ export class TypingPhase {
         this.retryButton = this.scene.add.rectangle(
             RETRY_BUTTON.x, RETRY_BUTTON.y, RETRY_BUTTON.width, RETRY_BUTTON.height, 0xc0392b
         );
-        this.retryButton.setDepth(40);
+        this.retryButton.setDepth(45);
         this.retryButton.setStrokeStyle(2, 0xffffff);
         this.retryButton.setInteractive({ useHandCursor: true });
-        this.retryButton.on('pointerup', () => this.retry());
+        this.retryButton.on('pointerdown', () => this.retryButton.setFillStyle(0x8B2E40));
+        this.retryButton.on('pointerout', () => this.retryButton.setFillStyle(0xc0392b));
+        this.retryButton.on('pointerup', () => {
+            this.retryButton.setFillStyle(0xc0392b);
+            this.retry();
+        });
 
         this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
-            fontSize: '16px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontStyle: 'bold',
             color: '#ffffff'
         }));
         this.retryLabel.setOrigin(0.5);
-        this.retryLabel.setDepth(41);
+        this.retryLabel.setDepth(46);
+
+        this.returnButton = this.scene.add.rectangle(
+            RETURN_BUTTON.x, RETURN_BUTTON.y, RETURN_BUTTON.width, RETURN_BUTTON.height, 0x16a34a
+        );
+        this.returnButton.setDepth(45);
+        this.returnButton.setStrokeStyle(2, 0xffffff);
+        this.returnButton.setInteractive({ useHandCursor: true });
+        this.returnButton.on('pointerdown', () => this.returnButton.setFillStyle(0x0e7490));
+        this.returnButton.on('pointerout', () => this.returnButton.setFillStyle(0x16a34a));
+        this.returnButton.on('pointerup', () => {
+            this.returnButton.setFillStyle(0x16a34a);
+            this.scene.returnToMap({ failed: true });
+        });
+
+        this.returnLabel = this.scene.add.text(RETURN_BUTTON.x, RETURN_BUTTON.y, 'Voltar ao mapa', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontStyle: 'bold',
+            color: '#ffffff'
+        }));
+        this.returnLabel.setOrigin(0.5);
+        this.returnLabel.setDepth(46);
     }
 
     createTexts() {
@@ -241,6 +271,9 @@ export class TypingPhase {
         this.retryButton.setVisible(false);
         this.retryButton.input.enabled = false;
         this.retryLabel.setVisible(false);
+        this.returnButton.setVisible(false);
+        this.returnButton.input.enabled = false;
+        this.returnLabel.setVisible(false);
         if (this.cellSprite) {
             this.cellSprite.destroy();
             this.cellSprite = null;
@@ -404,6 +437,8 @@ export class TypingPhase {
         });
         this.retryButton.destroy();
         this.retryLabel.destroy();
+        this.returnButton.destroy();
+        this.returnLabel.destroy();
         if (this.heartsDisplay) {
             this.heartsDisplay.destroy();
         }
@@ -435,6 +470,9 @@ export class TypingPhase {
         this.retryButton.setVisible(true);
         this.retryButton.input.enabled = true;
         this.retryLabel.setVisible(true);
+        this.returnButton.setVisible(true);
+        this.returnButton.input.enabled = true;
+        this.returnLabel.setVisible(true);
     }
 
     retry() {

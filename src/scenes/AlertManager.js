@@ -1,3 +1,4 @@
+import { isCharacterAttended } from './atpStore.js';
 export class AlertManager {
     constructor(scene) {
         this.scene = scene;
@@ -13,8 +14,8 @@ export class AlertManager {
         });
     }
 
-    updateCharacterAlert(character, time) {
-        if (!character.alertInterval) {
+    updateCharacterAlert(character, time, silent = false) {
+        if (!character.alertInterval || isCharacterAttended(character.iconButtonKey)) {
             return;
         }
 
@@ -22,7 +23,9 @@ export class AlertManager {
         if (!character.alertIcon && time >= character.nextAlertTime) {
             character.alertIcon = this.scene.add.image(0, 0, 'icone_alerta');
             character.alertIcon.setDepth(character.sprite.depth + 1);
-            this.playAlertSound();
+            if (!silent) {
+                this.playAlertSound();
+            }
 
             if (character.iconButtonKey) {
                 this.scene.alertedIconKeys.add(character.iconButtonKey);

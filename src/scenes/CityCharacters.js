@@ -56,6 +56,16 @@ export const city3Characters = [
 
 export const charactersByCity = [allCity1Characters, city2Characters, city3Characters];
 
+export function getCityIndexByCharacterId(characterId) {
+    if (!characterId) return 0;
+    for (let i = 0; i < charactersByCity.length; i++) {
+        if (charactersByCity[i].some((c) => c.id === characterId)) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 export function preloadCityCharacters(scene) {
     charactersByCity.flat().forEach(({ id, asset, idle }) => {
         const load = (key, file) => scene.load.image(key, `assets/Personagens/${asset}/${asset}.${file}.png`);

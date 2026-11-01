@@ -5,6 +5,7 @@ import { TypingPhase } from './TypingPhase.js';
 import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
+import { getCityIndexByCharacterId } from './CityCharacters.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -27,6 +28,9 @@ export class Minigame extends Phaser.Scene {
 
     init(data) {
         this.characterId = data && data.characterId ? data.characterId : null;
+        this.cityIndex = (data && typeof data.cityIndex === 'number')
+            ? data.cityIndex
+            : getCityIndexByCharacterId(this.characterId);
         this.typingPhase = null;
         this.transfusionPhase = null;
         this.collectionHidden = false;
@@ -47,6 +51,28 @@ export class Minigame extends Phaser.Scene {
         this.setupPatientSprite();
         this.setupCollectionPhase();
         this.setupDebugOutline();
+    }
+
+    returnToMap(options = {}) {
+        if (this.typingPhase) {
+            this.typingPhase.destroy?.();
+            this.typingPhase = null;
+        }
+        if (this.transfusionPhase) {
+            this.transfusionPhase.destroy?.();
+            this.transfusionPhase = null;
+        }
+
+        const cityIndex = typeof this.cityIndex === 'number'
+            ? this.cityIndex
+            : getCityIndexByCharacterId(this.characterId);
+
+        const data = { cityIndex };
+        if (options && options.failed && this.characterId) {
+            data.alertCharacterId = this.characterId;
+        }
+
+        this.scene.start('GameMap', data);
     }
 
     setupViewport() {

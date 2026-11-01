@@ -15,6 +15,11 @@ export class GameMap extends Phaser.Scene {
         super('GameMap');
     }
 
+    init(data) {
+        this.targetCityIndex = data && typeof data.cityIndex === 'number' ? data.cityIndex : 0;
+        this.alertCharacterId = data && data.alertCharacterId ? data.alertCharacterId : null;
+    }
+
     preload() {
         preloadCities(this);
         preloadCityCharacters(this);
@@ -60,6 +65,18 @@ export class GameMap extends Phaser.Scene {
             createCityCharacter(this, config);
         });
         rememberCityCharacters(this, 0);
+
+        if (this.targetCityIndex && this.targetCityIndex > 0) {
+            this.cityNavigation.goTo(this.targetCityIndex);
+        }
+
+        if (this.alertCharacterId) {
+            const char = this.clickableCharacters.find((c) => c.iconButtonKey === this.alertCharacterId);
+            if (char) {
+                char.nextAlertTime = 0;
+                this.clickableCharacterManager.getAlertManager().updateCharacterAlert(char, 0, true);
+            }
+        }
     }
 
     update(time) {

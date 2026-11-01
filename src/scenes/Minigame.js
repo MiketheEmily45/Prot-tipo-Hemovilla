@@ -31,6 +31,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = false;
         this.patientSprite = null;
         this.adjustModeActive = false;
+        this.adjustText = null;
     }
 
     preload() {
@@ -301,6 +302,24 @@ export class Minigame extends Phaser.Scene {
     }
 
     setupAdjustmentControls() {
+        this.adjustText = this.add.text(8, 56, '', {
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            color: '#fbbf24',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: { x: 8, y: 6 }
+        });
+        this.adjustText.setOrigin(0, 0);
+        this.adjustText.setDepth(999);
+        this.adjustText.setVisible(false);
+
+        const updateAdjustOverlay = () => {
+            if (!this.adjustText || !this.patientSprite) return;
+            const msg = `MODO AJUSTE (P para sair)\nx: ${this.patientSprite.x}\ny: ${this.patientSprite.y}\nscale: ${this.patientSprite.scaleX}\nangle: ${this.patientSprite.angle}°`;
+            this.adjustText.setText(msg);
+            console.log(`[Ajuste Paciente] x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
+        };
+
         const keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
         keyP.on('down', () => {
             if (!this.patientSprite) {
@@ -308,9 +327,9 @@ export class Minigame extends Phaser.Scene {
                 return;
             }
             this.adjustModeActive = !this.adjustModeActive;
-            console.log(`[Ajuste Paciente] Modo de ajuste: ${this.adjustModeActive ? 'ATIVADO' : 'DESATIVADO'}`);
+            this.adjustText.setVisible(this.adjustModeActive);
             if (this.adjustModeActive) {
-                console.log(`Valores atuais -> x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
+                updateAdjustOverlay();
             }
         });
 
@@ -321,40 +340,36 @@ export class Minigame extends Phaser.Scene {
         const keyNumpadSub = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.NUMPAD_SUBTRACT);
         const keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 
-        const logValues = () => {
-            console.log(`[Ajuste Paciente] x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
-        };
-
         cursors.left.on('down', () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.x -= 2;
-            logValues();
+            updateAdjustOverlay();
         });
         cursors.right.on('down', () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.x += 2;
-            logValues();
+            updateAdjustOverlay();
         });
         cursors.up.on('down', () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.y -= 2;
-            logValues();
+            updateAdjustOverlay();
         });
         cursors.down.on('down', () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.y += 2;
-            logValues();
+            updateAdjustOverlay();
         });
 
         const scaleUp = () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.setScale(Number((this.patientSprite.scaleX + 0.1).toFixed(2)));
-            logValues();
+            updateAdjustOverlay();
         };
         const scaleDown = () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.setScale(Math.max(0.2, Number((this.patientSprite.scaleX - 0.1).toFixed(2))));
-            logValues();
+            updateAdjustOverlay();
         };
 
         keyPlus.on('down', scaleUp);
@@ -365,7 +380,7 @@ export class Minigame extends Phaser.Scene {
         keyR.on('down', () => {
             if (!this.adjustModeActive || !this.patientSprite) return;
             this.patientSprite.angle = (this.patientSprite.angle + 15) % 360;
-            logValues();
+            updateAdjustOverlay();
         });
     }
 }

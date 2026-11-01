@@ -2,6 +2,7 @@
 // interacoes ao clicar e atualizacoes de posicao.
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
+import { createTextStyle } from './textUtils.js';
 import { Character } from './Character.js';
 import { AlertManager } from './AlertManager.js';
 
@@ -73,13 +74,13 @@ export class ClickableCharacterManager {
         const scene = this.scene;
         if (character.isStoppedByClick) {
             character.isStoppedByClick = false;
-            character.balloon.destroy();
+            character.balloon?.destroy();
             character.balloon = null;
             character.balloonTitle?.destroy();
             character.balloonTitle = null;
-            character.miniGameButton.destroy();
+            character.miniGameButton?.destroy();
             character.miniGameButton = null;
-            character.descriptionButton.destroy();
+            character.descriptionButton?.destroy();
             character.descriptionButton = null;
             character.resume();
             return;

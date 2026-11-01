@@ -107,7 +107,7 @@ export class CharacterDescriptionPanel {
         const panelBlocker = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0xffffff, 0);
         panelBlocker.setDepth(202);
         panelBlocker.setInteractive();
-        panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event.stopPropagation());
+        panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event?.stopPropagation?.());
 
         title.setPosition(panelX, panelTop + 34);
         title.setDepth(203);
@@ -159,7 +159,7 @@ export class CharacterDescriptionPanel {
         closeButton.setDepth(204);
         closeButton.setInteractive({ useHandCursor: true });
         closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
-            event.stopPropagation();
+            event?.stopPropagation?.();
             this.close();
         });
 

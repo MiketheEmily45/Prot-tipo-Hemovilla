@@ -91,13 +91,12 @@ export class ClickableCharacterManager {
         character.balloon.setDepth(character.sprite.depth + 2);
 
         const characterName = characterData[character.iconButtonKey]?.nome || '';
-        character.balloonTitle = scene.add.text(0, 0, characterName, {
+        character.balloonTitle = scene.add.text(0, 0, characterName, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '11px',
-            resolution: 3,
             fontStyle: 'bold',
             color: '#ffffff'
-        });
+        }));
         character.balloonTitle.setOrigin(0.5, 0.5);
         character.balloonTitle.setDepth(character.balloon.depth + 1);
         this.createMinigameBalloonButton(character);

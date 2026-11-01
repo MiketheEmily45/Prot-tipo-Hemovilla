@@ -3,6 +3,7 @@ import { BENCH_RESULT_FRAMES } from './minigameAssets.js';
 import { characterData } from './characterData.js';
 import { setDiscoveredType } from './discoveredTypes.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
+import { createTextStyle } from './textUtils.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -141,10 +142,10 @@ export class TypingPhase {
             rect.setStrokeStyle(2, 0xffffff);
             rect.setInteractive({ useHandCursor: true });
 
-            const label = this.scene.add.text(x, DIAGNOSIS_BUTTONS.y, type, {
+            const label = this.scene.add.text(x, DIAGNOSIS_BUTTONS.y, type, createTextStyle({
                 fontSize: '20px',
                 color: '#ffffff'
-            });
+            }));
             label.setOrigin(0.5);
             label.setDepth(41);
 
@@ -161,10 +162,10 @@ export class TypingPhase {
         this.retryButton.setInteractive({ useHandCursor: true });
         this.retryButton.on('pointerup', () => this.retry());
 
-        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', {
+        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
             fontSize: '16px',
             color: '#ffffff'
-        });
+        }));
         this.retryLabel.setOrigin(0.5);
         this.retryLabel.setDepth(41);
     }
@@ -180,21 +181,21 @@ export class TypingPhase {
         });
         this.heartsText = this.heartsDisplay.text;
 
-        this.hintText = this.scene.add.text(HINT_POSITION.x, HINT_POSITION.y, '', {
+        this.hintText = this.scene.add.text(HINT_POSITION.x, HINT_POSITION.y, '', createTextStyle({
             fontSize: '16px',
             color: '#ffffff',
             backgroundColor: '#000000',
             align: 'center',
             wordWrap: { width: 460 }
-        });
+        }));
         this.hintText.setOrigin(0.5);
         this.hintText.setDepth(45);
 
-        this.phaseText = this.scene.add.text(256, 40, '', {
+        this.phaseText = this.scene.add.text(256, 40, '', createTextStyle({
             fontSize: '24px',
             color: '#ffffff',
             backgroundColor: '#000000'
-        });
+        }));
         this.phaseText.setOrigin(0.5);
         this.phaseText.setDepth(100);
     }

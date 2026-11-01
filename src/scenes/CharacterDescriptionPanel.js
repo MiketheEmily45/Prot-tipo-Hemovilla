@@ -2,6 +2,7 @@
 // texto com scroll/mascara e botao de fechar.
 
 import { getDiscoveredType } from './discoveredTypes.js';
+import { createTextStyle } from './textUtils.js';
 
 export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
@@ -64,20 +65,20 @@ export class CharacterDescriptionPanel {
 
         let descriptionX = panelX;
 
-        const title = scene.add.text(panelX, 0, data.nome, {
+        const title = scene.add.text(panelX, 0, data.nome, createTextStyle({
             fontFamily: 'monospace',
             fontSize: `${titleFontSize}px`,
             fontStyle: 'bold',
             color: '#3b2a20'
-        }).setOrigin(0.5, 0);
+        })).setOrigin(0.5, 0);
 
-        const description = scene.add.text(panelX, 0, content, {
+        const description = scene.add.text(panelX, 0, content, createTextStyle({
             fontFamily: 'monospace',
             fontSize: `${fontSize}px`,
             color: '#3b2a20',
             lineSpacing: lineSpacing,
             wordWrap: { width: contentWidth, useAdvancedWrap: true }
-        }).setOrigin(0.5, 0);
+        })).setOrigin(0.5, 0);
 
         if (scene.currentCityIndex === 1 || scene.currentCityIndex === 2) {
             // Fixa a margem esquerda usando Bruno na Cidade2 e Yasmin na
@@ -90,7 +91,7 @@ export class CharacterDescriptionPanel {
                     alignmentReference.descricao,
                     ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
                 ].join('\n\n'));
-                descriptionX = panelX - description.width / 2;
+                descriptionX = Math.round(panelX - description.width / 2);
                 description.setOrigin(0, 0);
                 description.setText(content);
             }
@@ -145,16 +146,16 @@ export class CharacterDescriptionPanel {
                 0,
                 maxDescriptionScroll
             );
-            description.y = descriptionTop - descriptionScrollY;
+            description.y = Math.round(descriptionTop - descriptionScrollY);
         };
         scene.input.on('wheel', onDescriptionWheel);
 
-        const closeButton = scene.add.text(panelX + panelWidth / 2 - 28, panelTop + 14, 'X', {
+        const closeButton = scene.add.text(panelX + panelWidth / 2 - 28, panelTop + 14, 'X', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '20px',
             fontStyle: 'bold',
             color: '#afadab'
-        }).setOrigin(0.5);
+        })).setOrigin(0.5);
         closeButton.setDepth(204);
         closeButton.setInteractive({ useHandCursor: true });
         closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {

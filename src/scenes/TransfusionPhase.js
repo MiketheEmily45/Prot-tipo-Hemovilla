@@ -8,6 +8,7 @@ import {
     drawRound
 } from './bloodCompatibility.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
+import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
 
 // Configuracao da Fase 3
@@ -79,14 +80,14 @@ export class TransfusionPhase {
         const typeX = PORTRAIT_POSITION.x + TYPE_LABEL_OFFSET.x;
         const typeY = PORTRAIT_POSITION.y + TYPE_LABEL_OFFSET.y;
 
-        this.typeText = this.scene.add.text(typeX, typeY, `Tipo: ${displayType}`, {
+        this.typeText = this.scene.add.text(typeX, typeY, `Tipo: ${displayType}`, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '15px',
             fontStyle: 'bold',
             color: '#ffffff',
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             padding: { x: 6, y: 3 }
-        });
+        }));
         this.typeText.setOrigin(0.5, 0);
         this.typeText.setDepth(40);
 
@@ -107,13 +108,13 @@ export class TransfusionPhase {
             TRANSFUSION_BAR.x + TRANSFUSION_BAR.width / 2,
             TRANSFUSION_BAR.y - 14,
             'Transfusão',
-            {
+            createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '12px',
                 color: '#ffffff',
                 backgroundColor: 'rgba(0, 0, 0, 0.65)',
                 padding: { x: 4, y: 2 }
-            }
+            })
         );
         this.transfusionLabel.setOrigin(0.5, 0);
         this.transfusionLabel.setDepth(25);
@@ -153,7 +154,7 @@ export class TransfusionPhase {
     }
 
     setupMessageArea() {
-        this.messageText = this.scene.add.text(MESSAGE_BOX.x, MESSAGE_BOX.y, '', {
+        this.messageText = this.scene.add.text(MESSAGE_BOX.x, MESSAGE_BOX.y, '', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '14px',
             color: '#ffffff',
@@ -161,7 +162,7 @@ export class TransfusionPhase {
             padding: { x: 8, y: 4 },
             align: 'center',
             wordWrap: { width: 460 }
-        });
+        }));
         this.messageText.setOrigin(0.5);
         this.messageText.setDepth(45);
         this.messageText.setVisible(false);
@@ -179,11 +180,11 @@ export class TransfusionPhase {
         this.retryButton.setVisible(false);
         this.retryButton.on('pointerup', () => this.retry());
 
-        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', {
+        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '16px',
             color: '#ffffff'
-        });
+        }));
         this.retryLabel.setOrigin(0.5);
         this.retryLabel.setDepth(46);
         this.retryLabel.setVisible(false);
@@ -422,12 +423,12 @@ export class TransfusionPhase {
         panel.setStrokeStyle(2, 0xffffff);
         panel.setDepth(151);
 
-        const title = this.scene.add.text(RESULT_PANEL.x, RESULT_PANEL.y - 75, 'Atendimento concluído', {
+        const title = this.scene.add.text(RESULT_PANEL.x, RESULT_PANEL.y - 75, 'Atendimento concluído', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '22px',
             fontStyle: 'bold',
             color: '#ffffff'
-        }).setOrigin(0.5).setDepth(152);
+        })).setOrigin(0.5).setDepth(152);
 
         const atpIcon = this.scene.add.image(RESULT_PANEL.x - 70, RESULT_PANEL.y - 25, 'icone-atp');
         atpIcon.setOrigin(0.5);
@@ -437,12 +438,12 @@ export class TransfusionPhase {
             atpIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
 
-        const atpText = this.scene.add.text(RESULT_PANEL.x - 45, RESULT_PANEL.y - 25, `+${result.atp} ATP`, {
+        const atpText = this.scene.add.text(RESULT_PANEL.x - 45, RESULT_PANEL.y - 25, `+${result.atp} ATP`, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '26px',
             fontStyle: 'bold',
             color: '#fbbf24'
-        }).setOrigin(0, 0.5).setDepth(152);
+        })).setOrigin(0, 0.5).setDepth(152);
 
         const info = result.withinTime
             ? 'Bônus de tempo aplicado!'
@@ -452,12 +453,12 @@ export class TransfusionPhase {
             RESULT_PANEL.x,
             RESULT_PANEL.y + 15,
             `${info}\nErros no atendimento: ${result.errors}`,
-            {
+            createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '13px',
                 color: '#d1d5db',
                 align: 'center'
-            }
+            })
         ).setOrigin(0.5).setDepth(152);
 
         const returnBtn = this.scene.add.rectangle(
@@ -471,12 +472,12 @@ export class TransfusionPhase {
         returnBtn.setDepth(152);
         returnBtn.setInteractive({ useHandCursor: true });
 
-        const returnLabel = this.scene.add.text(RETURN_BUTTON.x, RETURN_BUTTON.y, 'Voltar ao mapa', {
+        const returnLabel = this.scene.add.text(RETURN_BUTTON.x, RETURN_BUTTON.y, 'Voltar ao mapa', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '16px',
             fontStyle: 'bold',
             color: '#ffffff'
-        }).setOrigin(0.5).setDepth(153);
+        })).setOrigin(0.5).setDepth(153);
 
         returnBtn.on('pointerdown', () => returnBtn.setTint(0x0e7490));
         returnBtn.on('pointerout', () => returnBtn.clearTint());

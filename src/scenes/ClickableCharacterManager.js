@@ -94,6 +94,7 @@ export class ClickableCharacterManager {
         character.balloonTitle = scene.add.text(0, 0, characterName, {
             fontFamily: 'monospace',
             fontSize: '11px',
+            resolution: 3,
             fontStyle: 'bold',
             color: '#ffffff'
         });
@@ -140,7 +141,7 @@ export class ClickableCharacterManager {
             character.sprite.x + character.balloonOffset.x,
             character.sprite.y + character.balloonOffset.y
         );
-        character.balloonTitle?.setPosition(character.balloon.x, character.balloon.y - 32);
+        character.balloonTitle?.setPosition(Math.round(character.balloon.x), Math.round(character.balloon.y - 32));
         character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y + 15);
         character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y + 15);
     }
@@ -182,7 +183,7 @@ export function updateCharacterBalloonPosition(character) {
             character.sprite.x + character.balloonOffset.x,
             character.sprite.y + character.balloonOffset.y
         );
-        character.balloonTitle?.setPosition(character.balloon.x, character.balloon.y - 32);
+        character.balloonTitle?.setPosition(Math.round(character.balloon.x), Math.round(character.balloon.y - 32));
         character.descriptionButton?.setPosition(character.balloon.x - 22, character.balloon.y + 15);
         character.miniGameButton?.setPosition(character.balloon.x + 22, character.balloon.y + 15);
     }

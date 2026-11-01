@@ -2,6 +2,7 @@ import { Start } from './scenes/Start.js'
 import { GameMap } from './scenes/GameMap.js'
 import { ConfigMenu } from './scenes/ConfigMenu.js'
 import { Minigame } from './scenes/Minigame.js'
+import { initDebugTools } from './scenes/debugTools.js'
 
 const config = {
     type: Phaser.AUTO,
@@ -12,6 +13,7 @@ const config = {
     height: 512,
     backgroundColor: '#000000',
     pixelArt: false,
+    roundPixels: true,
     physics: {
         default: 'arcade',
         arcade: {
@@ -31,5 +33,6 @@ const config = {
     },
 }
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+initDebugTools(game);
             

@@ -1,9 +1,10 @@
 // Tela do mini-game
-import { MINIGAME_ASSETS } from './minigameAssets.js';
+import { MINIGAME_ASSETS, PATIENT_SPRITES, PATIENT_SPRITE_CONFIG } from './minigameAssets.js';
 import { AttendanceState } from './AttendanceState.js';
 import { TypingPhase } from './TypingPhase.js';
 import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
+import { isProgressSavingDisabled } from './debugTools.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -29,6 +30,7 @@ export class Minigame extends Phaser.Scene {
         this.typingPhase = null;
         this.transfusionPhase = null;
         this.collectionHidden = false;
+        this.patientSprite = null;
     }
 
     preload() {
@@ -42,6 +44,7 @@ export class Minigame extends Phaser.Scene {
         this.setupBackground();
         this.setupPauseButton();
         this.setupAttendanceState();
+        this.setupPatientSprite();
         this.setupCollectionPhase();
         this.setupDebugOutline();
     }
@@ -75,7 +78,7 @@ export class Minigame extends Phaser.Scene {
     setupAttendanceState() {
         this.attendanceState = new AttendanceState({
             characterId: this.characterId,
-            typeKnown: getDiscoveredType(this.characterId) !== null
+            typeKnown: isProgressSavingDisabled() ? false : (getDiscoveredType(this.characterId) !== null)
         });
     }
 
@@ -167,6 +170,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = true;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
+        if (this.patientSprite) this.patientSprite.setVisible(false);
         this.progressBar.clear();
         this.debugGraphics.setVisible(false);
 
@@ -183,6 +187,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = true;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
+        if (this.patientSprite) this.patientSprite.setVisible(true);
         this.progressBar.clear();
         this.debugGraphics.setVisible(false);
 
@@ -269,6 +274,28 @@ export class Minigame extends Phaser.Scene {
 
         if (this.collectionStep !== 'FILLING') {
             this.progressBar.clear();
+        }
+    }
+
+
+    setupPatientSprite() {
+        const spriteKey = PATIENT_SPRITES[this.characterId];
+        if (!spriteKey || !this.textures.exists(spriteKey)) {
+            return;
+        }
+
+        this.patientSprite = this.add.image(
+            PATIENT_SPRITE_CONFIG.x,
+            PATIENT_SPRITE_CONFIG.y,
+            spriteKey
+        );
+        this.patientSprite.setOrigin(0.5);
+        this.patientSprite.setDepth(PATIENT_SPRITE_CONFIG.depth);
+        this.patientSprite.setScale(PATIENT_SPRITE_CONFIG.scale);
+        this.patientSprite.setAngle(PATIENT_SPRITE_CONFIG.angle);
+
+        if (this.patientSprite.texture) {
+            this.patientSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
     }
 }

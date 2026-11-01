@@ -3,6 +3,7 @@ import { BENCH_RESULT_FRAMES } from './minigameAssets.js';
 import { characterData } from './characterData.js';
 import { setDiscoveredType } from './discoveredTypes.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
+import { createTextStyle } from './textUtils.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -46,6 +47,7 @@ export class TypingPhase {
         this.lastPointer = null;
         this.isActive = true;
         this.isConfirmed = false;
+        this.cellSprite = null;
 
         this.createBench();
         this.createBottles();
@@ -140,10 +142,10 @@ export class TypingPhase {
             rect.setStrokeStyle(2, 0xffffff);
             rect.setInteractive({ useHandCursor: true });
 
-            const label = this.scene.add.text(x, DIAGNOSIS_BUTTONS.y, type, {
+            const label = this.scene.add.text(x, DIAGNOSIS_BUTTONS.y, type, createTextStyle({
                 fontSize: '20px',
                 color: '#ffffff'
-            });
+            }));
             label.setOrigin(0.5);
             label.setDepth(41);
 
@@ -160,10 +162,10 @@ export class TypingPhase {
         this.retryButton.setInteractive({ useHandCursor: true });
         this.retryButton.on('pointerup', () => this.retry());
 
-        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', {
+        this.retryLabel = this.scene.add.text(RETRY_BUTTON.x, RETRY_BUTTON.y, 'Tentar de novo', createTextStyle({
             fontSize: '16px',
             color: '#ffffff'
-        });
+        }));
         this.retryLabel.setOrigin(0.5);
         this.retryLabel.setDepth(41);
     }
@@ -179,21 +181,21 @@ export class TypingPhase {
         });
         this.heartsText = this.heartsDisplay.text;
 
-        this.hintText = this.scene.add.text(HINT_POSITION.x, HINT_POSITION.y, '', {
+        this.hintText = this.scene.add.text(HINT_POSITION.x, HINT_POSITION.y, '', createTextStyle({
             fontSize: '16px',
             color: '#ffffff',
             backgroundColor: '#000000',
             align: 'center',
             wordWrap: { width: 460 }
-        });
+        }));
         this.hintText.setOrigin(0.5);
         this.hintText.setDepth(45);
 
-        this.phaseText = this.scene.add.text(256, 40, '', {
+        this.phaseText = this.scene.add.text(256, 40, '', createTextStyle({
             fontSize: '24px',
             color: '#ffffff',
             backgroundColor: '#000000'
-        });
+        }));
         this.phaseText.setOrigin(0.5);
         this.phaseText.setDepth(100);
     }
@@ -239,6 +241,11 @@ export class TypingPhase {
         this.retryButton.setVisible(false);
         this.retryButton.input.enabled = false;
         this.retryLabel.setVisible(false);
+        if (this.cellSprite) {
+            this.cellSprite.destroy();
+            this.cellSprite = null;
+        }
+        this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
         this.lastPointer = null;
@@ -352,9 +359,25 @@ export class TypingPhase {
         this.setDiagnosisEnabled(false);
         setDiscoveredType(this.characterId, type);
         this.state.advance();
+        const cellKey = `hemacia-${type}`;
+        if (this.scene.textures.exists(cellKey)) {
+            this.cellSprite = this.scene.add.image(HINT_POSITION.x - 110, HINT_POSITION.y, cellKey);
+            this.cellSprite.setOrigin(0.5);
+            this.cellSprite.setDepth(45);
+            this.cellSprite.setScale(1);
+            if (this.cellSprite.texture) {
+                this.cellSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+        }
+        this.hintText.setPosition(HINT_POSITION.x + 25, HINT_POSITION.y);
         this.hintText.setText(`Tipo ${type} confirmado`);
 
         this.scene.time.delayedCall(CONFIRM_MS, () => {
+            if (this.cellSprite) {
+                this.cellSprite.destroy();
+                this.cellSprite = null;
+            }
+            this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
             this.hintText.setText('');
             this.isActive = false;
             this.debugGraphics.setVisible(false);
@@ -383,6 +406,10 @@ export class TypingPhase {
         this.retryLabel.destroy();
         if (this.heartsDisplay) {
             this.heartsDisplay.destroy();
+        }
+        if (this.cellSprite) {
+            this.cellSprite.destroy();
+            this.cellSprite = null;
         }
         this.hintText.destroy();
         this.phaseText.destroy();

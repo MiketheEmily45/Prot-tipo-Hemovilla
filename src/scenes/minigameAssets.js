@@ -84,8 +84,8 @@ export const PATIENT_SPRITES = {
 
 // Configuracao centralizada do sprite do paciente sobre a poltrona
 export const PATIENT_SPRITE_CONFIG = {
-    x: 250,
-    y: 230,
+    x: 254,
+    y: 250,
     scale: 2,
     angle: 0,
     depth: 2 // Atras dos tubos/frascos (depth 5), seringa (depth 10) e bolsas (depth 30), e na frente do fundo (tileSprite depth 0)

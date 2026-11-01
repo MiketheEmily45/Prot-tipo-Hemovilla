@@ -30,8 +30,6 @@ export class Minigame extends Phaser.Scene {
         this.transfusionPhase = null;
         this.collectionHidden = false;
         this.patientSprite = null;
-        this.adjustModeActive = false;
-        this.adjustText = null;
     }
 
     preload() {
@@ -48,7 +46,6 @@ export class Minigame extends Phaser.Scene {
         this.setupPatientSprite();
         this.setupCollectionPhase();
         this.setupDebugOutline();
-        this.setupAdjustmentControls();
     }
 
     setupViewport() {
@@ -299,88 +296,5 @@ export class Minigame extends Phaser.Scene {
         if (this.patientSprite.texture) {
             this.patientSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
-    }
-
-    setupAdjustmentControls() {
-        this.adjustText = this.add.text(8, 56, '', {
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            color: '#fbbf24',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            padding: { x: 8, y: 6 }
-        });
-        this.adjustText.setOrigin(0, 0);
-        this.adjustText.setDepth(999);
-        this.adjustText.setVisible(false);
-
-        const updateAdjustOverlay = () => {
-            if (!this.adjustText || !this.patientSprite) return;
-            const msg = `MODO AJUSTE (P para sair)\nx: ${this.patientSprite.x}\ny: ${this.patientSprite.y}\nscale: ${this.patientSprite.scaleX}\nangle: ${this.patientSprite.angle}°`;
-            this.adjustText.setText(msg);
-            console.log(`[Ajuste Paciente] x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
-        };
-
-        const keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-        keyP.on('down', () => {
-            if (!this.patientSprite) {
-                console.log('[Ajuste Paciente] Personagem atual nao possui sprite na poltrona.');
-                return;
-            }
-            this.adjustModeActive = !this.adjustModeActive;
-            this.adjustText.setVisible(this.adjustModeActive);
-            if (this.adjustModeActive) {
-                updateAdjustOverlay();
-            }
-        });
-
-        const cursors = this.input.keyboard.createCursorKeys();
-        const keyPlus = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS);
-        const keyNumpadAdd = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.NUMPAD_ADD);
-        const keyMinus = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.MINUS);
-        const keyNumpadSub = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.NUMPAD_SUBTRACT);
-        const keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-
-        cursors.left.on('down', () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.x -= 2;
-            updateAdjustOverlay();
-        });
-        cursors.right.on('down', () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.x += 2;
-            updateAdjustOverlay();
-        });
-        cursors.up.on('down', () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.y -= 2;
-            updateAdjustOverlay();
-        });
-        cursors.down.on('down', () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.y += 2;
-            updateAdjustOverlay();
-        });
-
-        const scaleUp = () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.setScale(Number((this.patientSprite.scaleX + 0.1).toFixed(2)));
-            updateAdjustOverlay();
-        };
-        const scaleDown = () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.setScale(Math.max(0.2, Number((this.patientSprite.scaleX - 0.1).toFixed(2))));
-            updateAdjustOverlay();
-        };
-
-        keyPlus.on('down', scaleUp);
-        keyNumpadAdd.on('down', scaleUp);
-        keyMinus.on('down', scaleDown);
-        keyNumpadSub.on('down', scaleDown);
-
-        keyR.on('down', () => {
-            if (!this.adjustModeActive || !this.patientSprite) return;
-            this.patientSprite.angle = (this.patientSprite.angle + 15) % 360;
-            updateAdjustOverlay();
-        });
     }
 }

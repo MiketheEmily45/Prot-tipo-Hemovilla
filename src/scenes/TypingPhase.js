@@ -46,6 +46,7 @@ export class TypingPhase {
         this.lastPointer = null;
         this.isActive = true;
         this.isConfirmed = false;
+        this.cellSprite = null;
 
         this.createBench();
         this.createBottles();
@@ -239,6 +240,11 @@ export class TypingPhase {
         this.retryButton.setVisible(false);
         this.retryButton.input.enabled = false;
         this.retryLabel.setVisible(false);
+        if (this.cellSprite) {
+            this.cellSprite.destroy();
+            this.cellSprite = null;
+        }
+        this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
         this.lastPointer = null;
@@ -352,9 +358,25 @@ export class TypingPhase {
         this.setDiagnosisEnabled(false);
         setDiscoveredType(this.characterId, type);
         this.state.advance();
+        const cellKey = `hemacia-${type}`;
+        if (this.scene.textures.exists(cellKey)) {
+            this.cellSprite = this.scene.add.image(HINT_POSITION.x - 110, HINT_POSITION.y, cellKey);
+            this.cellSprite.setOrigin(0.5);
+            this.cellSprite.setDepth(45);
+            this.cellSprite.setScale(1);
+            if (this.cellSprite.texture) {
+                this.cellSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+        }
+        this.hintText.setPosition(HINT_POSITION.x + 25, HINT_POSITION.y);
         this.hintText.setText(`Tipo ${type} confirmado`);
 
         this.scene.time.delayedCall(CONFIRM_MS, () => {
+            if (this.cellSprite) {
+                this.cellSprite.destroy();
+                this.cellSprite = null;
+            }
+            this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
             this.hintText.setText('');
             this.isActive = false;
             this.debugGraphics.setVisible(false);
@@ -383,6 +405,10 @@ export class TypingPhase {
         this.retryLabel.destroy();
         if (this.heartsDisplay) {
             this.heartsDisplay.destroy();
+        }
+        if (this.cellSprite) {
+            this.cellSprite.destroy();
+            this.cellSprite = null;
         }
         this.hintText.destroy();
         this.phaseText.destroy();

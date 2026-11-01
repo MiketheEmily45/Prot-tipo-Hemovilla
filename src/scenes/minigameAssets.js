@@ -55,7 +55,13 @@ export const MINIGAME_ASSETS = {
     'carlos-icon': 'assets/Personagens/Carlos/Carlos.Icone.png',
     'caue-icon': 'assets/Personagens/Caue/Caue.Icone.png',
     'yasmin-icon': 'assets/Personagens/Yasmin/Yasmin.Icone.png',
-    'teo-icon': 'assets/Personagens/Theo/Theo.Icone.png'
+    'teo-icon': 'assets/Personagens/Theo/Theo.Icone.png',
+    'icone-guia': 'assets/Minigame/Cenario/Guia/IconeGuia.png',
+    'anticorpo-anti-a': 'assets/Minigame/Anticorpos/AntiA.png',
+    'anticorpo-anti-b': 'assets/Minigame/Anticorpos/AntiB.png',
+    'anticorpo-anti-d': 'assets/Minigame/Anticorpos/AntiD.png',
+    'frasco-anti-d': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoD.png',
+    'character-frame': 'assets/Personagens/moldura_personagens.png'
 };
 
 // Tipo ABO -> chave da imagem de resultado da bancada.

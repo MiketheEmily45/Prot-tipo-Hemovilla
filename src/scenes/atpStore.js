@@ -1,4 +1,5 @@
 // Armazenamento simples de ATP e de atendimentos no localStorage.
+import { isProgressSavingDisabled } from './debugTools.js';
 const ATP_STORAGE_KEY = 'hemovilla-atp';
 const ATTENDED_STORAGE_KEY = 'hemovilla-attended-characters';
 
@@ -12,6 +13,9 @@ export function getATP() {
 }
 
 export function addATP(amount) {
+    if (isProgressSavingDisabled()) {
+        return getATP();
+    }
     try {
         const current = getATP();
         const updated = current + amount;
@@ -33,7 +37,7 @@ export function isCharacterAttended(characterId) {
 }
 
 export function markCharacterAttended(characterId) {
-    if (!characterId) return;
+    if (!characterId || isProgressSavingDisabled()) return;
     try {
         const raw = window.localStorage.getItem(ATTENDED_STORAGE_KEY);
         const list = raw ? JSON.parse(raw) : [];

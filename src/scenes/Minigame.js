@@ -4,6 +4,7 @@ import { AttendanceState } from './AttendanceState.js';
 import { TypingPhase } from './TypingPhase.js';
 import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
+import { isProgressSavingDisabled } from './debugTools.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -77,7 +78,7 @@ export class Minigame extends Phaser.Scene {
     setupAttendanceState() {
         this.attendanceState = new AttendanceState({
             characterId: this.characterId,
-            typeKnown: getDiscoveredType(this.characterId) !== null
+            typeKnown: isProgressSavingDisabled() ? false : (getDiscoveredType(this.characterId) !== null)
         });
     }
 

@@ -1,4 +1,5 @@
 // Tipos sanguineos descobertos pelo jogador, guardados em localStorage.
+import { isProgressSavingDisabled } from './debugTools.js';
 const STORAGE_KEY = 'hemovilla-discovered-types';
 
 function readAll() {
@@ -16,6 +17,7 @@ export function getDiscoveredType(characterId) {
 }
 
 export function setDiscoveredType(characterId, type) {
+    if (isProgressSavingDisabled()) return;
     try {
         const types = readAll();
         types[characterId] = type;

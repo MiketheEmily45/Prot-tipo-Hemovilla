@@ -429,12 +429,20 @@ export class TransfusionPhase {
             color: '#ffffff'
         }).setOrigin(0.5).setDepth(152);
 
-        const atpText = this.scene.add.text(RESULT_PANEL.x, RESULT_PANEL.y - 25, `⚡ +${result.atp} ATP`, {
+        const atpIcon = this.scene.add.image(RESULT_PANEL.x - 70, RESULT_PANEL.y - 25, 'icone-atp');
+        atpIcon.setOrigin(0.5);
+        atpIcon.setDepth(152);
+        atpIcon.setScale(1);
+        if (atpIcon.texture) {
+            atpIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+
+        const atpText = this.scene.add.text(RESULT_PANEL.x - 45, RESULT_PANEL.y - 25, `+${result.atp} ATP`, {
             fontFamily: 'monospace',
             fontSize: '26px',
             fontStyle: 'bold',
             color: '#fbbf24'
-        }).setOrigin(0.5).setDepth(152);
+        }).setOrigin(0, 0.5).setDepth(152);
 
         const info = result.withinTime
             ? 'Bônus de tempo aplicado!'

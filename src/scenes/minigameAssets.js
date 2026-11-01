@@ -37,6 +37,16 @@ export const MINIGAME_ASSETS = {
     'hemacia-AB': 'assets/Minigame/Hemacias/HemaciaTipoAB.png',
     'hemacia-B': 'assets/Minigame/Hemacias/HemaciaTipoB.png',
     'hemacia-O': 'assets/Minigame/Hemacias/HemaciaTipoO.png',
+    'paciente-beatriz': 'assets/Minigame/Cenario/Pacientes/Beatriz.png',
+    'paciente-bruno': 'assets/Minigame/Cenario/Pacientes/Bruno.png',
+    'paciente-carlos': 'assets/Minigame/Cenario/Pacientes/Carlos.png',
+    'paciente-caue': 'assets/Minigame/Cenario/Pacientes/Caue.png',
+    'paciente-cristina': 'assets/Minigame/Cenario/Pacientes/Cristina.png',
+    'paciente-marlene': 'assets/Minigame/Cenario/Pacientes/DonaMarlene.png',
+    'paciente-douglas': 'assets/Minigame/Cenario/Pacientes/Douglas.png',
+    'paciente-joaquim': 'assets/Minigame/Cenario/Pacientes/SeuJoaquim.png',
+    'paciente-teo': 'assets/Minigame/Cenario/Pacientes/Theo.png',
+    'paciente-yasmin': 'assets/Minigame/Cenario/Pacientes/Yasmin.png',
     'joaquim-icon': 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png',
     'marlene-icon': 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png',
     'aparecida-icon': 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png',
@@ -55,4 +65,28 @@ export const BENCH_RESULT_FRAMES = {
     B: 'bancada-resultado-6',
     AB: 'bancada-resultado-8',
     O: 'bancada-resultado-9'
+};
+// Mapa characterId -> chave da imagem do sprite do paciente na poltrona.
+// Personagens sem sprite de paciente (ex.: Dona Aparecida) ficam mapeados para null.
+export const PATIENT_SPRITES = {
+    beatriz: 'paciente-beatriz',
+    bruno: 'paciente-bruno',
+    carlos: 'paciente-carlos',
+    caue: 'paciente-caue',
+    cristina: 'paciente-cristina',
+    douglas: 'paciente-douglas',
+    joaquim: 'paciente-joaquim',
+    marlene: 'paciente-marlene',
+    teo: 'paciente-teo',
+    yasmin: 'paciente-yasmin',
+    aparecida: null
+};
+
+// Configuracao centralizada do sprite do paciente sobre a poltrona
+export const PATIENT_SPRITE_CONFIG = {
+    x: 250,
+    y: 230,
+    scale: 2,
+    angle: 0,
+    depth: 2 // Atras dos tubos/frascos (depth 5), seringa (depth 10) e bolsas (depth 30), e na frente do fundo (tileSprite depth 0)
 };

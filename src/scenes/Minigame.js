@@ -1,5 +1,5 @@
 // Tela do mini-game
-import { MINIGAME_ASSETS } from './minigameAssets.js';
+import { MINIGAME_ASSETS, PATIENT_SPRITES, PATIENT_SPRITE_CONFIG } from './minigameAssets.js';
 import { AttendanceState } from './AttendanceState.js';
 import { TypingPhase } from './TypingPhase.js';
 import { TransfusionPhase } from './TransfusionPhase.js';
@@ -29,6 +29,8 @@ export class Minigame extends Phaser.Scene {
         this.typingPhase = null;
         this.transfusionPhase = null;
         this.collectionHidden = false;
+        this.patientSprite = null;
+        this.adjustModeActive = false;
     }
 
     preload() {
@@ -42,8 +44,10 @@ export class Minigame extends Phaser.Scene {
         this.setupBackground();
         this.setupPauseButton();
         this.setupAttendanceState();
+        this.setupPatientSprite();
         this.setupCollectionPhase();
         this.setupDebugOutline();
+        this.setupAdjustmentControls();
     }
 
     setupViewport() {
@@ -167,6 +171,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = true;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
+        if (this.patientSprite) this.patientSprite.setVisible(false);
         this.progressBar.clear();
         this.debugGraphics.setVisible(false);
 
@@ -183,6 +188,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = true;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
+        if (this.patientSprite) this.patientSprite.setVisible(true);
         this.progressBar.clear();
         this.debugGraphics.setVisible(false);
 
@@ -270,5 +276,96 @@ export class Minigame extends Phaser.Scene {
         if (this.collectionStep !== 'FILLING') {
             this.progressBar.clear();
         }
+    }
+
+
+    setupPatientSprite() {
+        const spriteKey = PATIENT_SPRITES[this.characterId];
+        if (!spriteKey || !this.textures.exists(spriteKey)) {
+            return;
+        }
+
+        this.patientSprite = this.add.image(
+            PATIENT_SPRITE_CONFIG.x,
+            PATIENT_SPRITE_CONFIG.y,
+            spriteKey
+        );
+        this.patientSprite.setOrigin(0.5);
+        this.patientSprite.setDepth(PATIENT_SPRITE_CONFIG.depth);
+        this.patientSprite.setScale(PATIENT_SPRITE_CONFIG.scale);
+        this.patientSprite.setAngle(PATIENT_SPRITE_CONFIG.angle);
+
+        if (this.patientSprite.texture) {
+            this.patientSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+    }
+
+    setupAdjustmentControls() {
+        const keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        keyP.on('down', () => {
+            if (!this.patientSprite) {
+                console.log('[Ajuste Paciente] Personagem atual nao possui sprite na poltrona.');
+                return;
+            }
+            this.adjustModeActive = !this.adjustModeActive;
+            console.log(`[Ajuste Paciente] Modo de ajuste: ${this.adjustModeActive ? 'ATIVADO' : 'DESATIVADO'}`);
+            if (this.adjustModeActive) {
+                console.log(`Valores atuais -> x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
+            }
+        });
+
+        const cursors = this.input.keyboard.createCursorKeys();
+        const keyPlus = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS);
+        const keyNumpadAdd = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.NUMPAD_ADD);
+        const keyMinus = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.MINUS);
+        const keyNumpadSub = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.NUMPAD_SUBTRACT);
+        const keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+
+        const logValues = () => {
+            console.log(`[Ajuste Paciente] x: ${this.patientSprite.x}, y: ${this.patientSprite.y}, scale: ${this.patientSprite.scaleX}, angle: ${this.patientSprite.angle}`);
+        };
+
+        cursors.left.on('down', () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.x -= 2;
+            logValues();
+        });
+        cursors.right.on('down', () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.x += 2;
+            logValues();
+        });
+        cursors.up.on('down', () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.y -= 2;
+            logValues();
+        });
+        cursors.down.on('down', () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.y += 2;
+            logValues();
+        });
+
+        const scaleUp = () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.setScale(Number((this.patientSprite.scaleX + 0.1).toFixed(2)));
+            logValues();
+        };
+        const scaleDown = () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.setScale(Math.max(0.2, Number((this.patientSprite.scaleX - 0.1).toFixed(2))));
+            logValues();
+        };
+
+        keyPlus.on('down', scaleUp);
+        keyNumpadAdd.on('down', scaleUp);
+        keyMinus.on('down', scaleDown);
+        keyNumpadSub.on('down', scaleDown);
+
+        keyR.on('down', () => {
+            if (!this.adjustModeActive || !this.patientSprite) return;
+            this.patientSprite.angle = (this.patientSprite.angle + 15) % 360;
+            logValues();
+        });
     }
 }

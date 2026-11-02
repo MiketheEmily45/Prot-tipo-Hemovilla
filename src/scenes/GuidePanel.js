@@ -73,8 +73,8 @@ export class GuidePanel {
         this.panelBlocker.setInteractive();
         this.panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event?.stopPropagation?.());
 
-        // 4. Titulo centralizado
-        this.titleText = scene.add.text(panelX, panelTop + 34, 'GUIA DE ATENDIMENTO', createTextStyle({
+        // 4. Titulo centralizado (descido 4 px para nao encostar na borda superior do pergaminho)
+        this.titleText = scene.add.text(panelX, panelTop + 38, 'GUIA DE ATENDIMENTO', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '18px',
             fontStyle: 'bold',
@@ -83,7 +83,7 @@ export class GuidePanel {
 
         // 5. Botao fechar (X)
         const closeX = panelX + panelWidth / 2 - 28;
-        const closeY = panelTop + 16;
+        const closeY = panelTop + 12;
         this.closeButton = scene.add.text(closeX, closeY, 'X', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '20px',
@@ -172,18 +172,12 @@ export class GuidePanel {
     }
 
     renderTabContent() {
-        // Estrutura base de visualizacao para cada aba (sera detalhada nos Passos 3, 4 e 5)
+        // Estrutura base de visualizacao para cada aba
         const scene = this.scene;
         const { panelX, panelY } = GUIDE_PANEL_CONFIG;
 
         if (this.activeTab === 'tipos') {
-            const placeholder = scene.add.text(panelX, panelY + 20, 'Conteúdo da Aba 1 (Tipos):\n(Será integrado no Passo 3)', createTextStyle({
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                color: '#3b2a20',
-                align: 'center'
-            })).setOrigin(0.5).setDepth(203);
-            this.contentElements.push(placeholder);
+            this.renderTiposTab();
         } else if (this.activeTab === 'compatibilidade') {
             const placeholder = scene.add.text(panelX, panelY + 20, 'Conteúdo da Aba 2 (Compatibilidade):\n(Será integrado no Passo 4)', createTextStyle({
                 fontFamily: 'monospace',
@@ -201,6 +195,133 @@ export class GuidePanel {
             })).setOrigin(0.5).setDepth(203);
             this.contentElements.push(placeholder);
         }
+    }
+
+    renderTiposTab() {
+        const scene = this.scene;
+        const { panelX } = GUIDE_PANEL_CONFIG;
+
+        const tiposData = [
+            {
+                tipo: 'Tipo A',
+                hemaciaKey: 'hemacia-A',
+                antigenos: 'Antígenos na membrana: Antígeno A.',
+                reacao: 'Reação: reage (aglutina) com soro Anti-A (não reage com Anti-B).',
+                antibodies: ['anticorpo-anti-a'],
+                textWrapWidth: 268
+            },
+            {
+                tipo: 'Tipo B',
+                hemaciaKey: 'hemacia-B',
+                antigenos: 'Antígenos na membrana: Antígeno B.',
+                reacao: 'Reação: reage (aglutina) com soro Anti-B (não reage com Anti-A).',
+                antibodies: ['anticorpo-anti-b'],
+                textWrapWidth: 268
+            },
+            {
+                tipo: 'Tipo AB',
+                hemaciaKey: 'hemacia-AB',
+                antigenos: 'Antígenos na membrana: Antígenos A e B.',
+                reacao: 'Reação: reage (aglutina) com Anti-A e com Anti-B.',
+                antibodies: ['anticorpo-anti-a', 'anticorpo-anti-b'],
+                textWrapWidth: 240
+            },
+            {
+                tipo: 'Tipo O',
+                hemaciaKey: 'hemacia-O',
+                antigenos: 'Antígenos na membrana: nenhum antígeno A ou B.',
+                reacao: 'Reação: não reage com Anti-A nem com Anti-B.',
+                antibodies: [],
+                textWrapWidth: 314
+            }
+        ];
+
+        const startY = 134;
+        const rowHeight = 77;
+
+        tiposData.forEach((item, index) => {
+            const rowY = startY + index * rowHeight;
+            const rowCenter = rowY + 38;
+
+            // Linha divisoria sutil entre os itens (distribuicao uniforme aproveitando o espaco)
+            if (index < tiposData.length - 1) {
+                const separator = scene.add.line(
+                    panelX,
+                    rowY + rowHeight,
+                    0,
+                    0,
+                    364,
+                    0,
+                    0x8c7355,
+                    0.35
+                ).setDepth(203);
+                this.contentElements.push(separator);
+            }
+
+            // Hemacia no lado esquerdo com escala inteira e filtro NEAREST para maxima nitidez
+            const hemacia = scene.add.image(94, rowCenter, item.hemaciaKey);
+            hemacia.setScale(1);
+            if (hemacia.texture) {
+                hemacia.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+            hemacia.setDepth(203);
+            this.contentElements.push(hemacia);
+
+            // Nome do tipo (destaque, maior que a legenda)
+            const title = scene.add.text(126, rowY + 5, item.tipo, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '13px',
+                fontStyle: 'bold',
+                color: '#8B2E40'
+            })).setDepth(203);
+            this.contentElements.push(title);
+
+            // Legenda de antigenos aprovada (resolucao 3, coordenadas inteiras)
+            const antigenText = scene.add.text(126, rowY + 22, item.antigenos, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#3b2a20',
+                wordWrap: { width: item.textWrapWidth, useAdvancedWrap: true }
+            })).setDepth(203);
+            this.contentElements.push(antigenText);
+
+            // Legenda de reacao aprovada (resolucao 3, coordenadas inteiras)
+            const reacaoText = scene.add.text(126, rowY + 37, item.reacao, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#3b2a20',
+                lineSpacing: 2,
+                wordWrap: { width: item.textWrapWidth, useAdvancedWrap: true }
+            })).setDepth(203);
+            this.contentElements.push(reacaoText);
+
+            // Icones de anticorpo ao lado da reacao com escala inteira 1 (dobro do tamanho anterior) e filtro NEAREST
+            if (item.antibodies.length === 1) {
+                const abIcon = scene.add.image(418, rowCenter, item.antibodies[0]);
+                abIcon.setScale(1);
+                if (abIcon.texture) {
+                    abIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                abIcon.setDepth(203);
+                this.contentElements.push(abIcon);
+            } else if (item.antibodies.length === 2) {
+                const ab1 = scene.add.image(388, rowCenter, item.antibodies[0]);
+                ab1.setScale(1);
+                if (ab1.texture) {
+                    ab1.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                ab1.setDepth(203);
+                this.contentElements.push(ab1);
+
+                const ab2 = scene.add.image(424, rowCenter, item.antibodies[1]);
+                ab2.setScale(1);
+                if (ab2.texture) {
+                    ab2.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                ab2.setDepth(203);
+                this.contentElements.push(ab2);
+            }
+        });
     }
 
     close(resumeClock = true) {

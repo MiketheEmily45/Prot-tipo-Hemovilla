@@ -1,17 +1,26 @@
 // Logica pura de compatibilidade sanguinea (sistema ABO e fator Rh).
 export const RH_ENABLED = false;
 
-const ABO_COMPATIBILITY = {
+export const ABO_TYPES = ['A', 'B', 'AB', 'O'];
+
+export const ABO_COMPATIBILITY = {
     A: ['A', 'O'],
     B: ['B', 'O'],
     AB: ['A', 'B', 'AB', 'O'],
     O: ['O']
 };
 
-const ABO_ANTIBODIES = {
+export const ABO_ANTIBODIES = {
     A: 'Anti-B',
     B: 'Anti-A',
     O: 'Anti-A e Anti-B'
+};
+
+export const ABO_GUIDE_EXPLANATIONS = {
+    A: 'Tem Anti-B no plasma; rejeita B e AB.',
+    B: 'Tem Anti-A no plasma; rejeita A e AB.',
+    AB: 'Receptor universal: não tem Anti-A nem Anti-B.',
+    O: 'Tem Anti-A e Anti-B; é o doador universal.'
 };
 
 function getAbo(typeStr) {
@@ -61,6 +70,30 @@ export function canReceive(patientType, bagType, { rhEnabled = RH_ENABLED } = {}
     }
 
     return true;
+}
+
+export function getCompatibleBags(patientType, { rhEnabled = RH_ENABLED } = {}) {
+    const normalPool = rhEnabled
+        ? ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        : ['A+', 'B+', 'AB+', 'O+'];
+    return normalPool.filter((bag) => canReceive(patientType, bag, { rhEnabled }));
+}
+
+export function getCompatibilityGuideEntries({ rhEnabled = RH_ENABLED } = {}) {
+    const types = rhEnabled
+        ? ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        : ABO_TYPES;
+
+    return types.map((type) => {
+        const abo = getAbo(type);
+        return {
+            type,
+            patientLabel: 'Paciente ' + type,
+            hemaciaKey: 'hemacia-' + abo,
+            compatibleBags: getCompatibleBags(type, { rhEnabled }),
+            explanation: ABO_GUIDE_EXPLANATIONS[abo] || ''
+        };
+    });
 }
 
 export function incompatibilityReason(patientType, bagType, { rhEnabled = RH_ENABLED } = {}) {

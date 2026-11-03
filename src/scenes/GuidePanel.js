@@ -1,5 +1,6 @@
 // Painel do Guia do Minigame (estrutura base com abas, overlay bloqueador e pausa de tempo).
 import { createTextStyle } from './textUtils.js';
+import { getCompatibilityGuideEntries } from './bloodCompatibility.js';
 
 export const GUIDE_PANEL_CONFIG = {
     panelWidth: 448,
@@ -179,13 +180,7 @@ export class GuidePanel {
         if (this.activeTab === 'tipos') {
             this.renderTiposTab();
         } else if (this.activeTab === 'compatibilidade') {
-            const placeholder = scene.add.text(panelX, panelY + 20, 'Conteúdo da Aba 2 (Compatibilidade):\n(Será integrado no Passo 4)', createTextStyle({
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                color: '#3b2a20',
-                align: 'center'
-            })).setOrigin(0.5).setDepth(203);
-            this.contentElements.push(placeholder);
+            this.renderCompatibilidadeTab();
         } else if (this.activeTab === 'contaminadas') {
             const placeholder = scene.add.text(panelX, panelY + 20, 'Conteúdo da Aba 3 (Contaminadas):\n(Será integrado no Passo 5)', createTextStyle({
                 fontFamily: 'monospace',
@@ -321,6 +316,87 @@ export class GuidePanel {
                 ab2.setDepth(203);
                 this.contentElements.push(ab2);
             }
+        });
+    }
+
+    
+
+    renderCompatibilidadeTab() {
+        const scene = this.scene;
+        const { panelX } = GUIDE_PANEL_CONFIG;
+        const entries = getCompatibilityGuideEntries();
+
+        const startY = 134;
+        const rowHeight = 77;
+        const bagOrigin = { x: 33.5 / 64, y: 20.5 / 64 };
+
+        entries.forEach((item, index) => {
+            const rowY = startY + index * rowHeight;
+
+            // Linha divisoria sutil entre os itens (distribuicao uniforme aproveitando o espaco)
+            if (index < entries.length - 1) {
+                const separator = scene.add.line(
+                    panelX,
+                    rowY + rowHeight,
+                    0,
+                    0,
+                    364,
+                    0,
+                    0x8c7355,
+                    0.35
+                ).setDepth(203);
+                this.contentElements.push(separator);
+            }
+
+            // Coluna esquerda: rotulo "Paciente X" em vinho (#8B2E40) com a hemacia do tipo
+            const patientLabel = scene.add.text(94, rowY + 8, item.patientLabel, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                fontStyle: 'bold',
+                color: '#8B2E40'
+            })).setOrigin(0.5, 0).setDepth(203);
+            this.contentElements.push(patientLabel);
+
+            const hemacia = scene.add.image(94, rowY + 47, item.hemaciaKey);
+            hemacia.setScale(0.75);
+            if (hemacia.texture) {
+                hemacia.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+            hemacia.setDepth(203);
+            this.contentElements.push(hemacia);
+
+            // Coluna direita: rotulo "Pode receber:", miniaturas das bolsas compativeis e explicacao
+            const receiveLabel = scene.add.text(144, rowY + 20, 'Pode receber:', createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fontStyle: 'bold',
+                color: '#5a3e36'
+            })).setOrigin(0, 0.5).setDepth(203);
+            this.contentElements.push(receiveLabel);
+
+            // Miniaturas das bolsas compativeis (mesmos sprites que a Fase 3 usa hoje)
+            const bagStartX = 248;
+            const bagSpacing = 36;
+            item.compatibleBags.forEach((bagType, bagIdx) => {
+                const bagX = bagStartX + bagIdx * bagSpacing;
+                const bagY = rowY + 20;
+                const bagSprite = scene.add.image(bagX, bagY, 'bolsa-' + bagType);
+                bagSprite.setOrigin(bagOrigin.x, bagOrigin.y);
+                bagSprite.setScale(1);
+                if (bagSprite.texture) {
+                    bagSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                bagSprite.setDepth(203);
+                this.contentElements.push(bagSprite);
+            });
+
+            // Linha curta de explicacao (resolucao 3, coordenadas inteiras)
+            const explanationText = scene.add.text(144, rowY + 54, item.explanation, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#3b2a20'
+            })).setOrigin(0, 0.5).setDepth(203);
+            this.contentElements.push(explanationText);
         });
     }
 

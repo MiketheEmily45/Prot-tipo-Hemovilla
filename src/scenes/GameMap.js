@@ -9,6 +9,7 @@ import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
 import { AtpDisplay } from './AtpDisplay.js';
+import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -18,7 +19,6 @@ export class GameMap extends Phaser.Scene {
 
     init(data) {
         this.targetCityIndex = data && typeof data.cityIndex === 'number' ? data.cityIndex : 0;
-        this.alertCharacterId = data && data.alertCharacterId ? data.alertCharacterId : null;
     }
 
     preload() {
@@ -78,16 +78,34 @@ export class GameMap extends Phaser.Scene {
             this.cityNavigation.goTo(this.targetCityIndex);
         }
 
-        if (this.alertCharacterId) {
-            const char = this.clickableCharacters.find((c) => c.iconButtonKey === this.alertCharacterId);
-            if (char) {
-                char.nextAlertTime = 0;
-                this.clickableCharacterManager.getAlertManager().updateCharacterAlert(char, 0, true);
-            }
-        }
+        this.syncActiveCityAlerts(true);
     }
 
-    update(time) {
+    syncActiveCityAlerts(silent = true) {
+        if (!this.clickableCharacters) return;
+        this.clickableCharacters.forEach((char) => {
+            const occ = getOccurrence(char.iconButtonKey);
+            if (occ && occ.hasAlert) {
+                this.clickableCharacterManager?.getAlertManager().applyAlert(char, silent);
+            } else if (occ && !occ.hasAlert) {
+                this.clickableCharacterManager?.getAlertManager().removeAlert(char);
+            }
+        });
+    }
+
+    update(time, delta) {
+        if (typeof delta === 'number' && delta > 0) {
+            const newlyAlerted = updateActiveCityTimers(this.currentCityIndex ?? 0, delta);
+            if (newlyAlerted && newlyAlerted.length > 0) {
+                newlyAlerted.forEach((occ) => {
+                    const char = this.clickableCharacters?.find((c) => c.iconButtonKey === occ.id);
+                    if (char) {
+                        this.clickableCharacterManager?.getAlertManager().applyAlert(char, false);
+                    }
+                });
+            }
+        }
+
         updateCharacterIndicators(this, time);
 
         if (this.npcs) {

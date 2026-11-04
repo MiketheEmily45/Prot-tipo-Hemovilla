@@ -6,6 +6,7 @@ import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
+import { endMinigameSession } from './occurrenceState.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -54,6 +55,7 @@ export class Minigame extends Phaser.Scene {
     }
 
     returnToMap(options = {}) {
+        endMinigameSession();
         if (this.typingPhase) {
             this.typingPhase.destroy?.();
             this.typingPhase = null;
@@ -96,6 +98,7 @@ export class Minigame extends Phaser.Scene {
 
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
+            endMinigameSession();
             this.scene.start('Start');
         });
         this.pauseButton = pauseButton;

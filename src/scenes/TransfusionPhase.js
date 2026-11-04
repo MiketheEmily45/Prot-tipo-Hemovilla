@@ -10,6 +10,7 @@ import {
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
+import { onAttendanceSuccess } from './occurrenceState.js';
 import { GuidePanel } from './GuidePanel.js';
 
 // Configuracao da Fase 3
@@ -414,6 +415,11 @@ export class TransfusionPhase {
 
         if (this.compatibleCount >= REQUIRED_BAGS) {
             const result = this.state.complete();
+            addATP(result.atp);
+            markCharacterAttended(this.characterId);
+            onAttendanceSuccess(this.characterId);
+
+
             this.showResultScreen(result);
         }
     }
@@ -568,9 +574,9 @@ export class TransfusionPhase {
         returnBtn.on('pointerdown', () => returnBtn.setFillStyle(0x0e7490));
         returnBtn.on('pointerout', () => returnBtn.setFillStyle(0x16a34a));
         returnBtn.on('pointerup', () => {
-            // Credita o ATP e marca personagem como atendido
-            addATP(result.atp);
-            markCharacterAttended(this.characterId);
+
+
+
 
             // TODO: Integracao com GameMap: o GameMap atualmente e recriado do zero no scene.start('GameMap').
             // Para persistir o personagem como atendido e desativar alertas/retomar movimento no mapa,

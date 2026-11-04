@@ -2,6 +2,7 @@ import { CharacterMovement } from './CharacterMovement.js';
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { isDebugEnabled } from './debugTools.js';
+import { getOccurrence } from './occurrenceState.js';
 
 export const joaquimCharacter = {
     id: 'joaquim',
@@ -158,6 +159,11 @@ export function createCityCharacter(scene, config) {
         resume: () => movement.resume()
     });
 
+    const occ = getOccurrence(id);
+    if (occ && occ.hasAlert) {
+        scene.clickableCharacterManager?.getAlertManager().applyAlert(character, true);
+    }
+
     return { movement, character };
 }
 
@@ -232,7 +238,7 @@ export class CityCharacterGroupManager {
         }
         const elapsed = scene.time.now - group.suspendedAt;
         group.characters.forEach((character) => {
-            if (character.nextAlertTime !== null) character.nextAlertTime += elapsed;
+            // nextAlertTime foi substituido pelo occurrenceState
         });
         if (index === 0) scene.nextDirectionChange += elapsed;
         scene.clickableCharacters = group.characters;
@@ -240,6 +246,15 @@ export class CityCharacterGroupManager {
         scene.characterIconButtons = group.icons;
         scene.alertedIconKeys = group.alerts;
         this.setGroupVisible(group, true);
+
+        scene.clickableCharacters.forEach((character) => {
+            const occ = getOccurrence(character.iconButtonKey);
+            if (occ && occ.hasAlert) {
+                scene.clickableCharacterManager?.getAlertManager().applyAlert(character, true);
+            } else if (occ && !occ.hasAlert) {
+                scene.clickableCharacterManager?.getAlertManager().removeAlert(character);
+            }
+        });
         const hasCharacters = group.characters.length > 0;
         const showButton = hasCharacters && isDebugEnabled();
         scene.alertButton.setVisible(showButton);

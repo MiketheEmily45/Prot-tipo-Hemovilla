@@ -5,6 +5,7 @@ import { characterData } from './characterData.js';
 import { createTextStyle } from './textUtils.js';
 import { Character } from './Character.js';
 import { AlertManager } from './AlertManager.js';
+import { startMinigameSession } from './occurrenceState.js';
 
 export class ClickableCharacterManager {
     static maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
@@ -82,7 +83,9 @@ export class ClickableCharacterManager {
             character.miniGameButton = null;
             character.descriptionButton?.destroy();
             character.descriptionButton = null;
-            character.resume();
+            if (!character.alertIcon) {
+                character.resume();
+            }
             return;
         }
 
@@ -127,7 +130,7 @@ export class ClickableCharacterManager {
         character.miniGameButton.on('pointerup', () => {
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.clearTint();
-            this.getAlertManager().resetCharacterAlert(character);
+            startMinigameSession(character.iconButtonKey, scene.currentCityIndex);
             scene.scene.start('Minigame', {
                 characterId: character.iconButtonKey,
                 cityIndex: scene.currentCityIndex

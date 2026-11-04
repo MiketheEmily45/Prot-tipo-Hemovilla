@@ -1,3 +1,5 @@
+import { triggerAllInCity } from './occurrenceState.js';
+
 export class AlertManager {
     constructor(scene) {
         this.scene = scene;
@@ -13,13 +15,10 @@ export class AlertManager {
         });
     }
 
-    updateCharacterAlert(character, time, silent = false) {
-        if (!character.alertInterval) {
-            return;
-        }
+    applyAlert(character, silent = false) {
+        if (!character) return;
 
-        // Quando o tempo configurado termina, cria o icone uma unica vez.
-        if (!character.alertIcon && time >= character.nextAlertTime) {
+        if (!character.alertIcon) {
             character.alertIcon = this.scene.add.image(0, 0, 'icone_alerta');
             character.alertIcon.setDepth(character.sprite.depth + 1);
             if (!silent) {
@@ -27,9 +26,51 @@ export class AlertManager {
             }
 
             if (character.iconButtonKey) {
-                this.scene.alertedIconKeys.add(character.iconButtonKey);
+                this.scene.alertedIconKeys?.add(character.iconButtonKey);
                 this.updateIconButtonTint(character.iconButtonKey);
             }
+
+            character.stop?.();
+        }
+
+        if (character.miniGameButton) {
+            this.updateMiniGameButtonState(character);
+        }
+
+        if (character.alertIcon) {
+            character.alertIcon.setVisible(true);
+            character.alertIcon.setPosition(
+                character.sprite.x + character.alertOffset.x,
+                character.sprite.y + character.alertOffset.y
+            );
+        }
+    }
+
+    removeAlert(character) {
+        if (!character) return;
+
+        if (character.alertIcon) {
+            character.alertIcon.destroy();
+            character.alertIcon = null;
+        }
+
+        if (character.iconButtonKey) {
+            this.scene.alertedIconKeys?.delete(character.iconButtonKey);
+            this.updateIconButtonTint(character.iconButtonKey);
+        }
+
+        if (character.miniGameButton) {
+            this.updateMiniGameButtonState(character);
+        }
+
+        if (!character.isStoppedByClick) {
+            character.resume?.();
+        }
+    }
+
+    updateCharacterAlert(character, time) {
+        if (!character) {
+            return;
         }
 
         if (character.miniGameButton) {
@@ -46,22 +87,7 @@ export class AlertManager {
     }
 
     resetCharacterAlert(character) {
-        if (!character.alertIcon) {
-            this.updateMiniGameButtonState(character);
-            return;
-        }
-
-        // Ao clicar no botao do minigame, remove o icone e reinicia a contagem.
-        character.alertIcon.destroy();
-        character.alertIcon = null;
-        character.nextAlertTime = this.scene.time.now + character.alertInterval;
-
-        if (character.iconButtonKey) {
-            this.scene.alertedIconKeys.delete(character.iconButtonKey);
-            this.updateIconButtonTint(character.iconButtonKey);
-        }
-
-        this.updateMiniGameButtonState(character);
+        this.removeAlert(character);
     }
 
     triggerAll() {
@@ -69,8 +95,11 @@ export class AlertManager {
             return;
         }
 
+        const cityIndex = this.scene.currentCityIndex ?? 0;
+        triggerAllInCity(cityIndex);
+
         this.scene.clickableCharacters.forEach((character) => {
-            character.nextAlertTime = this.scene.time.now;
+            this.applyAlert(character, false);
         });
     }
 

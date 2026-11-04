@@ -1,6 +1,7 @@
 // Painel do Guia do Minigame (estrutura base com abas, overlay bloqueador e pausa de tempo).
 import { createTextStyle } from './textUtils.js';
 import { getCompatibilityGuideEntries } from './bloodCompatibility.js';
+import { CONTAMINATED_SCREENING_INFO } from './contaminatedInfo.js';
 
 export const GUIDE_PANEL_CONFIG = {
     panelWidth: 448,
@@ -182,13 +183,7 @@ export class GuidePanel {
         } else if (this.activeTab === 'compatibilidade') {
             this.renderCompatibilidadeTab();
         } else if (this.activeTab === 'contaminadas') {
-            const placeholder = scene.add.text(panelX, panelY + 20, 'Conteúdo da Aba 3 (Contaminadas):\n(Será integrado no Passo 5)', createTextStyle({
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                color: '#3b2a20',
-                align: 'center'
-            })).setOrigin(0.5).setDepth(203);
-            this.contentElements.push(placeholder);
+            this.renderContaminadasTab();
         }
     }
 
@@ -398,6 +393,111 @@ export class GuidePanel {
             })).setOrigin(0, 0.5).setDepth(203);
             this.contentElements.push(explanationText);
         });
+    }
+
+    renderContaminadasTab() {
+        const scene = this.scene;
+        const { panelX } = GUIDE_PANEL_CONFIG;
+        const info = CONTAMINATED_SCREENING_INFO;
+
+        // Titulo unico da aba ("TRIAGEM E SEGURANCA") em vinho (#8B2E40)
+        const title = scene.add.text(panelX, 142, info.title, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#8B2E40'
+        })).setOrigin(0.5, 0).setDepth(203);
+        this.contentElements.push(title);
+
+        // Texto introdutorio sobre a triagem sorologica em 11px
+        const introText = scene.add.text(panelX, 160, info.intro, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            color: '#3b2a20',
+            align: 'center',
+            lineSpacing: 2,
+            wordWrap: { width: 360, useAdvancedWrap: true }
+        })).setOrigin(0.5, 0).setDepth(203);
+        this.contentElements.push(introText);
+
+        // Linha divisoria sutil abaixo da introducao
+        const headerSeparator = scene.add.line(
+            panelX,
+            205,
+            0,
+            0,
+            364,
+            0,
+            0x8c7355,
+            0.35
+        ).setDepth(203);
+        this.contentElements.push(headerSeparator);
+
+        // Lista das 4 doencas rastreadas (distribuicao uniforme em linhas de 44px)
+        const startY = 207;
+        const rowHeight = 44;
+
+        info.diseases.forEach((item, index) => {
+            const rowY = startY + index * rowHeight;
+
+            // Marcador pontual em vinho
+            const bullet = scene.add.text(84, rowY + 6, '•', createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#8B2E40'
+            })).setOrigin(0.5, 0).setDepth(203);
+            this.contentElements.push(bullet);
+
+            // Nome da doenca em destaque
+            const diseaseName = scene.add.text(96, rowY + 6, item.name, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                fontStyle: 'bold',
+                color: '#8B2E40'
+            })).setOrigin(0, 0).setDepth(203);
+            this.contentElements.push(diseaseName);
+
+            // Descricao da doenca em 11px
+            const diseaseDesc = scene.add.text(96, rowY + 22, item.description, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#3b2a20'
+            })).setOrigin(0, 0).setDepth(203);
+            this.contentElements.push(diseaseDesc);
+
+            // Linha divisoria entre as doencas
+            if (index < info.diseases.length - 1) {
+                const separator = scene.add.line(
+                    panelX,
+                    rowY + rowHeight,
+                    0,
+                    0,
+                    364,
+                    0,
+                    0x8c7355,
+                    0.25
+                ).setDepth(203);
+                this.contentElements.push(separator);
+            }
+        });
+
+        // Caixa de alerta / rodape
+        const footerBg = scene.add.rectangle(panelX, 408, 364, 38, 0x8B2E40, 0.12);
+        footerBg.setStrokeStyle(1, 0x8B2E40, 0.5);
+        footerBg.setDepth(203);
+        this.contentElements.push(footerBg);
+
+        const footerText = scene.add.text(panelX, 408, info.footerNotice, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: '#8B2E40',
+            align: 'center',
+            lineSpacing: 2,
+            wordWrap: { width: 348, useAdvancedWrap: true }
+        })).setOrigin(0.5, 0.5).setDepth(203);
+        this.contentElements.push(footerText);
     }
 
     close(resumeClock = true) {

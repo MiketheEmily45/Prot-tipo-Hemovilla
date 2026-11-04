@@ -1,5 +1,6 @@
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
+import { isDebugEnabled } from './debugTools.js';
 
 export class MapControls {
     constructor(scene) {
@@ -32,19 +33,23 @@ export class MapControls {
     }
 
     createAlertButton() {
+        const isDebug = isDebugEnabled();
         const alertButton = this.scene.add.image(8, 600, 'alert-button');
         this.scene.alertButton = alertButton;
         this.alertButton = alertButton;
         alertButton.setOrigin(0, 1);
         alertButton.setDepth(100);
-        alertButton.setInteractive({ useHandCursor: true });
-        alertButton.on('pointerdown', () => {
-            alertButton.setTint(0x8B2E40);
-        });
-        alertButton.on('pointerup', () => {
-            alertButton.clearTint();
-            triggerAllCharactersAlert(this.scene);
-        });
+        alertButton.setVisible(isDebug);
+        if (isDebug) {
+            alertButton.setInteractive({ useHandCursor: true });
+            alertButton.on('pointerdown', () => {
+                alertButton.setTint(0x8B2E40);
+            });
+            alertButton.on('pointerup', () => {
+                alertButton.clearTint();
+                triggerAllCharactersAlert(this.scene);
+            });
+        }
         return alertButton;
     }
 }

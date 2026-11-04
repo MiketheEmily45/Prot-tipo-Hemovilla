@@ -1,6 +1,7 @@
 import { CharacterMovement } from './CharacterMovement.js';
 import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
+import { isDebugEnabled } from './debugTools.js';
 
 export const joaquimCharacter = {
     id: 'joaquim',
@@ -240,8 +241,11 @@ export class CityCharacterGroupManager {
         scene.alertedIconKeys = group.alerts;
         this.setGroupVisible(group, true);
         const hasCharacters = group.characters.length > 0;
-        scene.alertButton.setVisible(hasCharacters);
-        scene.alertButton.input.enabled = hasCharacters;
+        const showButton = hasCharacters && isDebugEnabled();
+        scene.alertButton.setVisible(showButton);
+        if (scene.alertButton.input) {
+            scene.alertButton.input.enabled = showButton;
+        }
     }
 }
 

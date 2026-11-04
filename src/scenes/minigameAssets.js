@@ -37,6 +37,8 @@ export const MINIGAME_ASSETS = {
     'hemacia-AB': 'assets/Minigame/Hemacias/HemaciaTipoAB.png',
     'hemacia-B': 'assets/Minigame/Hemacias/HemaciaTipoB.png',
     'hemacia-O': 'assets/Minigame/Hemacias/HemaciaTipoO.png',
+    'hemacia-rh-pos': 'assets/Minigame/Hemacias/HemaciaRhPositivo.png',
+    'hemacia-rh-neg': 'assets/Minigame/Hemacias/HemaciaRhNegativo.png',
     'paciente-beatriz': 'assets/Minigame/Cenario/Pacientes/Beatriz.png',
     'paciente-bruno': 'assets/Minigame/Cenario/Pacientes/Bruno.png',
     'paciente-carlos': 'assets/Minigame/Cenario/Pacientes/Carlos.png',

@@ -37,10 +37,10 @@ export const characterData = {
     },
     yasmin: {
         nome: 'Yasmin', tipoSanguineo: 'O', condicao: null,
-        descricao: 'Yasmin costuma passar o dia junto ao grande muro nos fundos da cidade, cercada por latas de spray, pincéis e potes de tinta espalhados pelo chão. Ela é uma jovem introspectiva e cheia de sensibilidade, que prefere usar a arte de rua para expressar sentimentos que raramente consegue colocar em palavras. Um morador costuma dizer: "A Yasmin quase não fala, mas basta olhar o muro para entender como ela está. Cada cor ali diz o que ela guarda por dentro!'
+        descricao: 'Yasmin costuma passar o dia junto ao grande muro nos fundos da cidade, cercada por latas de spray, pincéis e potes de tinta espalhados pelo chão. Ela é uma jovem introspectiva e cheia de sensibilidade, que prefere usar a arte de rua para expressar sentimentos que raramente consegue colocar em palavras. Um morador costuma dizer: "A Yasmin quase não fala, mas basta olhar o muro para entender como ela está. Cada cor ali diz o que ela guarda por dentro!"'
     },
     teo: {
         nome: 'Teo', tipoSanguineo: 'AB', condicao: null,
-        descricao: 'Teo passa a maior parte dos seus dias na pista de skate local. Magrelo, ele é um garoto que sonha em um dia acertar a manobra perfeita e deixar sua marca na cena do skate. É um jovem observador e reservado, com tendência a se perder em pensamentos enquanto observa o movimento da cidade do alto das rampas. Um colega da pista costuma dizer: "O Teo cai, levanta e tenta de novo sem reclamar. Ele só vai embora quando escurece!'
+        descricao: 'Teo passa a maior parte dos seus dias na pista de skate local. Magrelo, ele é um garoto que sonha em um dia acertar a manobra perfeita e deixar sua marca na cena do skate. É um jovem observador e reservado, com tendência a se perder em pensamentos enquanto observa o movimento da cidade do alto das rampas. Um colega da pista costuma dizer: "O Teo cai, levanta e tenta de novo sem reclamar. Ele só vai embora quando escurece!"'
     },
 };

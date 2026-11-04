@@ -4,6 +4,7 @@ import { characterData } from './characterData.js';
 import { setDiscoveredType } from './discoveredTypes.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
+import { GuidePanel } from './GuidePanel.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -29,6 +30,7 @@ const RETRY_BUTTON = { x: 176, y: 452, width: 144, height: 30 };
 const RETURN_BUTTON = { x: 336, y: 452, width: 144, height: 30 };
 const HINT_POSITION = { x: 256, y: 415 };
 const HEARTS_POSITION = { x: 504, y: 8 };
+const GUIDE_BUTTON = { x: 360, y: 8, scale: 1 };
 // Tempo mostrando o texto de acerto e a dica, em ms.
 const CONFIRM_MS = 1500;
 const HINT_MS = 2000;
@@ -55,7 +57,33 @@ export class TypingPhase {
         this.createDiagnosisButtons();
         this.createTexts();
         this.createDebugOutline();
+        this.guidePanel = new GuidePanel(this.scene, this.state, {
+            onToggleVisibility: (visible) => {
+                if (this.guideButton && !this.state.isFailed && !this.isConfirmed) {
+                    this.guideButton.setVisible(visible);
+                    this.guideButton.input.enabled = visible;
+                }
+            }
+        });
+        this.createGuideButton();
         this.reset();
+    }
+
+    createGuideButton() {
+        this.guideButton = this.scene.add.image(GUIDE_BUTTON.x, GUIDE_BUTTON.y, 'icone-guia');
+        this.guideButton.setOrigin(1, 0);
+        this.guideButton.setScale(GUIDE_BUTTON.scale);
+        if (this.guideButton.texture) {
+            this.guideButton.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+        this.guideButton.setDepth(100);
+        this.guideButton.setInteractive({ useHandCursor: true });
+        this.guideButton.on('pointerdown', () => this.guideButton.setTint(0x8B2E40));
+        this.guideButton.on('pointerout', () => this.guideButton.clearTint());
+        this.guideButton.on('pointerup', () => {
+            this.guideButton.clearTint();
+            this.guidePanel.open();
+        });
     }
 
     resolvePatientType(characterId) {
@@ -390,6 +418,13 @@ export class TypingPhase {
     handleCorrect(type) {
         this.isConfirmed = true;
         this.setDiagnosisEnabled(false);
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
         setDiscoveredType(this.characterId, type);
         this.state.advance();
         const cellKey = `hemacia-${type}`;
@@ -450,6 +485,14 @@ export class TypingPhase {
         this.phaseText.destroy();
         this.progressBar.destroy();
         this.debugGraphics.destroy();
+        if (this.guideButton) {
+            this.guideButton.destroy();
+            this.guideButton = null;
+        }
+        if (this.guidePanel) {
+            this.guidePanel.destroy();
+            this.guidePanel = null;
+        }
     }
 
     handleWrong() {
@@ -466,6 +509,13 @@ export class TypingPhase {
         }
 
         this.setDiagnosisEnabled(false);
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
         this.hintText.setText(`${explanation}\nA resposta correta era o tipo ${this.patientType}.`);
         this.retryButton.setVisible(true);
         this.retryButton.input.enabled = true;
@@ -477,6 +527,10 @@ export class TypingPhase {
 
     retry() {
         this.state.retry();
+        if (this.guideButton) {
+            this.guideButton.setVisible(true);
+            this.guideButton.input.enabled = true;
+        }
         this.reset();
     }
 

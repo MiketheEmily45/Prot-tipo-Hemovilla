@@ -10,6 +10,7 @@ import {
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
+import { GuidePanel } from './GuidePanel.js';
 
 // Configuracao da Fase 3
 const REQUIRED_BAGS = 1;
@@ -37,6 +38,7 @@ const TRANSFUSION_BAR = { x: 180, y: 310, width: 152, height: 10 };
 const MESSAGE_BOX = { x: 256, y: 365 };
 const FAILURE_RETRY_BUTTON = { x: 176, y: 400, width: 144, height: 32 };
 const FAILURE_RETURN_BUTTON = { x: 336, y: 400, width: 144, height: 32 };
+const GUIDE_BUTTON = { x: 360, y: 8, scale: 1 };
 const RESULT_PANEL = { x: 256, y: 256, width: 380, height: 240 };
 const RESULT_RETURN_BUTTON = { x: 256, y: 340, width: 180, height: 40 };
 
@@ -98,6 +100,29 @@ export class TransfusionPhase {
             originX: 0,
             originY: 0,
             depth: 40
+        });
+
+        this.guidePanel = new GuidePanel(this.scene, this.state, {
+            onToggleVisibility: (visible) => {
+                if (this.guideButton && this.isActive && !this.state.isFailed) {
+                    this.guideButton.setVisible(visible);
+                    this.guideButton.input.enabled = visible;
+                }
+            }
+        });
+        this.guideButton = this.scene.add.image(GUIDE_BUTTON.x, GUIDE_BUTTON.y, 'icone-guia');
+        this.guideButton.setOrigin(1, 0);
+        this.guideButton.setScale(GUIDE_BUTTON.scale);
+        if (this.guideButton.texture) {
+            this.guideButton.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+        this.guideButton.setDepth(100);
+        this.guideButton.setInteractive({ useHandCursor: true });
+        this.guideButton.on('pointerdown', () => this.guideButton.setTint(0x8B2E40));
+        this.guideButton.on('pointerout', () => this.guideButton.clearTint());
+        this.guideButton.on('pointerup', () => {
+            this.guideButton.clearTint();
+            this.guidePanel.open();
         });
     }
 
@@ -413,6 +438,13 @@ export class TransfusionPhase {
     }
 
     handleFailure() {
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
         this.bagItems.forEach((b) => {
             this.scene.input.setDraggable(b.sprite, false);
         });
@@ -432,6 +464,10 @@ export class TransfusionPhase {
 
     retry() {
         this.state.retry();
+        if (this.guideButton) {
+            this.guideButton.setVisible(true);
+            this.guideButton.input.enabled = true;
+        }
         this.heartsDisplay.update();
         this.retryButton.setVisible(false);
         this.retryButton.input.enabled = false;
@@ -447,6 +483,13 @@ export class TransfusionPhase {
 
     showResultScreen(result) {
         this.isActive = false;
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
 
         this.bagItems.forEach((b) => {
             this.scene.input.setDraggable(b.sprite, false);
@@ -587,5 +630,13 @@ export class TransfusionPhase {
         this.clearBags();
         this.clearXMarkers();
         if (this.debugGraphics) this.debugGraphics.destroy();
+        if (this.guideButton) {
+            this.guideButton.destroy();
+            this.guideButton = null;
+        }
+        if (this.guidePanel) {
+            this.guidePanel.destroy();
+            this.guidePanel = null;
+        }
     }
 }

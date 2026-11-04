@@ -1,4 +1,5 @@
 // Ferramentas de depuração ativas apenas quando a URL contém '?debug'.
+// F7: alterna a liberação de todas as cidades (apenas em memória, sem salvar no localStorage).
 // F8: alterna o modo 'não salvar progresso' (não grava ATP, atendidos nem tipo descoberto, e força Fase 2).
 // F9: zera todo o progresso salvo no localStorage e recarrega a cena atual.
 
@@ -10,6 +11,7 @@ export const STORAGE_KEYS = [
 
 let currentGame = null;
 let noSaveModeActive = false;
+let allCitiesUnlockedActive = false;
 let toastTimeout = null;
 
 export function isDebugEnabled() {
@@ -107,6 +109,48 @@ function updateIndicator() {
     }
 }
 
+function updateCitiesIndicator() {
+    if (typeof document === 'undefined') return;
+
+    let indicator = document.getElementById('debug-all-cities-indicator');
+    if (allCitiesUnlockedActive) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'debug-all-cities-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.bottom = '38px';
+            indicator.style.right = '12px';
+            indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+            indicator.style.color = '#38bdf8';
+            indicator.style.padding = '4px 8px';
+            indicator.style.borderRadius = '4px';
+            indicator.style.border = '1px solid #38bdf8';
+            indicator.style.fontFamily = 'monospace';
+            indicator.style.fontSize = '12px';
+            indicator.style.fontWeight = 'bold';
+            indicator.style.zIndex = '999999';
+            indicator.style.pointerEvents = 'none';
+            indicator.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.4)';
+            document.body.appendChild(indicator);
+        }
+        indicator.textContent = 'TESTE: cidades liberadas';
+        indicator.style.display = 'block';
+    } else if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
+
+export function toggleAllCitiesUnlocked() {
+    allCitiesUnlockedActive = !allCitiesUnlockedActive;
+    updateCitiesIndicator();
+    showToast(allCitiesUnlockedActive ? 'F7: Todas as cidades liberadas (debug)' : 'F7: Bloqueio normal de cidades');
+    return allCitiesUnlockedActive;
+}
+
+export function isAllCitiesUnlocked() {
+    return isDebugEnabled() && allCitiesUnlockedActive;
+}
+
 export function toggleNoSaveMode() {
     noSaveModeActive = !noSaveModeActive;
     updateIndicator();
@@ -146,7 +190,10 @@ export function initDebugTools(game) {
     window.addEventListener('keydown', (event) => {
         if (!isDebugEnabled()) return;
 
-        if (event.key === 'F8' || event.code === 'F8') {
+        if (event.key === 'F7' || event.code === 'F7') {
+            event.preventDefault();
+            toggleAllCitiesUnlocked();
+        } else if (event.key === 'F8' || event.code === 'F8') {
             event.preventDefault();
             toggleNoSaveMode();
         } else if (event.key === 'F9' || event.code === 'F9') {

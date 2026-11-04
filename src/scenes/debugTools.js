@@ -1,7 +1,15 @@
 // Ferramentas de depuração ativas apenas quando a URL contém '?debug'.
 // F7: alterna a liberação de todas as cidades (apenas em memória, sem salvar no localStorage).
 // F8: alterna o modo 'não salvar progresso' (não grava ATP, atendidos nem tipo descoberto, e força Fase 2).
-// F9: zera todo o progresso salvo no localStorage e recarrega a cena atual.
+// F9: zera todo o progresso salvo no localStorage e recarrega a cena atual (também reinicia os tempos de ocorrência).
+// T: (apenas no mapa) adianta 30 segundos nos relógios de ocorrência da cidade ativa.
+// L: (apenas no mapa) exibe no console a tabela com o estado e tempo restante de todos os 9 personagens.
+
+import {
+    resetOccurrenceState,
+    advanceActiveCityTimers,
+    logOccurrencesTable
+} from './occurrenceState.js';
 
 export const STORAGE_KEYS = [
     'hemovilla-atp',
@@ -165,7 +173,8 @@ export function toggleNoSaveMode() {
 
 export function resetProgressAndReload() {
     clearAllProgress();
-    showToast('Progresso zerado');
+    resetOccurrenceState();
+    showToast('Progresso e ocorrências zerados');
 
     if (currentGame && currentGame.scene) {
         const activeScenes = currentGame.scene.getScenes(true);
@@ -199,6 +208,30 @@ export function initDebugTools(game) {
         } else if (event.key === 'F9' || event.code === 'F9') {
             event.preventDefault();
             resetProgressAndReload();
+        } else if (event.key === 't' || event.key === 'T') {
+            const mapScene = currentGame?.scene?.getScene('GameMap');
+            if (mapScene && currentGame.scene.isActive('GameMap')) {
+                event.preventDefault();
+                const cityIndex = mapScene.currentCityIndex ?? 0;
+                const newlyAlerted = advanceActiveCityTimers(cityIndex, 30000);
+                if (newlyAlerted && newlyAlerted.length > 0) {
+                    newlyAlerted.forEach((occ) => {
+                        const char = mapScene.clickableCharacters?.find((c) => c.iconButtonKey === occ.id);
+                        if (char) {
+                            mapScene.clickableCharacterManager?.getAlertManager().applyAlert(char, false);
+                        }
+                    });
+                }
+                showToast(`T: +30s nos relógios da Cidade ${cityIndex + 1}`);
+                logOccurrencesTable();
+            }
+        } else if (event.key === 'l' || event.key === 'L') {
+            const mapScene = currentGame?.scene?.getScene('GameMap');
+            if (mapScene && currentGame.scene.isActive('GameMap')) {
+                event.preventDefault();
+                logOccurrencesTable();
+                showToast('L: Tabela de ocorrências exibida no console');
+            }
         }
     });
 }

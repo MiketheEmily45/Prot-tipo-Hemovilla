@@ -8,6 +8,7 @@ import { ClickableCharacterManager, updateCharacterIndicators } from './Clickabl
 import { createCharacterIconButtons } from './IconButtons.js';
 import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
+import { AtpDisplay } from './AtpDisplay.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -37,6 +38,8 @@ export class GameMap extends Phaser.Scene {
         this.load.audio('feminine-huh', 'assets/SFX/FeminineHuh.mp3');
         // Botao de alerta localizado no canto inferior esquerdo da tela.
         this.load.image('alert-button', 'assets/Telas/Botoes/botao_alerta.png');
+        // Icone do saldo de ATP
+        this.load.image('icone-atp', 'assets/Minigame/Cenario/IconeATP.png');
     }
 
     create() {
@@ -54,6 +57,11 @@ export class GameMap extends Phaser.Scene {
         this.mapControls = new MapControls(this);
         const { pauseButton } = this.mapControls.create();
         this.cityNavigation.createButtons(pauseButton);
+
+        // Painel de exibicao de saldo de ATP na barra inferior (canto superior direito da barra preta)
+        this.atpDisplay = new AtpDisplay(this, { x: 504, y: 520, width: 84, height: 24 });
+        this.events.on('wake', () => this.atpDisplay?.update());
+        this.events.on('resume', () => this.atpDisplay?.update());
 
         this.cursors = this.input.keyboard.createCursorKeys();
 

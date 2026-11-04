@@ -48,6 +48,7 @@ export const MINIGAME_ASSETS = {
     'paciente-joaquim': 'assets/Minigame/Cenario/Pacientes/SeuJoaquim.png',
     'paciente-teo': 'assets/Minigame/Cenario/Pacientes/Theo.png',
     'paciente-yasmin': 'assets/Minigame/Cenario/Pacientes/Yasmin.png',
+    'paciente-aparecida': 'assets/Minigame/Cenario/Pacientes/DonaAparecida.png',
     'joaquim-icon': 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png',
     'marlene-icon': 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png',
     'aparecida-icon': 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png',
@@ -86,7 +87,7 @@ export const PATIENT_SPRITES = {
     marlene: 'paciente-marlene',
     teo: 'paciente-teo',
     yasmin: 'paciente-yasmin',
-    aparecida: null
+    aparecida: 'paciente-aparecida'
 };
 
 // Configuracao centralizada do sprite do paciente sobre a poltrona

@@ -1,5 +1,4 @@
 import { switchCityCharacters } from './CityCharacters.js';
-import { createCityNavigationButtons } from './IconButtons.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createTextStyle } from './textUtils.js';
 import { isCityUnlocked, getCityLockMessage } from './cityUnlocks.js';
@@ -11,7 +10,7 @@ export const cities = [
     { folder: 'Cidade 3', layers: ['BaseCidade3', 'ComplementosCidade3', 'ConstrucoesPrincipaisCidade3'] }
 ];
 
-const layerKey = (city, layer) => `city-${city}-layer-${layer}`;
+export const layerKey = (city, layer) => `city-${city}-layer-${layer}`;
 
 export function preloadCities(scene) {
     CityNavigation.preload(scene);
@@ -35,6 +34,7 @@ export class CityNavigation {
             scene.add.tileSprite(256, 256, 512, 512, layerKey(0, index)));
         this.lockNoticeElements = [];
         this.lockNoticeTimer = null;
+        this.buttons = null;
     }
 
     get currentCityIndex() {
@@ -43,13 +43,6 @@ export class CityNavigation {
 
     get totalCities() {
         return cities.length;
-    }
-
-    createButtons(pauseButton) {
-        this.buttons = createCityNavigationButtons(this.scene, pauseButton, (direction) => {
-            this.goTo(this.scene.currentCityIndex + direction);
-        });
-        this.updateButtons();
     }
 
     goTo(index) {
@@ -122,10 +115,18 @@ export class CityNavigation {
     }
 
     updateButtons() {
-        // Mantem o espaco reservado para cada seta nos extremos da navegacao.
-        this.buttons.previous.setVisible(this.scene.currentCityIndex > 0);
-        this.buttons.previous.input.enabled = this.scene.currentCityIndex > 0;
-        this.buttons.next.setVisible(this.scene.currentCityIndex < cities.length - 1);
-        this.buttons.next.input.enabled = this.scene.currentCityIndex < cities.length - 1;
+        if (!this.buttons) return;
+        if (this.buttons.previous) {
+            this.buttons.previous.setVisible(this.scene.currentCityIndex > 0);
+            if (this.buttons.previous.input) {
+                this.buttons.previous.input.enabled = this.scene.currentCityIndex > 0;
+            }
+        }
+        if (this.buttons.next) {
+            this.buttons.next.setVisible(this.scene.currentCityIndex < cities.length - 1);
+            if (this.buttons.next.input) {
+                this.buttons.next.input.enabled = this.scene.currentCityIndex < cities.length - 1;
+            }
+        }
     }
 }

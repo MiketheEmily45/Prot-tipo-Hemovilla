@@ -18,7 +18,9 @@ export class GameMap extends Phaser.Scene {
     }
 
     init(data) {
-        this.targetCityIndex = data && typeof data.cityIndex === 'number' ? data.cityIndex : 0;
+        this.targetCityIndex = data && typeof data.targetCityIndex === 'number'
+            ? data.targetCityIndex
+            : (data && typeof data.cityIndex === 'number' ? data.cityIndex : 0);
     }
 
     preload() {
@@ -55,8 +57,7 @@ export class GameMap extends Phaser.Scene {
         createCharacterIconButtons(this);
 
         this.mapControls = new MapControls(this);
-        const { pauseButton } = this.mapControls.create();
-        this.cityNavigation.createButtons(pauseButton);
+        this.mapControls.create();
 
         // Painel de exibicao de saldo de ATP na barra inferior (canto superior direito da barra preta)
         this.atpDisplay = new AtpDisplay(this, { x: 504, y: 520, width: 84, height: 24 });

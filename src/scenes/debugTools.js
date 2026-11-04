@@ -2,38 +2,37 @@
 // F7: alterna a liberação de todas as cidades (apenas em memória, sem salvar no localStorage).
 // F8: alterna o modo 'não salvar progresso' (não grava ATP, atendidos nem tipo descoberto, e força Fase 2).
 // F9: zera todo o progresso salvo no localStorage e recarrega a cena atual (também reinicia os tempos de ocorrência).
+// Y: adiciona 500 ATP ao saldo (respeitando o modo sem salvar do F8).
 // T: (apenas no mapa) adianta 30 segundos nos relógios de ocorrência da cidade ativa.
 // L: (apenas no mapa) exibe no console a tabela com o estado e tempo restante de todos os 9 personagens.
+
+import {
+    isDebugEnabled,
+    isProgressSavingDisabled,
+    isAllCitiesUnlocked,
+    setNoSaveMode,
+    setAllCitiesUnlocked
+} from './debugState.js';
+
+export { isDebugEnabled, isProgressSavingDisabled, isAllCitiesUnlocked };
 
 import {
     resetOccurrenceState,
     advanceActiveCityTimers,
     logOccurrencesTable
 } from './occurrenceState.js';
+import { addATP, resetInMemoryATP } from './atpStore.js';
+import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 
 export const STORAGE_KEYS = [
     'hemovilla-atp',
     'hemovilla-attended-characters',
-    'hemovilla-discovered-types'
+    'hemovilla-discovered-types',
+    'hemovilla-purchased-cities'
 ];
 
 let currentGame = null;
-let noSaveModeActive = false;
-let allCitiesUnlockedActive = false;
 let toastTimeout = null;
-
-export function isDebugEnabled() {
-    if (typeof window === 'undefined') return false;
-    try {
-        return new URLSearchParams(window.location.search).has('debug');
-    } catch (e) {
-        return false;
-    }
-}
-
-export function isProgressSavingDisabled() {
-    return isDebugEnabled() && noSaveModeActive;
-}
 
 export function clearAllProgress() {
     try {
@@ -90,7 +89,7 @@ function updateIndicator() {
     if (typeof document === 'undefined') return;
 
     let indicator = document.getElementById('debug-no-save-indicator');
-    if (noSaveModeActive) {
+    if (isProgressSavingDisabled()) {
         if (!indicator) {
             indicator = document.createElement('div');
             indicator.id = 'debug-no-save-indicator';
@@ -121,7 +120,7 @@ function updateCitiesIndicator() {
     if (typeof document === 'undefined') return;
 
     let indicator = document.getElementById('debug-all-cities-indicator');
-    if (allCitiesUnlockedActive) {
+    if (isAllCitiesUnlocked()) {
         if (!indicator) {
             indicator = document.createElement('div');
             indicator.id = 'debug-all-cities-indicator';
@@ -149,21 +148,29 @@ function updateCitiesIndicator() {
 }
 
 export function toggleAllCitiesUnlocked() {
-    allCitiesUnlockedActive = !allCitiesUnlockedActive;
+    const current = isAllCitiesUnlocked();
+    const next = setAllCitiesUnlocked(!current);
     updateCitiesIndicator();
-    showToast(allCitiesUnlockedActive ? 'F7: Todas as cidades liberadas (debug)' : 'F7: Bloqueio normal de cidades');
-    return allCitiesUnlockedActive;
-}
+    showToast(next ? 'F7: Todas as cidades liberadas (debug)' : 'F7: Bloqueio normal de cidades');
 
-export function isAllCitiesUnlocked() {
-    return isDebugEnabled() && allCitiesUnlockedActive;
+    if (currentGame && currentGame.scene) {
+        const activeScenes = currentGame.scene.getScenes(true);
+        activeScenes.forEach((s) => {
+            if (typeof s.refresh === 'function') {
+                s.refresh();
+            }
+        });
+    }
+
+    return next;
 }
 
 export function toggleNoSaveMode() {
-    noSaveModeActive = !noSaveModeActive;
+    const current = isProgressSavingDisabled();
+    const next = setNoSaveMode(!current);
     updateIndicator();
 
-    if (noSaveModeActive && currentGame && currentGame.scene) {
+    if (next && currentGame && currentGame.scene) {
         const minigame = currentGame.scene.getScene('Minigame');
         if (minigame && minigame.scene.isActive() && minigame.attendanceState) {
             minigame.attendanceState.typeKnown = false;
@@ -173,6 +180,8 @@ export function toggleNoSaveMode() {
 
 export function resetProgressAndReload() {
     clearAllProgress();
+    resetPurchasedCitiesMemory();
+    resetInMemoryATP();
     resetOccurrenceState();
     showToast('Progresso e ocorrências zerados');
 
@@ -208,6 +217,19 @@ export function initDebugTools(game) {
         } else if (event.key === 'F9' || event.code === 'F9') {
             event.preventDefault();
             resetProgressAndReload();
+        } else if (event.key === 'y' || event.key === 'Y') {
+            event.preventDefault();
+            const updated = addATP(500);
+            showToast(`Y: +500 ATP (saldo: ${updated})`);
+            if (currentGame && currentGame.scene) {
+                const activeScenes = currentGame.scene.getScenes(true);
+                activeScenes.forEach((s) => {
+                    s.atpDisplay?.update();
+                    if (typeof s.refresh === 'function') {
+                        s.refresh();
+                    }
+                });
+            }
         } else if (event.key === 't' || event.key === 'T') {
             const mapScene = currentGame?.scene?.getScene('GameMap');
             if (mapScene && currentGame.scene.isActive('GameMap')) {

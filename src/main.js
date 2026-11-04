@@ -2,6 +2,7 @@ import { Start } from './scenes/Start.js'
 import { GameMap } from './scenes/GameMap.js'
 import { ConfigMenu } from './scenes/ConfigMenu.js'
 import { Minigame } from './scenes/Minigame.js'
+import { CitySelect } from './scenes/CitySelect.js'
 import { initDebugTools } from './scenes/debugTools.js'
 
 const config = {
@@ -25,7 +26,8 @@ const config = {
         Start,
         GameMap,
         ConfigMenu,
-        Minigame
+        Minigame,
+        CitySelect
     ],
     scale: {
         mode: Phaser.Scale.FIT,
@@ -35,4 +37,3 @@ const config = {
 
 const game = new Phaser.Game(config);
 initDebugTools(game);
-            

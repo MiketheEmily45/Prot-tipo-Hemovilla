@@ -1,18 +1,21 @@
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
+import { createTextStyle } from './textUtils.js';
 
 export class MapControls {
     constructor(scene) {
         this.scene = scene;
         this.pauseButton = null;
+        this.citySelectButton = null;
         this.alertButton = null;
     }
 
     create() {
         const pauseButton = this.createPauseButton();
+        const citySelectButton = this.createCitySelectButton(pauseButton);
         const alertButton = this.createAlertButton();
-        return { pauseButton, alertButton };
+        return { pauseButton, citySelectButton, alertButton };
     }
 
     createPauseButton() {
@@ -30,6 +33,41 @@ export class MapControls {
         });
         this.pauseButton = pauseButton;
         return pauseButton;
+    }
+
+    createCitySelectButton(pauseButton) {
+        // Posicionado a direita do botao de pausa (x=8, w=40) com 8 px de espaco: x=56, y=8, w=80, h=40
+        const x = 56;
+        const y = 8;
+        const width = 80;
+        const height = 40;
+
+        const bg = this.scene.add.rectangle(x + width / 2, y + height / 2, width, height, 0x1e293b);
+        bg.setStrokeStyle(1.5, 0x38bdf8);
+        bg.setOrigin(0.5);
+        bg.setDepth(100);
+        bg.setInteractive({ useHandCursor: true });
+
+        const label = this.scene.add.text(x + width / 2, y + height / 2, 'Cidades', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#ffffff'
+        })).setOrigin(0.5).setDepth(101);
+
+        bg.on('pointerdown', () => bg.setFillStyle(0x0f172a));
+        bg.on('pointerout', () => bg.setFillStyle(0x1e293b));
+        bg.on('pointerup', () => {
+            bg.setFillStyle(0x1e293b);
+            closeCharacterDescription(this.scene);
+            this.scene.scene.start('CitySelect', {
+                currentCityIndex: this.scene.currentCityIndex ?? 0
+            });
+        });
+
+        this.citySelectButton = bg;
+        this.citySelectLabel = label;
+        return { bg, label };
     }
 
     createAlertButton() {

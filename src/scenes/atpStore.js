@@ -1,9 +1,18 @@
 // Armazenamento simples de ATP e de atendimentos no localStorage.
-import { isProgressSavingDisabled } from './debugTools.js';
+import { isProgressSavingDisabled } from './debugState.js';
 const ATP_STORAGE_KEY = 'hemovilla-atp';
 const ATTENDED_STORAGE_KEY = 'hemovilla-attended-characters';
 
+let inMemoryATP = null;
+
+export function resetInMemoryATP() {
+    inMemoryATP = null;
+}
+
 export function getATP() {
+    if (inMemoryATP !== null && isProgressSavingDisabled()) {
+        return inMemoryATP;
+    }
     try {
         const raw = window.localStorage.getItem(ATP_STORAGE_KEY);
         return raw ? parseInt(raw, 10) || 0 : 0;
@@ -13,16 +22,37 @@ export function getATP() {
 }
 
 export function addATP(amount) {
+    if (typeof amount !== 'number' || amount <= 0) return getATP();
+    const current = getATP();
+    const updated = current + amount;
     if (isProgressSavingDisabled()) {
-        return getATP();
+        inMemoryATP = updated;
+        return updated;
     }
     try {
-        const current = getATP();
-        const updated = current + amount;
         window.localStorage.setItem(ATP_STORAGE_KEY, String(updated));
         return updated;
     } catch (error) {
-        return amount;
+        return current;
+    }
+}
+
+export function spendATP(amount) {
+    if (typeof amount !== 'number' || amount <= 0) return false;
+    const current = getATP();
+    if (current < amount) {
+        return false;
+    }
+    const updated = current - amount;
+    if (isProgressSavingDisabled()) {
+        inMemoryATP = updated;
+        return true;
+    }
+    try {
+        window.localStorage.setItem(ATP_STORAGE_KEY, String(updated));
+        return true;
+    } catch (error) {
+        return false;
     }
 }
 

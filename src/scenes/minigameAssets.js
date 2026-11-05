@@ -11,13 +11,13 @@ export const MINIGAME_ASSETS = {
     'frasco-anti-a': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoA.png',
     'frasco-anti-b': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoB.png',
     'bancada-vazia': 'assets/Minigame/Cenario/SalaAnalise/BancadaLaboratorio.png',
-    'bancada-soros': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_2.png',
-    'bancada-sangue-poco1': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_3.png',
-    'bancada-sangue': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_4.png',
-    'bancada-resultado-5': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_5.png',
-    'bancada-resultado-6': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_6.png',
-    'bancada-resultado-8': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_8.png',
-    'bancada-resultado-9': 'assets/Minigame/Cenario/SalaAnalise/PixilFrame0_9.png',
+    'bancada-soros': 'assets/Minigame/Cenario/SalaAnalise/AntiAeAntiBSozinhos.png',
+    'bancada-sangue-poco1': 'assets/Minigame/Cenario/SalaAnalise/SangueEmUmFrasco.png',
+    'bancada-sangue': 'assets/Minigame/Cenario/SalaAnalise/SangueEmDoisFrascos.png',
+    'bancada-resultado-5': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoA.png',
+    'bancada-resultado-6': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoB.png',
+    'bancada-resultado-8': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoAB.png',
+    'bancada-resultado-9': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoO.png',
     'bolsa-A+': 'assets/Minigame/BolsasDeSangue/APos.png',
     'bolsa-A-': 'assets/Minigame/BolsasDeSangue/ANeg.png',
     'bolsa-AB+': 'assets/Minigame/BolsasDeSangue/ABPos.png',
@@ -37,6 +37,8 @@ export const MINIGAME_ASSETS = {
     'hemacia-AB': 'assets/Minigame/Hemacias/HemaciaTipoAB.png',
     'hemacia-B': 'assets/Minigame/Hemacias/HemaciaTipoB.png',
     'hemacia-O': 'assets/Minigame/Hemacias/HemaciaTipoO.png',
+    'hemacia-rh-pos': 'assets/Minigame/Hemacias/HemaciaRhPositivo.png',
+    'hemacia-rh-neg': 'assets/Minigame/Hemacias/HemaciaRhNegativo.png',
     'paciente-beatriz': 'assets/Minigame/Cenario/Pacientes/Beatriz.png',
     'paciente-bruno': 'assets/Minigame/Cenario/Pacientes/Bruno.png',
     'paciente-carlos': 'assets/Minigame/Cenario/Pacientes/Carlos.png',
@@ -48,6 +50,7 @@ export const MINIGAME_ASSETS = {
     'paciente-joaquim': 'assets/Minigame/Cenario/Pacientes/SeuJoaquim.png',
     'paciente-teo': 'assets/Minigame/Cenario/Pacientes/Theo.png',
     'paciente-yasmin': 'assets/Minigame/Cenario/Pacientes/Yasmin.png',
+    'paciente-aparecida': 'assets/Minigame/Cenario/Pacientes/DonaAparecida.png',
     'joaquim-icon': 'assets/Personagens/SeuJoaquim/SeuJoaquim.Icone.png',
     'marlene-icon': 'assets/Personagens/DonaMarlene/DonaMarlene.Icone.png',
     'aparecida-icon': 'assets/Personagens/DonaAparecida/DonaAparecida.Icone.png',
@@ -66,15 +69,14 @@ export const MINIGAME_ASSETS = {
 };
 
 // Tipo ABO -> chave da imagem de resultado da bancada.
-// mapeamento provisorio, confirmar com o Carlos
 export const BENCH_RESULT_FRAMES = {
     A: 'bancada-resultado-5',
     B: 'bancada-resultado-6',
     AB: 'bancada-resultado-8',
     O: 'bancada-resultado-9'
 };
+
 // Mapa characterId -> chave da imagem do sprite do paciente na poltrona.
-// Personagens sem sprite de paciente (ex.: Dona Aparecida) ficam mapeados para null.
 export const PATIENT_SPRITES = {
     beatriz: 'paciente-beatriz',
     bruno: 'paciente-bruno',
@@ -87,7 +89,7 @@ export const PATIENT_SPRITES = {
     marlene: 'paciente-marlene',
     teo: 'paciente-teo',
     yasmin: 'paciente-yasmin',
-    aparecida: null
+    aparecida: 'paciente-aparecida'
 };
 
 // Configuracao centralizada do sprite do paciente sobre a poltrona

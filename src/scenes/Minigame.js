@@ -7,6 +7,7 @@ import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession } from './occurrenceState.js';
+import { preloadAudio, playSfx } from './AudioManager.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -42,6 +43,7 @@ export class Minigame extends Phaser.Scene {
         Object.entries(MINIGAME_ASSETS).forEach(([key, path]) => {
             this.load.image(key, path);
         });
+        preloadAudio(this);
     }
 
     create() {
@@ -98,6 +100,7 @@ export class Minigame extends Phaser.Scene {
 
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
+            playSfx(this, 'clique');
             endMinigameSession();
             this.scene.start('Start');
         });
@@ -181,6 +184,7 @@ export class Minigame extends Phaser.Scene {
         this.tube.setTexture('frasco-cheio');
         this.syringe.setVisible(false);
         this.input.setDraggable(this.syringe, false);
+        playSfx(this, 'coleta_bolsa');
 
         this.attendanceState.advance();
 

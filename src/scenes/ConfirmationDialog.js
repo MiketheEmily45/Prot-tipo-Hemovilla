@@ -1,4 +1,5 @@
 import { createTextStyle } from './textUtils.js';
+import { playSfx } from './AudioManager.js';
 
 /**
  * Dialogo de confirmacao modal reutilizavel para o jogo (ex: compra de cidades, compras da loja).
@@ -146,6 +147,8 @@ export class ConfirmationDialog {
                 this.close();
                 if (typeof onAccept === 'function') {
                     onAccept();
+                } else {
+                    playSfx(scene, 'clique');
                 }
             });
 
@@ -165,6 +168,7 @@ export class ConfirmationDialog {
             cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x334155));
             cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x475569));
             cancelBg.on('pointerup', () => {
+                playSfx(scene, 'clique');
                 this.close();
                 if (typeof onCancel === 'function') {
                     onCancel();
@@ -192,6 +196,7 @@ export class ConfirmationDialog {
             cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x334155));
             cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x475569));
             cancelBg.on('pointerup', () => {
+                playSfx(scene, 'clique');
                 this.close();
                 if (typeof onCancel === 'function') {
                     onCancel();

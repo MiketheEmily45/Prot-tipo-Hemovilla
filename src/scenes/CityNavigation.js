@@ -2,6 +2,7 @@ import { switchCityCharacters } from './CityCharacters.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createTextStyle } from './textUtils.js';
 import { isCityUnlocked, getCityLockMessage } from './cityUnlocks.js';
+import { playSfx } from './AudioManager.js';
 
 // A ordem das camadas segue a composicao original da Cidade 1.
 export const cities = [
@@ -50,6 +51,7 @@ export class CityNavigation {
         if (!Number.isInteger(index) || index < 0 || index >= cities.length || index === scene.currentCityIndex) return;
 
         if (!isCityUnlocked(index)) {
+            playSfx(scene, 'bloqueado');
             const message = getCityLockMessage(index);
             if (message) {
                 this.showLockNotice(message);

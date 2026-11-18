@@ -2,6 +2,7 @@ import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
 import { createTextStyle } from './textUtils.js';
+import { playSfx } from './AudioManager.js';
 
 export class MapControls {
     constructor(scene) {
@@ -28,6 +29,7 @@ export class MapControls {
         });
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
+            playSfx(this.scene, 'clique');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('Start');
         });
@@ -59,6 +61,7 @@ export class MapControls {
         bg.on('pointerout', () => bg.setFillStyle(0x1e293b));
         bg.on('pointerup', () => {
             bg.setFillStyle(0x1e293b);
+            playSfx(this.scene, 'clique');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('CitySelect', {
                 currentCityIndex: this.scene.currentCityIndex ?? 0
@@ -85,6 +88,7 @@ export class MapControls {
             });
             alertButton.on('pointerup', () => {
                 alertButton.clearTint();
+                playSfx(this.scene, 'clique');
                 triggerAllCharactersAlert(this.scene);
             });
         }

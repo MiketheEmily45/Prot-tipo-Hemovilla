@@ -6,6 +6,7 @@ import { createTextStyle } from './textUtils.js';
 import { Character } from './Character.js';
 import { AlertManager } from './AlertManager.js';
 import { startMinigameSession } from './occurrenceState.js';
+import { playSfx } from './AudioManager.js';
 
 export class ClickableCharacterManager {
     static maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
@@ -45,7 +46,7 @@ export class ClickableCharacterManager {
 
     playCharacterClickSound(character) {
         const scene = this.scene;
-        if (!scene || !scene.sound || typeof scene.sound.play !== 'function') {
+        if (!scene) {
             return;
         }
 
@@ -55,7 +56,7 @@ export class ClickableCharacterManager {
         }
 
         const soundKey = gender === 'male' ? 'masculine-huh' : 'feminine-huh';
-        scene.sound.play(soundKey, { volume: 0.8 });
+        playSfx(scene, soundKey);
     }
 
     register(config) {
@@ -108,6 +109,7 @@ export class ClickableCharacterManager {
         character.descriptionButton.setDepth(character.balloon.depth + 1);
         character.descriptionButton.setInteractive({ useHandCursor: true });
         character.descriptionButton.on('pointerdown', () => {
+            playSfx(scene, 'clique');
             openCharacterDescription(scene, character.iconButtonKey, characterData);
         });
         this.updateBalloonPosition(character);
@@ -130,6 +132,7 @@ export class ClickableCharacterManager {
         character.miniGameButton.on('pointerup', () => {
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.clearTint();
+            playSfx(scene, 'clique');
             startMinigameSession(character.iconButtonKey, scene.currentCityIndex);
             scene.scene.start('Minigame', {
                 characterId: character.iconButtonKey,

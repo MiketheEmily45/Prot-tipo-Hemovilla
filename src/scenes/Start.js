@@ -1,4 +1,4 @@
-import { getSettings } from './settingsStore.js';
+import { preloadAudio, playSceneMusic, stopMusic, playSfx } from './AudioManager.js';
 
 export class Start extends Phaser.Scene {
 
@@ -11,7 +11,7 @@ export class Start extends Phaser.Scene {
         this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         this.load.image('config-button', 'assets/Telas/Botoes/botao_config.png');
         this.load.image('title', 'assets/Telas/Fundos/title.png');
-        this.load.audio('start-music', 'assets/Musica/MenuMusic.mp3');
+        preloadAudio(this);
     }
 
     create() {
@@ -24,16 +24,7 @@ export class Start extends Phaser.Scene {
     }
 
     playMusic() {
-        const { musicVolume } = getSettings();
-        const menuMusic = this.sound.get('start-music');
-        if (menuMusic) {
-            menuMusic.setVolume(musicVolume);
-            if (!menuMusic.isPlaying) {
-                menuMusic.play();
-            }
-        } else {
-            this.sound.play('start-music', { loop: true, volume: musicVolume });
-        }
+        playSceneMusic(this, 'Start');
     }
 
     setupViewport() {
@@ -61,7 +52,8 @@ export class Start extends Phaser.Scene {
         });
         startButton.on('pointerup', () => {            
             startButton.clearTint();
-            this.sound.stopByKey('start-music');
+            playSfx(this, 'clique');
+            stopMusic(this, 'start-music');
             this.scene.start('GameMap');
         });
         this.startButton = startButton;
@@ -76,6 +68,7 @@ export class Start extends Phaser.Scene {
         });
         configButton.on('pointerup', () => {            
             configButton.clearTint();
+            playSfx(this, 'clique');
             this.scene.start('ConfigMenu', { fromScene: 'Start' });
         });
         this.configButton = configButton;

@@ -10,6 +10,7 @@ import { getATP, spendATP } from './atpStore.js';
 import { AtpDisplay } from './AtpDisplay.js';
 import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { createTextStyle } from './textUtils.js';
+import { preloadAudio, playSfx } from './AudioManager.js';
 
 export const CITY_NAMES = [
     'Centro',
@@ -35,6 +36,7 @@ export class CitySelect extends Phaser.Scene {
     preload() {
         preloadCities(this);
         this.load.image('icone-atp', 'assets/Minigame/Cenario/IconeATP.png');
+        preloadAudio(this);
     }
 
     create() {
@@ -92,6 +94,7 @@ export class CitySelect extends Phaser.Scene {
         bg.on('pointerout', () => bg.setFillStyle(0x1e293b));
         bg.on('pointerup', () => {
             bg.setFillStyle(0x1e293b);
+            playSfx(this, 'clique');
             this.scene.start('GameMap', { targetCityIndex: this.currentCityIndex });
         });
     }
@@ -107,6 +110,7 @@ export class CitySelect extends Phaser.Scene {
         this.leftArrow.on('pointerup', () => {
             this.leftArrow.clearTint();
             if (this.selectedIndex > 0) {
+                playSfx(this, 'clique');
                 this.setSelectedIndex(this.selectedIndex - 1);
             }
         });
@@ -121,6 +125,7 @@ export class CitySelect extends Phaser.Scene {
         this.rightArrow.on('pointerup', () => {
             this.rightArrow.clearTint();
             if (this.selectedIndex < cities.length - 1) {
+                playSfx(this, 'clique');
                 this.setSelectedIndex(this.selectedIndex + 1);
             }
         });
@@ -253,6 +258,7 @@ export class CitySelect extends Phaser.Scene {
             textColor = '#ffffff';
             isClickable = true;
             clickHandler = () => {
+                playSfx(this, 'clique');
                 this.scene.start('GameMap', { targetCityIndex: cityIndex });
             };
         } else if (canBuy) {
@@ -263,6 +269,7 @@ export class CitySelect extends Phaser.Scene {
             textColor = '#ffffff';
             isClickable = true;
             clickHandler = () => {
+                playSfx(this, 'clique');
                 this.confirmationDialog.show({
                     title: 'Liberar Cidade 3',
                     message: 'Deseja comprar o acesso à Periferia/lazer por 1000 ATP?',
@@ -274,8 +281,11 @@ export class CitySelect extends Phaser.Scene {
                         const success = spendATP(CITY_3_PRICE);
                         if (success) {
                             purchaseCity(2);
+                            playSfx(this, 'compra');
                             this.atpDisplay?.update();
                             this.renderCityView();
+                        } else {
+                            playSfx(this, 'bloqueado');
                         }
                     }
                 });
@@ -309,6 +319,13 @@ export class CitySelect extends Phaser.Scene {
                 btnBg.setFillStyle(bgColor);
                 clickHandler();
             });
+        } else if (!isCurrent && !unlocked && !canBuy) {
+            // Estado 4 (Bloqueado): permite clicar no retangulo e no texto para tocar o som de bloqueado
+            const playBlocked = () => playSfx(this, 'bloqueado');
+            btnBg.setInteractive();
+            btnBg.on('pointerdown', playBlocked);
+            btnText.setInteractive();
+            btnText.on('pointerdown', playBlocked);
         }
 
         // Dica sob a cidade bloqueada (ou aviso de compra)

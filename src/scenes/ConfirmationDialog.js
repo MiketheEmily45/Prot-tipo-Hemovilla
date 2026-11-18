@@ -41,11 +41,15 @@ export class ConfirmationDialog {
         backdrop.setInteractive();
         this.elements.push(backdrop);
 
-        // Painel central
+        // Painel central com borda preta externa e contorno verde-oliva
         const panelWidth = 380;
         const panelHeight = 230;
-        const panel = scene.add.rectangle(centerX, centerY, panelWidth, panelHeight, 0x1e293b);
-        panel.setStrokeStyle(2, 0x38bdf8);
+        const outerBorder = scene.add.rectangle(centerX, centerY, panelWidth + 8, panelHeight + 8, 0x000000);
+        outerBorder.setDepth(depth + 1);
+        this.elements.push(outerBorder);
+
+        const panel = scene.add.rectangle(centerX, centerY, panelWidth, panelHeight, 0x171c10);
+        panel.setStrokeStyle(3, 0x718E10);
         panel.setDepth(depth + 1);
         this.elements.push(panel);
 
@@ -54,7 +58,7 @@ export class ConfirmationDialog {
             fontFamily: 'monospace',
             fontSize: '17px',
             fontStyle: 'bold',
-            color: '#ffffff'
+            color: '#BDEE38'
         })).setOrigin(0.5).setDepth(depth + 2);
         this.elements.push(titleText);
 
@@ -62,7 +66,7 @@ export class ConfirmationDialog {
         const msgText = scene.add.text(centerX, centerY - 38, message, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '13px',
-            color: '#e2e8f0',
+            color: '#f5f5f4',
             align: 'center',
             wordWrap: { width: 340 }
         })).setOrigin(0.5).setDepth(depth + 2);
@@ -81,7 +85,7 @@ export class ConfirmationDialog {
                         fontFamily: 'monospace',
                         fontSize: '12px',
                         fontStyle: 'bold',
-                        color: '#4ade80',
+                        color: '#BDEE38',
                         align: 'center'
                     })
                 ).setOrigin(0.5).setDepth(depth + 2);
@@ -95,7 +99,7 @@ export class ConfirmationDialog {
                     createTextStyle({
                         fontFamily: 'monospace',
                         fontSize: '12px',
-                        color: '#cbd5e1',
+                        color: '#d4d4d8',
                         align: 'center'
                     })
                 ).setOrigin(0.5).setDepth(depth + 2);
@@ -128,9 +132,9 @@ export class ConfirmationDialog {
             const acceptX = centerX - (btnWidth / 2 + btnSpacing / 2);
             const cancelX = centerX + (btnWidth / 2 + btnSpacing / 2);
 
-            // Botao Aceitar (verde)
-            const acceptBg = scene.add.rectangle(acceptX, buttonY, btnWidth, btnHeight, 0x16a34a);
-            acceptBg.setStrokeStyle(1, 0x22c55e);
+            // Botao Aceitar (verde-oliva)
+            const acceptBg = scene.add.rectangle(acceptX, buttonY, btnWidth, btnHeight, 0x718E10);
+            acceptBg.setStrokeStyle(2, 0x000000);
             acceptBg.setDepth(depth + 2);
             acceptBg.setInteractive({ useHandCursor: true });
 
@@ -138,11 +142,11 @@ export class ConfirmationDialog {
                 fontFamily: 'monospace',
                 fontSize: '13px',
                 fontStyle: 'bold',
-                color: '#ffffff'
+                color: '#BDEE38'
             })).setOrigin(0.5).setDepth(depth + 3);
 
-            acceptBg.on('pointerdown', () => acceptBg.setFillStyle(0x15803d));
-            acceptBg.on('pointerout', () => acceptBg.setFillStyle(0x16a34a));
+            acceptBg.on('pointerdown', () => acceptBg.setFillStyle(0x4A5E17));
+            acceptBg.on('pointerout', () => acceptBg.setFillStyle(0x718E10));
             acceptBg.on('pointerup', () => {
                 this.close();
                 if (typeof onAccept === 'function') {
@@ -152,9 +156,9 @@ export class ConfirmationDialog {
                 }
             });
 
-            // Botao Cancelar (cinza)
-            const cancelBg = scene.add.rectangle(cancelX, buttonY, btnWidth, btnHeight, 0x475569);
-            cancelBg.setStrokeStyle(1, 0x64748b);
+            // Botao Cancelar (oliva escuro)
+            const cancelBg = scene.add.rectangle(cancelX, buttonY, btnWidth, btnHeight, 0x4A5E17);
+            cancelBg.setStrokeStyle(2, 0x000000);
             cancelBg.setDepth(depth + 2);
             cancelBg.setInteractive({ useHandCursor: true });
 
@@ -162,11 +166,11 @@ export class ConfirmationDialog {
                 fontFamily: 'monospace',
                 fontSize: '13px',
                 fontStyle: 'bold',
-                color: '#ffffff'
+                color: '#d9e8b5'
             })).setOrigin(0.5).setDepth(depth + 3);
 
-            cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x334155));
-            cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x475569));
+            cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x33410f));
+            cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x4A5E17));
             cancelBg.on('pointerup', () => {
                 playSfx(scene, 'clique');
                 this.close();
@@ -181,8 +185,8 @@ export class ConfirmationDialog {
             const btnWidth = 140;
             const btnHeight = 36;
 
-            const cancelBg = scene.add.rectangle(centerX, buttonY, btnWidth, btnHeight, 0x475569);
-            cancelBg.setStrokeStyle(1, 0x64748b);
+            const cancelBg = scene.add.rectangle(centerX, buttonY, btnWidth, btnHeight, 0x718E10);
+            cancelBg.setStrokeStyle(2, 0x000000);
             cancelBg.setDepth(depth + 2);
             cancelBg.setInteractive({ useHandCursor: true });
 
@@ -190,11 +194,11 @@ export class ConfirmationDialog {
                 fontFamily: 'monospace',
                 fontSize: '13px',
                 fontStyle: 'bold',
-                color: '#ffffff'
+                color: '#BDEE38'
             })).setOrigin(0.5).setDepth(depth + 3);
 
-            cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x334155));
-            cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x475569));
+            cancelBg.on('pointerdown', () => cancelBg.setFillStyle(0x4A5E17));
+            cancelBg.on('pointerout', () => cancelBg.setFillStyle(0x718E10));
             cancelBg.on('pointerup', () => {
                 playSfx(scene, 'clique');
                 this.close();

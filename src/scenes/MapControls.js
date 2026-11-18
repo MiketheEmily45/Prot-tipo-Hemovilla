@@ -1,7 +1,6 @@
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
-import { createTextStyle } from './textUtils.js';
 import { playSfx } from './AudioManager.js';
 
 export class MapControls {
@@ -23,9 +22,15 @@ export class MapControls {
         const pauseButton = this.scene.add.image(8, 8, 'pause-button');
         pauseButton.setOrigin(0);
         pauseButton.setDepth(100);
+        if (pauseButton.texture) {
+            pauseButton.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
         pauseButton.setInteractive({ useHandCursor: true });
         pauseButton.on('pointerdown', () => {
             pauseButton.setTint(0x8B2E40);
+        });
+        pauseButton.on('pointerout', () => {
+            pauseButton.clearTint();
         });
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
@@ -38,29 +43,25 @@ export class MapControls {
     }
 
     createCitySelectButton(pauseButton) {
-        // Posicionado a direita do botao de pausa (x=8, w=40) com 8 px de espaco: x=56, y=8, w=80, h=40
-        const x = 56;
-        const y = 8;
-        const width = 80;
-        const height = 40;
+        // Posicionado a direita do botao de pausa (x=8, w=40) com 8 px de espaco: x=56, y=8 (40x40)
+        const x = pauseButton ? pauseButton.x + pauseButton.displayWidth + 8 : 56;
+        const y = pauseButton ? pauseButton.y : 8;
 
-        const bg = this.scene.add.rectangle(x + width / 2, y + height / 2, width, height, 0x1e293b);
-        bg.setStrokeStyle(1.5, 0x38bdf8);
-        bg.setOrigin(0.5);
-        bg.setDepth(100);
-        bg.setInteractive({ useHandCursor: true });
-
-        const label = this.scene.add.text(x + width / 2, y + height / 2, 'Cidades', createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            fontStyle: 'bold',
-            color: '#ffffff'
-        })).setOrigin(0.5).setDepth(101);
-
-        bg.on('pointerdown', () => bg.setFillStyle(0x0f172a));
-        bg.on('pointerout', () => bg.setFillStyle(0x1e293b));
-        bg.on('pointerup', () => {
-            bg.setFillStyle(0x1e293b);
+        const citySelectButton = this.scene.add.image(x, y, 'city-select-button');
+        citySelectButton.setOrigin(0);
+        citySelectButton.setDepth(100);
+        if (citySelectButton.texture) {
+            citySelectButton.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+        citySelectButton.setInteractive({ useHandCursor: true });
+        citySelectButton.on('pointerdown', () => {
+            citySelectButton.setTint(0x8B2E40);
+        });
+        citySelectButton.on('pointerout', () => {
+            citySelectButton.clearTint();
+        });
+        citySelectButton.on('pointerup', () => {
+            citySelectButton.clearTint();
             playSfx(this.scene, 'clique');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('CitySelect', {
@@ -68,9 +69,8 @@ export class MapControls {
             });
         });
 
-        this.citySelectButton = bg;
-        this.citySelectLabel = label;
-        return { bg, label };
+        this.citySelectButton = citySelectButton;
+        return citySelectButton;
     }
 
     createAlertButton() {

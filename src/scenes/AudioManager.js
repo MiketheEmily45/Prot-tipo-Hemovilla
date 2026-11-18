@@ -23,6 +23,14 @@ export const SFX_ASSETS = Object.freeze({
     'feminine-huh': 'assets/SFX/FeminineHuh.mp3'
 });
 
+// Tabela de volume base por musica em um unico lugar para ajuste de ouvido.
+export const MUSIC_BASE_VOLUMES = Object.freeze({
+    'start-music': 1.0,
+    'city-music': 0.5
+});
+
+export const DEFAULT_MUSIC_BASE_VOLUME = 1.0;
+
 // Tabela de volume base por som em um unico lugar para ajuste de ouvido.
 // Os WAVs novos sao baixos e desiguais: vitoria ~10%, clique ~18%, demais ~25-33%.
 export const SFX_BASE_VOLUMES = Object.freeze({
@@ -131,6 +139,13 @@ class AudioManager {
         }
     }
 
+    getMusicBaseVolume(key) {
+        if (key && key in MUSIC_BASE_VOLUMES) {
+            return MUSIC_BASE_VOLUMES[key];
+        }
+        return DEFAULT_MUSIC_BASE_VOLUME;
+    }
+
     playMusic(scene, key, config = {}) {
         if (!scene || !scene.sound || !key) {
             return null;
@@ -143,6 +158,12 @@ class AudioManager {
             ? Math.max(0, Math.min(1, musicVolume))
             : 0;
 
+        const baseVolume = this.getMusicBaseVolume(key);
+        const configVolume = config && typeof config.volume === 'number' && !Number.isNaN(config.volume)
+            ? config.volume
+            : 1;
+        const finalVolume = Math.max(0, baseVolume * configVolume * safeMusicVolume);
+
         if (this.currentMusicKey && this.currentMusicKey !== key) {
             this.stopMusic(scene);
         }
@@ -150,13 +171,13 @@ class AudioManager {
         let music = scene.sound.get(key);
         if (music) {
             if (typeof music.setVolume === 'function') {
-                music.setVolume(safeMusicVolume);
+                music.setVolume(finalVolume);
             }
             if (!music.isPlaying) {
                 music.play({
                     loop: true,
                     ...config,
-                    volume: safeMusicVolume
+                    volume: finalVolume
                 });
             }
         } else {
@@ -166,7 +187,7 @@ class AudioManager {
             music = scene.sound.add(key, {
                 loop: true,
                 ...config,
-                volume: safeMusicVolume
+                volume: finalVolume
             });
             music.play();
         }
@@ -190,16 +211,18 @@ class AudioManager {
             ? volume
             : getSettings().musicVolume;
         const safeVolume = Math.max(0, Math.min(1, rawVolume));
+        const baseVolume = this.getMusicBaseVolume(this.currentMusicKey);
+        const finalVolume = Math.max(0, baseVolume * safeVolume);
 
         if (this.currentMusicSound && typeof this.currentMusicSound.setVolume === 'function') {
-            this.currentMusicSound.setVolume(safeVolume);
+            this.currentMusicSound.setVolume(finalVolume);
         }
 
         const soundManager = scene?.sound || this.boundGame?.sound;
         if (soundManager && this.currentMusicKey && typeof soundManager.get === 'function') {
             const soundInstance = soundManager.get(this.currentMusicKey);
             if (soundInstance && typeof soundInstance.setVolume === 'function') {
-                soundInstance.setVolume(safeVolume);
+                soundInstance.setVolume(finalVolume);
                 this.currentMusicSound = soundInstance;
             }
         }

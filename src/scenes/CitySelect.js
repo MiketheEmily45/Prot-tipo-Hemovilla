@@ -43,15 +43,15 @@ export class CitySelect extends Phaser.Scene {
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
 
-        // Fundo tematico escuro
-        this.add.rectangle(256, 256, 512, 512, 0x090d16);
+        // Fundo escuro neutro (proximo do preto da barra inferior do mapa, sem tom azulado)
+        this.add.rectangle(256, 256, 512, 512, 0x0a0a0a);
 
         // Titulo superior
         this.add.text(256, 28, 'SELEÇÃO DE CIDADE', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '18px',
             fontStyle: 'bold',
-            color: '#f8fafc'
+            color: '#ffffff'
         })).setOrigin(0.5);
 
         // Botao Fechar / Voltar ao mapa no canto superior esquerdo
@@ -79,21 +79,21 @@ export class CitySelect extends Phaser.Scene {
         const btnW = 56;
         const btnH = 30;
 
-        const bg = this.add.rectangle(btnX, btnY, btnW, btnH, 0x1e293b);
-        bg.setStrokeStyle(1, 0x475569);
+        const bg = this.add.rectangle(btnX, btnY, btnW, btnH, 0x718E10);
+        bg.setStrokeStyle(2, 0x000000);
         bg.setInteractive({ useHandCursor: true });
 
         const label = this.add.text(btnX, btnY, 'Voltar', createTextStyle({
             fontFamily: 'monospace',
             fontSize: '12px',
             fontStyle: 'bold',
-            color: '#ffffff'
+            color: '#BDEE38'
         })).setOrigin(0.5);
 
-        bg.on('pointerdown', () => bg.setFillStyle(0x0f172a));
-        bg.on('pointerout', () => bg.setFillStyle(0x1e293b));
+        bg.on('pointerdown', () => bg.setFillStyle(0x4A5E17));
+        bg.on('pointerout', () => bg.setFillStyle(0x718E10));
         bg.on('pointerup', () => {
-            bg.setFillStyle(0x1e293b);
+            bg.setFillStyle(0x718E10);
             playSfx(this, 'clique');
             this.scene.start('GameMap', { targetCityIndex: this.currentCityIndex });
         });
@@ -163,14 +163,14 @@ export class CitySelect extends Phaser.Scene {
             fontFamily: 'monospace',
             fontSize: '18px',
             fontStyle: 'bold',
-            color: '#38bdf8'
+            color: '#BDEE38'
         })).setOrigin(0.5);
         this.previewElements.push(nameText);
 
         const indexLabel = this.add.text(256, 88, `Cidade ${cityIndex + 1} de ${cities.length}`, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '11px',
-            color: '#94a3b8'
+            color: '#9ca3af'
         })).setOrigin(0.5);
         this.previewElements.push(indexLabel);
 
@@ -180,8 +180,11 @@ export class CitySelect extends Phaser.Scene {
         const previewY = 236;
         const scale = previewSize / 512;
 
-        const previewBg = this.add.rectangle(previewX, previewY, previewSize, previewSize, 0x0f172a);
-        previewBg.setStrokeStyle(2, unlocked ? 0x38bdf8 : 0x475569);
+        const previewOuterBorder = this.add.rectangle(previewX, previewY, previewSize + 8, previewSize + 8, 0x000000);
+        this.previewElements.push(previewOuterBorder);
+
+        const previewBg = this.add.rectangle(previewX, previewY, previewSize, previewSize, 0x141414);
+        previewBg.setStrokeStyle(3, unlocked ? 0x718E10 : 0x4A5E17);
         this.previewElements.push(previewBg);
 
         // Camadas do mapa da cidade em escala reduzida
@@ -209,7 +212,7 @@ export class CitySelect extends Phaser.Scene {
             lockGfx.setDepth(10);
 
             // Alca do cadeado (arco/retangulo arredondado vazado)
-            lockGfx.lineStyle(6, 0xe2e8f0, 1);
+            lockGfx.lineStyle(6, 0xd4d4d8, 1);
             lockGfx.strokeRoundedRect(previewX - 18, previewY - 34, 36, 32, 14);
 
             // Corpo do cadeado
@@ -219,7 +222,7 @@ export class CitySelect extends Phaser.Scene {
             lockGfx.strokeRoundedRect(previewX - 26, previewY - 10, 52, 42, 6);
 
             // Buraco da fechadura
-            lockGfx.fillStyle(0x0f172a, 1);
+            lockGfx.fillStyle(0x141414, 1);
             lockGfx.fillCircle(previewX, previewY + 7, 5);
             lockGfx.fillRect(previewX - 3, previewY + 7, 6, 12);
 
@@ -237,25 +240,25 @@ export class CitySelect extends Phaser.Scene {
         const btnH = 42;
 
         let labelText = '';
-        let bgColor = 0x1e293b;
-        let strokeColor = 0x334155;
-        let textColor = '#ffffff';
+        let bgColor = 0x4A5E17;
+        let strokeColor = 0x000000;
+        let textColor = '#BDEE38';
         let isClickable = false;
         let clickHandler = null;
 
         if (isCurrent) {
             // Estado 1: Selecionado (cidade atual, desabilitado)
             labelText = 'Selecionado';
-            bgColor = 0x334155;
-            strokeColor = 0x475569;
-            textColor = '#94a3b8';
+            bgColor = 0x4A5E17;
+            strokeColor = 0x000000;
+            textColor = '#93a862';
             isClickable = false;
         } else if (unlocked) {
             // Estado 2: Selecionar (cidade liberada, ativa)
             labelText = 'Selecionar';
-            bgColor = 0x16a34a;
-            strokeColor = 0x22c55e;
-            textColor = '#ffffff';
+            bgColor = 0x718E10;
+            strokeColor = 0x000000;
+            textColor = '#BDEE38';
             isClickable = true;
             clickHandler = () => {
                 playSfx(this, 'clique');
@@ -264,9 +267,9 @@ export class CitySelect extends Phaser.Scene {
         } else if (canBuy) {
             // Estado 3: Comprar (pode ser comprada por 1000 ATP)
             labelText = `Comprar (${CITY_3_PRICE} ATP)`;
-            bgColor = 0x0284c7;
-            strokeColor = 0x38bdf8;
-            textColor = '#ffffff';
+            bgColor = 0x718E10;
+            strokeColor = 0x000000;
+            textColor = '#BDEE38';
             isClickable = true;
             clickHandler = () => {
                 playSfx(this, 'clique');
@@ -293,14 +296,14 @@ export class CitySelect extends Phaser.Scene {
         } else {
             // Estado 4: Bloqueado (nao pode liberar nem comprar ainda)
             labelText = 'Bloqueado';
-            bgColor = 0x1e293b;
-            strokeColor = 0x334155;
-            textColor = '#64748b';
+            bgColor = 0x4A5E17;
+            strokeColor = 0x000000;
+            textColor = '#849657';
             isClickable = false;
         }
 
         const btnBg = this.add.rectangle(btnX, btnY, btnW, btnH, bgColor);
-        btnBg.setStrokeStyle(1.5, strokeColor);
+        btnBg.setStrokeStyle(2, strokeColor);
         this.previewElements.push(btnBg);
 
         const btnText = this.add.text(btnX, btnY, labelText, createTextStyle({
@@ -313,7 +316,7 @@ export class CitySelect extends Phaser.Scene {
 
         if (isClickable && clickHandler) {
             btnBg.setInteractive({ useHandCursor: true });
-            btnBg.on('pointerdown', () => btnBg.setFillStyle(bgColor === 0x16a34a ? 0x15803d : 0x0369a1));
+            btnBg.on('pointerdown', () => btnBg.setFillStyle(0x4A5E17));
             btnBg.on('pointerout', () => btnBg.setFillStyle(bgColor));
             btnBg.on('pointerup', () => {
                 btnBg.setFillStyle(bgColor);
@@ -335,7 +338,7 @@ export class CitySelect extends Phaser.Scene {
                 const hintText = this.add.text(btnX, 458, hint, createTextStyle({
                     fontFamily: 'monospace',
                     fontSize: '11px',
-                    color: canBuy ? '#38bdf8' : '#f59e0b',
+                    color: canBuy ? '#BDEE38' : '#f59e0b',
                     align: 'center',
                     wordWrap: { width: 360 }
                 })).setOrigin(0.5);

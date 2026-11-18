@@ -384,6 +384,9 @@ export class TypingPhase {
     }
 
     showHint(message) {
+        const captionOpen = Boolean(this.scene.tutorialManager?.caption?.isOpen);
+        this.hintText.setPosition(HINT_POSITION.x, captionOpen ? 358 : HINT_POSITION.y);
+        this.hintText.setDepth(captionOpen ? 130 : 45);
         this.hintText.setText(message);
 
         if (this.hintTimer) {
@@ -415,6 +418,8 @@ export class TypingPhase {
     }
 
     handleDiagnosis(type) {
+        this.scene.tutorialManager?.completeCurrentSection();
+        this.hintText.setDepth(45);
         if (type === this.patientType) {
             this.handleCorrect(type);
             return;

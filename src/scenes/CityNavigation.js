@@ -69,6 +69,7 @@ export class CityNavigation {
         });
 
         this.updateButtons();
+        scene.tutorialManager?.onCityChanged();
     }
 
     showLockNotice(message) {

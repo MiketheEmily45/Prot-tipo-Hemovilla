@@ -9,6 +9,18 @@ export function setTimersRunDuringMinigame(value) {
     TIMERS_RUN_DURING_MINIGAME = Boolean(value);
 }
 
+// Congela a contagem de todos os relogios (usado pelo tutorial enquanto ele nao termina).
+// Nao persiste: o tutorial reaplica o valor sempre que o mapa abre.
+let occurrenceClocksFrozen = false;
+
+export function setOccurrenceClocksFrozen(value) {
+    occurrenceClocksFrozen = Boolean(value);
+}
+
+export function areOccurrenceClocksFrozen() {
+    return occurrenceClocksFrozen;
+}
+
 export const OCCURRENCE_DEFINITIONS = [
     { id: 'joaquim', name: 'Seu Joaquim', cityIndex: 0, cityName: 'Cidade 1', intervalMs: 60000 },
     { id: 'marlene', name: 'Dona Marlene', cityIndex: 0, cityName: 'Cidade 1', intervalMs: 120000 },
@@ -52,7 +64,7 @@ export function getAllOccurrences() {
 }
 
 export function updateActiveCityTimers(cityIndex, deltaMs) {
-    if (typeof deltaMs !== 'number' || deltaMs <= 0) {
+    if (typeof deltaMs !== 'number' || deltaMs <= 0 || occurrenceClocksFrozen) {
         return [];
     }
 
@@ -101,6 +113,17 @@ export function triggerAllInCity(cityIndex) {
     });
 
     return newlyAlerted;
+}
+
+// Gera a ocorrencia de um unico personagem (mesmo efeito do "gerar alertas", so que para um).
+export function triggerOccurrence(characterId) {
+    const entry = occurrenceStateMap.get(characterId);
+    if (!entry || entry.hasAlert) {
+        return null;
+    }
+    entry.hasAlert = true;
+    entry.remainingMs = 0;
+    return entry;
 }
 
 export function startMinigameSession(characterId, cityIndex) {

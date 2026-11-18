@@ -1,3 +1,5 @@
+import { getSettings } from './settingsStore.js';
+
 export class Start extends Phaser.Scene {
 
     constructor() {
@@ -22,11 +24,15 @@ export class Start extends Phaser.Scene {
     }
 
     playMusic() {
+        const { musicVolume } = getSettings();
         const menuMusic = this.sound.get('start-music');
-        if (menuMusic && !menuMusic.isPlaying) {
-            menuMusic.play();
-        } else if (!menuMusic) {
-            this.sound.play('start-music', { loop: true });
+        if (menuMusic) {
+            menuMusic.setVolume(musicVolume);
+            if (!menuMusic.isPlaying) {
+                menuMusic.play();
+            }
+        } else {
+            this.sound.play('start-music', { loop: true, volume: musicVolume });
         }
     }
 
@@ -70,7 +76,7 @@ export class Start extends Phaser.Scene {
         });
         configButton.on('pointerup', () => {            
             configButton.clearTint();
-            this.scene.start('ConfigMenu');
+            this.scene.start('ConfigMenu', { fromScene: 'Start' });
         });
         this.configButton = configButton;
     }

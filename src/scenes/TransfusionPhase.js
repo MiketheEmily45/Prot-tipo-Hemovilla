@@ -11,6 +11,7 @@ import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
 import { onAttendanceSuccess } from './occurrenceState.js';
+import { markAttendanceJustCompleted } from './tutorialState.js';
 import { GuidePanel } from './GuidePanel.js';
 import { playSfx } from './AudioManager.js';
 
@@ -423,6 +424,9 @@ export class TransfusionPhase {
             addATP(result.atp);
             markCharacterAttended(this.characterId);
             onAttendanceSuccess(this.characterId);
+            // Tutorial: o mapa mostra a secao D ao voltar; a legenda do minigame, se aberta, e encerrada.
+            markAttendanceJustCompleted();
+            this.scene.tutorialManager?.onAttendanceCompleted();
 
             playSfx(this.scene, 'vitoria');
             this.showResultScreen(result);

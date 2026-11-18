@@ -8,6 +8,7 @@ import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession } from './occurrenceState.js';
 import { preloadAudio, playSfx } from './AudioManager.js';
+import { TutorialManager } from './TutorialManager.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -37,6 +38,7 @@ export class Minigame extends Phaser.Scene {
         this.transfusionPhase = null;
         this.collectionHidden = false;
         this.patientSprite = null;
+        this.tutorialManager = null;
     }
 
     preload() {
@@ -54,6 +56,9 @@ export class Minigame extends Phaser.Scene {
         this.setupPatientSprite();
         this.setupCollectionPhase();
         this.setupDebugOutline();
+        // Tutorial: legendas da Fase 1 (as das Fases 2 e 3 entram quando cada fase abre).
+        this.tutorialManager = new TutorialManager(this);
+        this.tutorialManager.startMinigame();
     }
 
     returnToMap(options = {}) {
@@ -213,6 +218,7 @@ export class Minigame extends Phaser.Scene {
                 this.startTransfusionPhase();
             }
         });
+        this.tutorialManager?.startMinigamePhase('minigameFase2');
     }
 
     startTransfusionPhase() {
@@ -232,6 +238,7 @@ export class Minigame extends Phaser.Scene {
         this.transfusionPhase = new TransfusionPhase(this, this.attendanceState, {
             characterId: this.characterId
         });
+        this.tutorialManager?.startMinigamePhase('minigameFase3');
     }
 
     setupDebugOutline() {

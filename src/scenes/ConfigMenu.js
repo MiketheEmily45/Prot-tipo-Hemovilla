@@ -1,5 +1,5 @@
 // Tela de configuracoes
-import { getSettings, saveSettings, restoreDefaultVolumes } from './settingsStore.js';
+import { getSettings, saveSettings, restoreDefaultVolumes, reactivateTutorial } from './settingsStore.js';
 import { ConfirmPopup } from './ConfirmPopup.js';
 import { clearAllProgress } from './debugTools.js';
 import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
@@ -354,7 +354,8 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     handleReactivateTutorial() {
-        saveSettings({ tutorialHintsEnabled: true }, this.game);
+        // Limpa todas as flags do tutorial e religa as dicas (o progresso do jogo nao muda).
+        reactivateTutorial(this.game);
         this.showFeedback('Dicas do tutorial reativadas.');
     }
 

@@ -1,4 +1,4 @@
-import { triggerAllInCity } from './occurrenceState.js';
+import { triggerAllInCity, triggerOccurrence } from './occurrenceState.js';
 import { playSfx } from './AudioManager.js';
 
 export class AlertManager {
@@ -102,6 +102,18 @@ export class AlertManager {
         this.scene.clickableCharacters.forEach((character) => {
             this.applyAlert(character, false);
         });
+    }
+
+    // Mesmo mecanismo do "gerar alertas" (triggerAll), aplicado a um unico personagem da cidade ativa.
+    triggerCharacter(characterId, silent = false) {
+        const character = this.scene.clickableCharacters?.find((c) => c.iconButtonKey === characterId);
+        if (!character) {
+            return false;
+        }
+
+        triggerOccurrence(characterId);
+        this.applyAlert(character, silent);
+        return true;
     }
 
     updateMiniGameButtonState(character) {

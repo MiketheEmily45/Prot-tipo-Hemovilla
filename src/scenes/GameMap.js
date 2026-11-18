@@ -11,6 +11,7 @@ import { MapControls } from './MapControls.js';
 import { AtpDisplay } from './AtpDisplay.js';
 import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
 import { preloadAudio } from './AudioManager.js';
+import { TutorialManager, MAP_CAPTION_BOTTOM_Y } from './TutorialManager.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -80,6 +81,10 @@ export class GameMap extends Phaser.Scene {
         }
 
         this.syncActiveCityAlerts(true);
+
+        // Tutorial: introducao e ocorrencia inicial do Seu Joaquim (se ainda pendentes).
+        this.tutorialManager = new TutorialManager(this, { bottomY: MAP_CAPTION_BOTTOM_Y });
+        this.tutorialManager.startMap();
     }
 
     syncActiveCityAlerts(silent = true) {

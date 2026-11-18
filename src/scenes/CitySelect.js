@@ -11,6 +11,7 @@ import { AtpDisplay } from './AtpDisplay.js';
 import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { createTextStyle } from './textUtils.js';
 import { preloadAudio, playSfx } from './AudioManager.js';
+import { TutorialManager } from './TutorialManager.js';
 
 export const CITY_NAMES = [
     'Centro',
@@ -71,6 +72,10 @@ export class CitySelect extends Phaser.Scene {
 
         // Renderiza a cidade inicial
         this.renderCityView();
+
+        // Tutorial: legenda da primeira vez que a selecao de cidade abre.
+        this.tutorialManager = new TutorialManager(this);
+        this.tutorialManager.startCitySelect();
     }
 
     createBackButton() {

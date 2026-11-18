@@ -57,7 +57,7 @@ export class Minigame extends Phaser.Scene {
         this.setupCollectionPhase();
         this.setupDebugOutline();
         // Tutorial: legendas da Fase 1 (as das Fases 2 e 3 entram quando cada fase abre).
-        this.tutorialManager = new TutorialManager(this);
+        this.tutorialManager = new TutorialManager(this, { depth: 110 });
         this.tutorialManager.startMinigame();
     }
 
@@ -291,7 +291,10 @@ export class Minigame extends Phaser.Scene {
         }
 
         const x = this.syringe.x - PROGRESS_BAR.width / 2;
-        const y = this.syringe.y + PROGRESS_BAR.offsetY;
+        const rawY = this.syringe.y + PROGRESS_BAR.offsetY;
+        const y = (this.tutorialManager?.caption?.isOpen && rawY > 286)
+            ? this.syringe.y - PROGRESS_BAR.offsetY
+            : rawY;
         const ratio = this.fillProgressMs / FILL_FULL_MS;
 
         this.progressBar.fillStyle(0x000000, 0.7);

@@ -16,9 +16,9 @@ import { isCharacterAttended } from './atpStore.js';
 export const MAP_CAPTION_BOTTOM_Y = 506;
 
 export class TutorialManager {
-    constructor(scene, { bottomY = null } = {}) {
+    constructor(scene, { bottomY = null, depth = undefined } = {}) {
         this.scene = scene;
-        this.caption = new TutorialCaption(scene, { bottomY });
+        this.caption = new TutorialCaption(scene, { bottomY, depth });
         this.currentSection = null;
         scene.events?.once?.('shutdown', () => this.destroy());
     }
@@ -31,11 +31,12 @@ export class TutorialManager {
 
     // ===== Nucleo =====
 
-    runSection(section, { startIndex = 0, onStepDone = null, onDone = null } = {}) {
+    runSection(section, { startIndex = 0, dismissOnLastPage = true, onStepDone = null, onDone = null } = {}) {
         if (!this.caption) return;
         this.currentSection = section;
         this.caption.show(TUTORIAL_STEPS[section], {
             blocking: TUTORIAL_SECTION_BLOCKING[section],
+            dismissOnLastPage,
             startIndex,
             bottomY: TUTORIAL_CAPTION_BOTTOM_Y[section] ?? null,
             onStepDone,
@@ -120,7 +121,7 @@ export class TutorialManager {
         refreshOccurrenceClockFreeze();
 
         if (firstTime && !this.caption.isOpen) {
-            this.runSection('ocorrenciaInicial');
+            this.runSection('ocorrenciaInicial', { dismissOnLastPage: false });
         }
     }
 
@@ -156,6 +157,7 @@ export class TutorialManager {
     // Atendimento concluido: a legenda do minigame, se ainda aberta, e encerrada.
     onAttendanceCompleted() {
         this.completeCurrentSection();
+        refreshOccurrenceClockFreeze();
     }
 
     // ===== Selecao de cidade (E) =====

@@ -6,6 +6,7 @@ import { setOccurrenceClocksFrozen } from './occurrenceState.js';
 export const TUTORIAL_CHARACTER_ID = 'joaquim';
 
 let attendanceJustCompleted = false;
+let attendanceCompletedInSession = false;
 
 export function isTutorialActive() {
     return getSettings().tutorialHintsEnabled === true;
@@ -17,12 +18,16 @@ export function isTutorialSectionPending(section) {
 }
 
 // Os relogios de ocorrencia ficam parados enquanto o tutorial nao termina:
-// tutorial ligado, minigame do tutorial ainda nao concluido e Seu Joaquim ainda nao atendido.
+// tutorial ligado, minigame inicial ainda nao concluido e Seu Joaquim ainda nao atendido.
 // (Se ele ja foi atendido, nada e forcado e os relogios correm normalmente.)
 export function shouldFreezeOccurrenceClocks() {
     const settings = getSettings();
+    if (!settings.tutorialProgress.minigameFase3) {
+        attendanceCompletedInSession = false;
+    }
     return settings.tutorialHintsEnabled === true
-        && settings.tutorialProgress.minigameFase3 !== true
+        && settings.tutorialProgress.aposPrimeiroAtendimento !== true
+        && !attendanceCompletedInSession
         && !isCharacterAttended(TUTORIAL_CHARACTER_ID);
 }
 
@@ -37,6 +42,8 @@ export function refreshOccurrenceClockFreeze() {
 // Marcado pela Fase 3 quando um atendimento termina; o mapa le e limpa ao abrir (secao D).
 export function markAttendanceJustCompleted() {
     attendanceJustCompleted = true;
+    attendanceCompletedInSession = true;
+    refreshOccurrenceClockFreeze();
 }
 
 export function consumeAttendanceJustCompleted() {

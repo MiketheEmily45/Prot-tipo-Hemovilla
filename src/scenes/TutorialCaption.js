@@ -5,8 +5,9 @@ import { TUTORIAL_SKIP_LABEL } from './tutorialSteps.js';
 
 const MARGIN = 6;             // distancia da borda preta externa ate a borda da tela
 const BORDER = 4;             // borda preta grossa
-const PADDING = 22;           // da moldura marrom ate o texto
-const MIN_BOX_HEIGHT = 56;
+const PAD_X = 18;             // margem horizontal da moldura marrom ate o texto
+const PAD_Y = 12;             // margem vertical da moldura marrom ate o texto
+const MIN_BOX_HEIGHT = 46;
 const MAX_LINES = 3;
 const FONT_SIZE = 13;
 const LINE_SPACING = 4;
@@ -85,6 +86,7 @@ export class TutorialCaption {
         this.pages = [];
         this.pageIndex = 0;
         this.blocking = true;
+        this.dismissOnLastPage = true;
         this.callbacks = {};
         this.isOpen = false;
         this.keyHandler = (event) => {
@@ -110,11 +112,12 @@ export class TutorialCaption {
      * @param {()=>void} [options.onComplete] chamado depois do ultimo passo
      * @param {()=>void} [options.onSkip] chamado ao clicar em "Pular tutorial"
      */
-    show(steps, { blocking = true, startIndex = 0, bottomY = null, onStepDone = null, onComplete = null, onSkip = null } = {}) {
+    show(steps, { blocking = true, dismissOnLastPage = true, startIndex = 0, bottomY = null, onStepDone = null, onComplete = null, onSkip = null } = {}) {
         this.hide();
         this.activeBottomY = bottomY;
 
         this.blocking = blocking;
+        this.dismissOnLastPage = dismissOnLastPage;
         this.callbacks = { onStepDone, onComplete, onSkip };
         this.pages = this.buildPages(steps).filter((page) => page.stepIndex >= startIndex);
         this.pageIndex = 0;
@@ -159,7 +162,7 @@ export class TutorialCaption {
 
     get textWidth() {
         const { width } = this.cameraSize;
-        return width - 2 * (MARGIN + BORDER) - 2 * PADDING - INDICATOR_WIDTH;
+        return width - 2 * (MARGIN + BORDER) - 2 * PAD_X - INDICATOR_WIDTH;
     }
 
     bindKeys() {
@@ -211,10 +214,10 @@ export class TutorialCaption {
             wordWrap: { width: this.textWidth, useAdvancedWrap: true }
         }));
         text.setDepth(depth + 2);
-        const boxH = Math.max(MIN_BOX_HEIGHT, Math.ceil(text.height) + 2 * PADDING);
+        const boxH = Math.max(MIN_BOX_HEIGHT, Math.ceil(text.height) + 2 * PAD_Y);
         const bottomY = this.activeBottomY ?? this.bottomY ?? (height - MARGIN);
         const boxY = bottomY - BORDER - boxH;
-        text.setPosition(boxX + PADDING, boxY + PADDING);
+        text.setPosition(boxX + PAD_X, boxY + PAD_Y);
         this.elements.push(text);
 
         const gfx = scene.add.graphics();
@@ -224,9 +227,9 @@ export class TutorialCaption {
         gfx.fillStyle(0x674430, 1);
         gfx.fillRect(boxX, boxY, boxW, boxH);
         gfx.fillStyle(0x331d11, 1);
-        gfx.fillRect(boxX + 10, boxY + 10, boxW - 20, boxH - 20);
+        gfx.fillRect(boxX + 10, boxY + 6, boxW - 20, boxH - 12);
         gfx.fillStyle(0xd7c8a9, 1);
-        gfx.fillRect(boxX + 14, boxY + 14, boxW - 28, boxH - 28);
+        gfx.fillRect(boxX + 14, boxY + 9, boxW - 28, boxH - 18);
         this.elements.push(gfx);
 
         // Clique na caixa avanca.
@@ -251,7 +254,7 @@ export class TutorialCaption {
         const indicator = scene.add.graphics();
         indicator.setDepth(depth + 2);
         const ix = boxX + boxW - 28;
-        const iy = boxY + boxH - 26;
+        const iy = boxY + boxH - 21;
         indicator.fillStyle(0x674430, 1);
         indicator.fillTriangle(ix, iy, ix + 12, iy, ix + 6, iy + 8);
         this.elements.push(indicator);
@@ -325,6 +328,7 @@ export class TutorialCaption {
 
     advance() {
         if (!this.isOpen) return;
+        if (!this.dismissOnLastPage && this.pageIndex >= this.pages.length - 1) return;
 
         playSfx(this.scene, 'clique');
         const page = this.pages[this.pageIndex];

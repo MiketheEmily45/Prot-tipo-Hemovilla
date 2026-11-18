@@ -11,7 +11,7 @@
 export const TUTORIAL_STEPS = Object.freeze({
     intro: [
         { id: 'A1', text: 'Bem-vindo ao Hemovilla! Nesta cidade, você ajuda moradores que precisam de uma transfusão de sangue.' },
-        { id: 'A2', text: 'Os moradores andam pela cidade. Clique em um deles, ou no ícone dele aqui embaixo, para conhecê-lo melhor.' },
+        { id: 'A2', text: 'Os moradores andam pela cidade. Clique em um deles, ou no ícone de algum deles aqui embaixo, para conhecê-los melhor.' },
         { id: 'A3', text: 'O seu saldo de ATP, a moeda do jogo, fica no canto inferior direito.' }
     ],
     ocorrenciaInicial: [
@@ -21,10 +21,10 @@ export const TUTORIAL_STEPS = Object.freeze({
         { id: 'C1', text: 'Fase 1 — Coleta: arraste a seringa até a poltrona, segure o clique para enchê-la com o sangue do paciente e leve-a até o tubo de coleta.' }
     ],
     minigameFase2: [
-        { id: 'C2', text: 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Arraste o soro Anti-A para o poço 1 e o Anti-B para o poço 2, pingue o sangue do tubo em cada poço e misture segurando o clique. Depois observe se o sangue forma grumos (aglutinação).' },
+        { id: 'C2', text: 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Misture o sangue com os soros e observe se ele forma grumos (aglutinação).' },
         { id: 'C3', text: 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.' },
         { id: 'C4', text: 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.' },
-        { id: 'C5', text: 'Em dúvida? O botão de guia, no alto da tela, mostra os tipos e as compatibilidades.' }
+        { id: 'C5', text: 'Em dúvida? O botão de guia, no canto superior direito, mostra os tipos e as compatibilidades.' }
     ],
     minigameFase3: [
         { id: 'C6', text: 'Fase 3 — Transfusão: arraste a bolsa de sangue compatível até o paciente.' },
@@ -55,9 +55,9 @@ export const TUTORIAL_SECTION_BLOCKING = Object.freeze({
 // No minigame o rodape tem as bolsas, os botoes de tipo e a seringa; por isso a legenda fica logo acima
 // dessa faixa de controles, como no mapa ela fica acima da barra dos icones.
 export const TUTORIAL_CAPTION_BOTTOM_Y = Object.freeze({
-    minigameFase1: 400,
-    minigameFase2: 404,
-    minigameFase3: 408
+    minigameFase1: 392,
+    minigameFase2: 463,
+    minigameFase3: 398
 });
 
 export const TUTORIAL_SKIP_LABEL = 'Pular tutorial';

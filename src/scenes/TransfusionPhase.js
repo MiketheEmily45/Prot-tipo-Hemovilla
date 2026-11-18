@@ -28,8 +28,10 @@ const BAG_ORIGIN = { x: 33.5 / 64, y: 20.5 / 64 };
 
 // Posicoes configuraveis
 const HEARTS_POSITION = { x: 100, y: 16 };
-const PORTRAIT_POSITION = { x: 456, y: 32 };
+// Icone 64x64 centrado em (456, 56): borda direita em 488 (24 px da direita) e borda superior em 24 (24 px do topo).
+const PORTRAIT_POSITION = { x: 456, y: 56 };
 const TYPE_LABEL_OFFSET = { x: 0, y: 32 };
+const TYPE_BOX_HEIGHT = 22;
 const BAG_SLOTS = [
     { x: 80, y: 440 },
     { x: 196, y: 440 },
@@ -37,7 +39,6 @@ const BAG_SLOTS = [
     { x: 428, y: 440 }
 ];
 
-const TRANSFUSION_BAR = { x: 180, y: 310, width: 152, height: 10 };
 const MESSAGE_BOX = { x: 256, y: 365 };
 const FAILURE_RETRY_BUTTON = { x: 176, y: 400, width: 144, height: 32 };
 const FAILURE_RETURN_BUTTON = { x: 336, y: 400, width: 144, height: 32 };
@@ -57,7 +58,6 @@ export class TransfusionPhase {
         this.xMarkers = [];
 
         this.setupHUD();
-        this.setupTransfusionBar();
         this.setupMessageArea();
         this.setupRound();
         this.setupDebugOutline();
@@ -85,17 +85,27 @@ export class TransfusionPhase {
 
         const typeX = PORTRAIT_POSITION.x + TYPE_LABEL_OFFSET.x;
         const typeY = PORTRAIT_POSITION.y + TYPE_LABEL_OFFSET.y;
+        const portraitWidth = this.portrait?.displayWidth || 64;
 
-        this.typeText = this.scene.add.text(typeX, typeY, `Tipo: ${displayType}`, createTextStyle({
+        this.typeBg = this.scene.add.rectangle(
+            typeX,
+            typeY,
+            portraitWidth,
+            TYPE_BOX_HEIGHT,
+            0x000000,
+            0.65
+        );
+        this.typeBg.setOrigin(0.5, 0);
+        this.typeBg.setDepth(40);
+
+        this.typeText = this.scene.add.text(typeX, typeY + TYPE_BOX_HEIGHT / 2, `Tipo: ${displayType}`, createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '15px',
+            fontSize: '13px',
             fontStyle: 'bold',
-            color: '#ffffff',
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            padding: { x: 6, y: 3 }
+            color: '#ffffff'
         }));
-        this.typeText.setOrigin(0.5, 0);
-        this.typeText.setDepth(40);
+        this.typeText.setOrigin(0.5, 0.5);
+        this.typeText.setDepth(41);
 
         this.heartsDisplay = new HeartsDisplay(this.scene, this.state, {
             x: HEARTS_POSITION.x,
@@ -104,6 +114,22 @@ export class TransfusionPhase {
             originY: 0,
             depth: 40
         });
+
+        const heartsWidth = this.heartsDisplay.sprite?.displayWidth || 64;
+        this.transfusionLabel = this.scene.add.text(
+            HEARTS_POSITION.x + heartsWidth / 2,
+            HEARTS_POSITION.y + 10,
+            'Transfusão',
+            createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                padding: { x: 4, y: 2 }
+            })
+        );
+        this.transfusionLabel.setOrigin(0.5, 1);
+        this.transfusionLabel.setDepth(40);
 
         this.guidePanel = new GuidePanel(this.scene, this.state, {
             onToggleVisibility: (visible) => {
@@ -128,59 +154,6 @@ export class TransfusionPhase {
             playSfx(this.scene, 'clique');
             this.guidePanel.open();
         });
-    }
-
-    setupTransfusionBar() {
-        this.transfusionBarGraphics = this.scene.add.graphics();
-        this.transfusionBarGraphics.setDepth(25);
-
-        this.transfusionLabel = this.scene.add.text(
-            TRANSFUSION_BAR.x + TRANSFUSION_BAR.width / 2,
-            TRANSFUSION_BAR.y - 14,
-            'Transfusão',
-            createTextStyle({
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                color: '#ffffff',
-                backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                padding: { x: 4, y: 2 }
-            })
-        );
-        this.transfusionLabel.setOrigin(0.5, 0);
-        this.transfusionLabel.setDepth(25);
-
-        this.drawTransfusionBar();
-    }
-
-    drawTransfusionBar() {
-        this.transfusionBarGraphics.clear();
-
-        this.transfusionBarGraphics.fillStyle(0x000000, 0.7);
-        this.transfusionBarGraphics.fillRect(
-            TRANSFUSION_BAR.x,
-            TRANSFUSION_BAR.y,
-            TRANSFUSION_BAR.width,
-            TRANSFUSION_BAR.height
-        );
-
-        this.transfusionBarGraphics.lineStyle(1, 0xffffff, 0.9);
-        this.transfusionBarGraphics.strokeRect(
-            TRANSFUSION_BAR.x,
-            TRANSFUSION_BAR.y,
-            TRANSFUSION_BAR.width,
-            TRANSFUSION_BAR.height
-        );
-
-        const ratio = Math.min(1, this.compatibleCount / REQUIRED_BAGS);
-        if (ratio > 0) {
-            this.transfusionBarGraphics.fillStyle(0xc0392b, 1);
-            this.transfusionBarGraphics.fillRect(
-                TRANSFUSION_BAR.x + 1,
-                TRANSFUSION_BAR.y + 1,
-                (TRANSFUSION_BAR.width - 2) * ratio,
-                TRANSFUSION_BAR.height - 2
-            );
-        }
     }
 
     setupMessageArea() {
@@ -391,6 +364,8 @@ export class TransfusionPhase {
             return;
         }
 
+        this.scene.tutorialManager?.completeCurrentSection();
+
         const isCompatible = canReceive(this.patientType, bagItem.bagType, { rhEnabled: RH_ENABLED });
 
         if (isCompatible) {
@@ -415,7 +390,6 @@ export class TransfusionPhase {
         }
 
         this.compatibleCount++;
-        this.drawTransfusionBar();
         this.clearMessage();
         playSfx(this.scene, 'transfusao');
 
@@ -496,7 +470,6 @@ export class TransfusionPhase {
         this.returnLabel.setVisible(false);
         this.clearMessage();
         this.compatibleCount = 0;
-        this.drawTransfusionBar();
         this.setupRound();
     }
 
@@ -605,12 +578,6 @@ export class TransfusionPhase {
             this.debugGraphics.strokeRect(slot.x - width / 2, slot.y - height / 2, width, height);
         });
 
-        this.debugGraphics.strokeRect(
-            TRANSFUSION_BAR.x,
-            TRANSFUSION_BAR.y,
-            TRANSFUSION_BAR.width,
-            TRANSFUSION_BAR.height
-        );
         this.debugGraphics.setVisible(false);
 
         this.debugKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
@@ -631,9 +598,9 @@ export class TransfusionPhase {
             this.debugKey.removeAllListeners();
         }
         if (this.portrait) this.portrait.destroy();
+        if (this.typeBg) this.typeBg.destroy();
         if (this.typeText) this.typeText.destroy();
         if (this.heartsDisplay) this.heartsDisplay.destroy();
-        if (this.transfusionBarGraphics) this.transfusionBarGraphics.destroy();
         if (this.transfusionLabel) this.transfusionLabel.destroy();
         if (this.messageText) this.messageText.destroy();
         if (this.retryButton) this.retryButton.destroy();

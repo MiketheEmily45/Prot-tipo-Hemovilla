@@ -101,7 +101,7 @@ function resetEverything() {
 // ===== Paginacao: legenda com mais de 3 linhas e dividida =====
 {
     const fits = (text) => text.length <= 156;
-    const long = TUTORIAL_STEPS.minigameFase2[0].text;
+    const long = 'Primeira frase longa para preencher mais de uma linha na caixa de legenda do tutorial. Segunda frase complementar que faz o texto ultrapassar o limite de tres linhas na tela.';
     const pages = paginateCaption(long, fits);
     assert.ok(pages.length >= 2, 'texto longo deve virar 2 legendas ou mais');
     assert.ok(pages.every(fits));
@@ -151,6 +151,11 @@ assert.equal(getOccurrence('aparecida').hasAlert, false);
 assert.equal(pageText(scene), TUTORIAL_STEPS.ocorrenciaInicial[0].text);
 assert.equal(caption(scene).blocking, false);
 assert.ok(!caption(scene).elements.some((el) => el.width === 512 && el.height === 608), 'A4 nao bloqueia o jogo');
+// A4 fica na tela ate abrir o minigame (clicar na legenda ou apertar Espaco/Enter nao fecha A4).
+caption(scene).advance();
+scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
+assert.equal(caption(scene).isOpen, true, 'A4 permanece na tela ate abrir o minigame');
+assert.equal(progress().ocorrenciaInicial, false);
 assert.deepEqual(updateActiveCityTimers(0, 10 * 60 * 1000), []);
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.equal(scene.clickableCharacters.find((c) => c.iconButtonKey === 'marlene').alertIcon ?? null, null);
@@ -219,4 +224,105 @@ scene = openMap();
 assert.equal(caption(scene).isOpen, false);
 closeScene(scene);
 
-console.log('OK: legendas, estado do tutorial, introducao, ocorrencia inicial, relogios parados e botao TUTORIAL.');
+// ===== Etapa 2: secoes C (minigame Fases 1, 2 e 3), D (apos 1o atendimento) e E (selecao de cidade) =====
+const { TutorialManager } = await import('../src/scenes/TutorialManager.js');
+const { addATP, getATP, isCharacterAttended } = await import('../src/scenes/atpStore.js');
+
+function createDummyScene(width = 512, height = 512) {
+    const keyboard = Object.assign(new EventEmitter(), { createCursorKeys() {} });
+    return {
+        cameras: { main: { width, height } },
+        add: {
+            image: makeObject,
+            rectangle: (x, y, w, h) => Object.assign(makeObject(x, y), { width: w, height: h }),
+            text: (x, y, text) => makeObject(x, y, undefined, text),
+            graphics: makeObject
+        },
+        input: Object.assign(new EventEmitter(), { keyboard }),
+        events: new EventEmitter(),
+        tweens: { add: () => ({ stop() {} }) },
+        sound: { play: (key) => { soundsPlayed.push(key); }, get: () => null }
+    };
+}
+
+resetEverything();
+scene = openMap();
+['keydown-SPACE', 'keydown-SPACE', 'keydown-SPACE'].forEach((key) => scene.input.keyboard.emit(key, { repeat: false }));
+assert.equal(pageText(scene), TUTORIAL_STEPS.ocorrenciaInicial[0].text);
+closeScene(scene);
+
+// Abre o minigame: cumpre A4 e mostra C1 (Fase 1) sem bloquear.
+const mgScene = createDummyScene(512, 512);
+mgScene.tutorialManager = new TutorialManager(mgScene);
+mgScene.tutorialManager.startMinigame();
+assert.equal(progress().ocorrenciaInicial, true);
+assert.equal(caption(mgScene).isOpen, true);
+assert.equal(caption(mgScene).blocking, false);
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase1[0].text);
+
+// Avanca para Fase 2: encerra C1 e mostra C2, C3, C4 e C5 (so ABO, sem Anti-D).
+mgScene.tutorialManager.startMinigamePhase('minigameFase2');
+assert.equal(progress().minigameFase1, true);
+assert.equal(caption(mgScene).blocking, false);
+assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Misture o sangue com os soros e observe se ele forma grumos (aglutinação).');
+caption(mgScene).advance();
+assert.equal(pageText(mgScene), 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.');
+caption(mgScene).advance();
+assert.equal(pageText(mgScene), 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.');
+caption(mgScene).advance();
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase2[3].text);
+assert.ok(!TUTORIAL_STEPS.minigameFase2.some((s) => /Anti-D|Rh/i.test(s.text)), 'Fase 2 nao cita Anti-D nem Rh');
+
+// Avanca para Fase 3: encerra Fase 2 e mostra C6 e C7.
+mgScene.tutorialManager.startMinigamePhase('minigameFase3');
+assert.equal(progress().minigameFase2, true);
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[0].text);
+caption(mgScene).advance();
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[1].text);
+// Mesmo se o jogador fechar C7 antes de concluir a transfusao, os relogios continuam parados ate concluir.
+caption(mgScene).advance();
+assert.equal(caption(mgScene).isOpen, false);
+assert.deepEqual(updateActiveCityTimers(0, 10 * 60 * 1000), [], 'relogios continuam parados ate concluir o atendimento');
+
+// Conclui o atendimento do Seu Joaquim: paga ATP, marca como atendido e solta os relogios.
+addATP(120);
+markCharacterAttended('joaquim');
+markAttendanceJustCompleted();
+mgScene.tutorialManager.onAttendanceCompleted();
+mgScene.events.emit('shutdown');
+
+assert.equal(getATP(), 120);
+assert.equal(isCharacterAttended('joaquim'), true);
+assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos concluir o minigame');
+
+// Volta ao mapa: secao D (D1 e D2, bloqueando).
+scene = openMap();
+assert.equal(caption(scene).isOpen, true);
+assert.equal(caption(scene).blocking, true);
+assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[0].text);
+caption(scene).advance();
+assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[1].text);
+caption(scene).advance();
+assert.equal(caption(scene).isOpen, false);
+assert.equal(progress().aposPrimeiroAtendimento, true);
+closeScene(scene);
+
+// Abre a selecao de cidade (1a vez): secao E (E1, bloqueando); na 2a vez nao repete.
+const csScene = createDummyScene(512, 512);
+csScene.tutorialManager = new TutorialManager(csScene);
+csScene.tutorialManager.startCitySelect();
+assert.equal(caption(csScene).isOpen, true);
+assert.equal(caption(csScene).blocking, true);
+assert.equal(pageText(csScene), TUTORIAL_STEPS.selecaoCidade[0].text);
+caption(csScene).advance();
+assert.equal(caption(csScene).isOpen, false);
+assert.equal(progress().selecaoCidade, true);
+csScene.events.emit('shutdown');
+
+const csScene2 = createDummyScene(512, 512);
+csScene2.tutorialManager = new TutorialManager(csScene2);
+csScene2.tutorialManager.startCitySelect();
+assert.equal(caption(csScene2).isOpen, false, 'E1 nao repete na 2a vez');
+csScene2.events.emit('shutdown');
+
+console.log('OK: legendas, estado do tutorial, secoes A-E, ocorrencia inicial, relogios parados e botao TUTORIAL.');

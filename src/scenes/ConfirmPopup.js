@@ -1,4 +1,5 @@
 import { createTextStyle } from './textUtils.js';
+import { playSfx } from './AudioManager.js';
 
 /**
  * Pop-up de confirmacao provisorio desenhado em codigo (Graphics),
@@ -167,6 +168,7 @@ export class ConfirmPopup {
             isPressed = false;
             drawBtn(normalColor);
             labelText.clearTint();
+            playSfx(scene, 'clique');
             onClick();
         });
 

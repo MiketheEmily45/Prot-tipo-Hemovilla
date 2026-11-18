@@ -5,6 +5,7 @@ import { setDiscoveredType } from './discoveredTypes.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { GuidePanel } from './GuidePanel.js';
+import { playSfx } from './AudioManager.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -82,6 +83,7 @@ export class TypingPhase {
         this.guideButton.on('pointerout', () => this.guideButton.clearTint());
         this.guideButton.on('pointerup', () => {
             this.guideButton.clearTint();
+            playSfx(this.scene, 'clique');
             this.guidePanel.open();
         });
     }
@@ -193,6 +195,7 @@ export class TypingPhase {
         this.retryButton.on('pointerout', () => this.retryButton.setFillStyle(0xc0392b));
         this.retryButton.on('pointerup', () => {
             this.retryButton.setFillStyle(0xc0392b);
+            playSfx(this.scene, 'clique');
             this.retry();
         });
 
@@ -215,6 +218,7 @@ export class TypingPhase {
         this.returnButton.on('pointerout', () => this.returnButton.setFillStyle(0x16a34a));
         this.returnButton.on('pointerup', () => {
             this.returnButton.setFillStyle(0x16a34a);
+            playSfx(this.scene, 'clique');
             this.scene.returnToMap({ failed: true });
         });
 
@@ -344,11 +348,13 @@ export class TypingPhase {
 
         if (well.index !== item.wellIndex) {
             // Poco trocado: nao e erro, so uma dica.
+            playSfx(this.scene, 'bloqueado');
             this.returnItem(item);
             this.showHint(item.hint);
             return;
         }
 
+        playSfx(this.scene, 'clique');
         well.state = 'SERUM';
         this.updateWellImage(well);
         item.sprite.setVisible(false);
@@ -364,11 +370,13 @@ export class TypingPhase {
         }
 
         if (well.state === 'EMPTY') {
+            playSfx(this.scene, 'bloqueado');
             this.showHint('Pingue o soro no poço antes do sangue');
             return;
         }
 
         if (well.state === 'SERUM') {
+            playSfx(this.scene, 'clique');
             well.state = 'BLOOD';
             well.mixDistance = 0;
             this.updateWellImage(well);
@@ -417,6 +425,7 @@ export class TypingPhase {
 
     handleCorrect(type) {
         this.isConfirmed = true;
+        playSfx(this.scene, 'acerto');
         this.setDiagnosisEnabled(false);
         if (this.guideButton) {
             this.guideButton.setVisible(false);
@@ -504,10 +513,12 @@ export class TypingPhase {
         const explanation = `${describe(0)}. ${describe(1)}.`;
 
         if (!result.failed) {
+            playSfx(this.scene, 'erro');
             this.hintText.setText(`Não é esse tipo. ${explanation}`);
             return;
         }
 
+        playSfx(this.scene, 'derrota');
         this.setDiagnosisEnabled(false);
         if (this.guideButton) {
             this.guideButton.setVisible(false);

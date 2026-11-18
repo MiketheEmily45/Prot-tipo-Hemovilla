@@ -1,6 +1,7 @@
 import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
 import { allCity1Characters } from './CityCharacters.js';
+import { playSfx } from './AudioManager.js';
 
 export class CityNavigationButtons {
     constructor(scene, pauseButton, onNavigate) {
@@ -17,6 +18,7 @@ export class CityNavigationButtons {
             button.on('pointerout', () => button.clearTint());
             button.on('pointerup', () => {
                 button.clearTint();
+                playSfx(this.scene, 'clique');
                 this.onNavigate(direction);
             });
             return button;
@@ -59,6 +61,7 @@ export class CharacterIconButtonBar {
 
             iconButton.on('pointerup', () => {
                 this.updateTint(id);
+                playSfx(this.scene, 'clique');
                 // O mesmo icone alterna a descricao; outro icone troca o personagem.
                 // Consultar a descricao nao altera movimento, balao ou alerta do personagem.
                 openCharacterDescription(this.scene, id, characterData);

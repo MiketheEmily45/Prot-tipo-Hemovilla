@@ -3,6 +3,7 @@
 
 import { getDiscoveredType } from './discoveredTypes.js';
 import { createTextStyle } from './textUtils.js';
+import { playSfx } from './AudioManager.js';
 
 export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
@@ -160,6 +161,7 @@ export class CharacterDescriptionPanel {
         closeButton.setInteractive({ useHandCursor: true });
         closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
             event?.stopPropagation?.();
+            playSfx(scene, 'clique');
             this.close();
         });
 

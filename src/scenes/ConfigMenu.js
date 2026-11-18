@@ -6,6 +6,7 @@ import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetInMemoryATP } from './atpStore.js';
 import { resetOccurrenceState } from './occurrenceState.js';
 import { createTextStyle } from './textUtils.js';
+import { preloadAudio, playSfx, updateMusicVolume } from './AudioManager.js';
 
 export const CONFIG_ASSETS = {
     'config-bg': 'assets/Telas/Config/Fundo.png',
@@ -59,6 +60,7 @@ export class ConfigMenu extends Phaser.Scene {
         Object.entries(CONFIG_ASSETS).forEach(([key, path]) => {
             this.load.image(key, path);
         });
+        preloadAudio(this);
     }
 
     create() {
@@ -125,7 +127,7 @@ export class ConfigMenu extends Phaser.Scene {
             },
             onRelease: () => {
                 // Ponto unico para tocar o efeito sonoro de teste ao soltar o slider:
-                // playClick();
+                playSfx(this, 'clique');
             }
         });
     }
@@ -296,6 +298,7 @@ export class ConfigMenu extends Phaser.Scene {
             }
             isPressed = false;
             btn.clearTint();
+            playSfx(this, 'clique');
             onClick();
         });
 
@@ -327,10 +330,7 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applyMenuMusicVolume(volume) {
-        const menuMusic = this.sound?.get('start-music');
-        if (menuMusic && typeof menuMusic.setVolume === 'function') {
-            menuMusic.setVolume(volume);
-        }
+        updateMusicVolume(volume, this);
     }
 
     handleRestoreDefaults() {

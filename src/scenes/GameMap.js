@@ -10,6 +10,7 @@ import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
 import { AtpDisplay } from './AtpDisplay.js';
 import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
+import { preloadAudio } from './AudioManager.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -35,9 +36,7 @@ export class GameMap extends Phaser.Scene {
         this.load.image('icone_alerta', 'assets/Personagens/icone_alerta.png');
         this.load.image('botao_minigame', 'assets/Telas/Botoes/botao_minigame.png');
         this.load.image('botao_descricao', 'assets/Telas/Botoes/botao_descricao.png');
-        this.load.audio('alert-sound', 'assets/Musica/som_alerta.mp3');
-        this.load.audio('masculine-huh', 'assets/SFX/MasculineHuh.mp3');
-        this.load.audio('feminine-huh', 'assets/SFX/FeminineHuh.mp3');
+        preloadAudio(this);
         // Botao de alerta localizado no canto inferior esquerdo da tela.
         this.load.image('alert-button', 'assets/Telas/Botoes/botao_alerta.png');
         // Icone do saldo de ATP

@@ -12,6 +12,7 @@ import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
 import { onAttendanceSuccess } from './occurrenceState.js';
 import { GuidePanel } from './GuidePanel.js';
+import { playSfx } from './AudioManager.js';
 
 // Configuracao da Fase 3
 const REQUIRED_BAGS = 1;
@@ -123,6 +124,7 @@ export class TransfusionPhase {
         this.guideButton.on('pointerout', () => this.guideButton.clearTint());
         this.guideButton.on('pointerup', () => {
             this.guideButton.clearTint();
+            playSfx(this.scene, 'clique');
             this.guidePanel.open();
         });
     }
@@ -209,6 +211,7 @@ export class TransfusionPhase {
         this.retryButton.on('pointerout', () => this.retryButton.setFillStyle(0xc0392b));
         this.retryButton.on('pointerup', () => {
             this.retryButton.setFillStyle(0xc0392b);
+            playSfx(this.scene, 'clique');
             this.retry();
         });
 
@@ -237,6 +240,7 @@ export class TransfusionPhase {
         this.returnButton.on('pointerout', () => this.returnButton.setFillStyle(0x16a34a));
         this.returnButton.on('pointerup', () => {
             this.returnButton.setFillStyle(0x16a34a);
+            playSfx(this.scene, 'clique');
             this.scene.returnToMap({ failed: true });
         });
 
@@ -412,6 +416,7 @@ export class TransfusionPhase {
         this.compatibleCount++;
         this.drawTransfusionBar();
         this.clearMessage();
+        playSfx(this.scene, 'transfusao');
 
         if (this.compatibleCount >= REQUIRED_BAGS) {
             const result = this.state.complete();
@@ -419,8 +424,10 @@ export class TransfusionPhase {
             markCharacterAttended(this.characterId);
             onAttendanceSuccess(this.characterId);
 
-
+            playSfx(this.scene, 'vitoria');
             this.showResultScreen(result);
+        } else {
+            playSfx(this.scene, 'acerto');
         }
     }
 
@@ -436,8 +443,10 @@ export class TransfusionPhase {
         this.drawRedX(bagItem.slot.x, bagItem.slot.y);
 
         if (errorResult.failed) {
+            playSfx(this.scene, 'derrota');
             this.handleFailure();
         } else {
+            playSfx(this.scene, 'erro');
             const reason = incompatibilityReason(this.patientType, bagItem.bagType, { rhEnabled: RH_ENABLED });
             this.showMessage(reason);
         }
@@ -574,13 +583,7 @@ export class TransfusionPhase {
         returnBtn.on('pointerdown', () => returnBtn.setFillStyle(0x0e7490));
         returnBtn.on('pointerout', () => returnBtn.setFillStyle(0x16a34a));
         returnBtn.on('pointerup', () => {
-
-
-
-
-            // TODO: Integracao com GameMap: o GameMap atualmente e recriado do zero no scene.start('GameMap').
-            // Para persistir o personagem como atendido e desativar alertas/retomar movimento no mapa,
-            // o GameMap deve consultar isCharacterAttended(character.id) ao inicializar ou atualizar os alertas.
+            playSfx(this.scene, 'clique');
             this.scene.returnToMap();
         });
     }

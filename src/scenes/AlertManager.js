@@ -1,4 +1,5 @@
 import { triggerAllInCity } from './occurrenceState.js';
+import { playSfx } from './AudioManager.js';
 
 export class AlertManager {
     constructor(scene) {
@@ -121,11 +122,7 @@ export class AlertManager {
     }
 
     playAlertSound() {
-        if (!this.scene || !this.scene.sound || typeof this.scene.sound.play !== 'function') {
-            return;
-        }
-
-        this.scene.sound.play('alert-sound', { volume: 0.8 });
+        playSfx(this.scene, 'alert-sound');
     }
 
     updateIconButtonTint(iconButtonKey) {

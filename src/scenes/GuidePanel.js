@@ -2,6 +2,7 @@
 import { createTextStyle } from './textUtils.js';
 import { getCompatibilityGuideEntries } from './bloodCompatibility.js';
 import { CONTAMINATED_SCREENING_INFO } from './contaminatedInfo.js';
+import { playSfx } from './AudioManager.js';
 
 export const GUIDE_PANEL_CONFIG = {
     panelWidth: 448,
@@ -97,6 +98,7 @@ export class GuidePanel {
         this.closeButton.on('pointerout', () => this.closeButton.setColor('#afadab'));
         this.closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
             event?.stopPropagation?.();
+            playSfx(scene, 'clique');
             this.close();
         });
 
@@ -128,7 +130,10 @@ export class GuidePanel {
             })).setOrigin(0.5).setDepth(204);
             label.setInteractive({ useHandCursor: true });
 
-            const onSelect = () => this.selectTab(tab.id);
+            const onSelect = () => {
+                playSfx(scene, 'clique');
+                this.selectTab(tab.id);
+            };
             bg.on('pointerup', onSelect);
             label.on('pointerup', onSelect);
 

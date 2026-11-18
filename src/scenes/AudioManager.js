@@ -26,7 +26,7 @@ export const SFX_ASSETS = Object.freeze({
 // Tabela de volume base por musica em um unico lugar para ajuste de ouvido.
 export const MUSIC_BASE_VOLUMES = Object.freeze({
     'start-music': 1.0,
-    'city-music': 0.5
+    'city-music': 0.2
 });
 
 export const DEFAULT_MUSIC_BASE_VOLUME = 1.0;

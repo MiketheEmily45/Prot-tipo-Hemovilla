@@ -47,7 +47,7 @@ export const SCENE_MUSIC_KEYS = Object.freeze({
     Start: 'start-music',
     ConfigMenu: 'start-music',
     GameMap: 'city-music',
-    CitySelect: null,
+    CitySelect: 'city-music',
     Minigame: null
 });
 

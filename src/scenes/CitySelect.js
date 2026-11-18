@@ -10,7 +10,7 @@ import { getATP, spendATP } from './atpStore.js';
 import { AtpDisplay } from './AtpDisplay.js';
 import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { createTextStyle } from './textUtils.js';
-import { preloadAudio, playSfx } from './AudioManager.js';
+import { preloadAudio, playSfx, playSceneMusic } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
 
 export const CITY_NAMES = [
@@ -41,6 +41,7 @@ export class CitySelect extends Phaser.Scene {
     }
 
     create() {
+        playSceneMusic(this, 'CitySelect');
         this.scale.resize(512, 512);
         this.cameras.main.setViewport(0, 0, 512, 512);
 

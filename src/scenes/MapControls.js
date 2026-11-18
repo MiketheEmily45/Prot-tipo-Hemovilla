@@ -64,7 +64,6 @@ export class MapControls {
         citySelectButton.on('pointerup', () => {
             citySelectButton.clearTint();
             playSfx(this.scene, 'clique');
-            stopMusic(this.scene, 'city-music');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('CitySelect', {
                 currentCityIndex: this.scene.currentCityIndex ?? 0

@@ -10,7 +10,7 @@ import { CityNavigation, preloadCities } from './CityNavigation.js';
 import { MapControls } from './MapControls.js';
 import { AtpDisplay } from './AtpDisplay.js';
 import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
-import { preloadAudio } from './AudioManager.js';
+import { preloadAudio, playSceneMusic } from './AudioManager.js';
 import { TutorialManager, MAP_CAPTION_BOTTOM_Y } from './TutorialManager.js';
 
 export class GameMap extends Phaser.Scene {
@@ -46,6 +46,7 @@ export class GameMap extends Phaser.Scene {
     }
 
     create() {
+        playSceneMusic(this, 'GameMap');
         this.scale.resize(512, 608);
         this.cameras.main.setViewport(0, 0, 512, 608);
         this.physics.world.setBounds(0, 0, 512, 512);

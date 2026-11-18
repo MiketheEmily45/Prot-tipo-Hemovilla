@@ -7,7 +7,7 @@ import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession } from './occurrenceState.js';
-import { preloadAudio, playSfx, playSceneMusic, stopMusic } from './AudioManager.js';
+import { preloadAudio, playSfx } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
@@ -49,7 +49,6 @@ export class Minigame extends Phaser.Scene {
     }
 
     create() {
-        playSceneMusic(this, 'Minigame');
         this.setupViewport();
         this.setupBackground();
         this.setupPauseButton();
@@ -63,7 +62,6 @@ export class Minigame extends Phaser.Scene {
     }
 
     returnToMap(options = {}) {
-        stopMusic(this, 'minigame-music');
         endMinigameSession();
         if (this.typingPhase) {
             this.typingPhase.destroy?.();
@@ -108,7 +106,6 @@ export class Minigame extends Phaser.Scene {
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
             playSfx(this, 'clique');
-            stopMusic(this, 'minigame-music');
             endMinigameSession();
             this.scene.start('Start');
         });

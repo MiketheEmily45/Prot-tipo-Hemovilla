@@ -6,7 +6,7 @@ import { createTextStyle } from './textUtils.js';
 import { Character } from './Character.js';
 import { AlertManager } from './AlertManager.js';
 import { startMinigameSession } from './occurrenceState.js';
-import { playSfx } from './AudioManager.js';
+import { playSfx, stopMusic } from './AudioManager.js';
 
 export class ClickableCharacterManager {
     static maleCharacterIds = new Set(['joaquim', 'caue', 'carlos', 'teo', 'bruno']);
@@ -133,6 +133,7 @@ export class ClickableCharacterManager {
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.clearTint();
             playSfx(scene, 'clique');
+            stopMusic(scene, 'city-music');
             startMinigameSession(character.iconButtonKey, scene.currentCityIndex);
             scene.scene.start('Minigame', {
                 characterId: character.iconButtonKey,

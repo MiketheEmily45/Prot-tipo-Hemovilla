@@ -1,7 +1,7 @@
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
-import { playSfx } from './AudioManager.js';
+import { playSfx, stopMusic } from './AudioManager.js';
 
 export class MapControls {
     constructor(scene) {
@@ -35,6 +35,7 @@ export class MapControls {
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
             playSfx(this.scene, 'clique');
+            stopMusic(this.scene, 'city-music');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('Start');
         });
@@ -63,6 +64,7 @@ export class MapControls {
         citySelectButton.on('pointerup', () => {
             citySelectButton.clearTint();
             playSfx(this.scene, 'clique');
+            stopMusic(this.scene, 'city-music');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('CitySelect', {
                 currentCityIndex: this.scene.currentCityIndex ?? 0

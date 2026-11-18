@@ -4,7 +4,7 @@ import { getSettings } from './settingsStore.js';
 // Tabela unica de caminhos de musica.
 export const MUSIC_ASSETS = Object.freeze({
     'start-music': 'assets/Musica/MenuMusic.mp3',
-    'minigame-music': 'assets/Musica/MinigameMusic.wav'
+    'city-music': 'assets/Musica/CityMusic.wav'
 });
 
 // Tabela unica de caminhos de efeitos sonoros (SFX).
@@ -46,9 +46,9 @@ export const DEFAULT_SFX_BASE_VOLUME = 0.8;
 export const SCENE_MUSIC_KEYS = Object.freeze({
     Start: 'start-music',
     ConfigMenu: 'start-music',
-    GameMap: null,
+    GameMap: 'city-music',
     CitySelect: null,
-    Minigame: 'minigame-music'
+    Minigame: null
 });
 
 class AudioManager {

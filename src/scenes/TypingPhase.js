@@ -25,7 +25,6 @@ const BENCH_HEIGHT = 256;
 const ANTI_A_START = { x: 100, y: 64 };
 const ANTI_B_START = { x: 412, y: 64 };
 const ANTI_D_START = { x: 148, y: 74 };
-const ANTI_D_ICON_POS = { x: 94, y: 74 };
 const TUBE_START = { x: 256, y: 64 };
 // Retangulos dos pocos (poco 1 a esquerda, poco 2 a direita).
 const WELL_AREAS = [
@@ -73,6 +72,8 @@ export class TypingPhase {
         this.isActive = true;
         this.isConfirmed = false;
         this.cellSprite = null;
+        this.antiDDropSprite = null;
+        this.antiDDropTween = null;
         this.hintTimer = null;
         this.confirmTimer = null;
 
@@ -101,6 +102,13 @@ export class TypingPhase {
         }
         if (this.confirmTimer) {
             this.confirmTimer.paused = isPaused;
+        }
+        if (this.antiDDropTween) {
+            if (isPaused) {
+                this.antiDDropTween.pause?.();
+            } else {
+                this.antiDDropTween.resume?.();
+            }
         }
     }
 
@@ -191,14 +199,6 @@ export class TypingPhase {
         this.stageBadge.setOrigin(0.5);
         this.stageBadge.setDepth(42);
         this.stageBadge.setVisible(false);
-
-        this.antiDIcon = this.scene.add.image(ANTI_D_ICON_POS.x, ANTI_D_ICON_POS.y, 'anticorpo-anti-d');
-        this.antiDIcon.setScale(0.5);
-        this.antiDIcon.setDepth(30);
-        if (this.antiDIcon.texture) {
-            this.antiDIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-        }
-        this.antiDIcon.setVisible(false);
 
         this.antiDLabel = this.scene.add.text(ANTI_D_START.x, ANTI_D_START.y + 52, 'Anti-D', createTextStyle({
             fontFamily: 'monospace',
@@ -423,7 +423,6 @@ export class TypingPhase {
         this.well2Overlay?.setVisible(visible);
         this.well2Label?.setVisible(visible);
         this.stageBadge?.setVisible(visible);
-        this.antiDIcon?.setVisible(visible);
         this.antiDLabel?.setVisible(visible);
     }
 
@@ -454,6 +453,7 @@ export class TypingPhase {
         this.setDiagnosisEnabled(false);
         this.hideFailureButtons();
         this.clearCellSprite();
+        this.clearAntiDDropAnimation();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -496,6 +496,7 @@ export class TypingPhase {
 
         this.hideFailureButtons();
         this.clearCellSprite();
+        this.clearAntiDDropAnimation();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -517,6 +518,49 @@ export class TypingPhase {
             this.cellSprite.destroy();
             this.cellSprite = null;
         }
+    }
+
+    clearAntiDDropAnimation() {
+        this.antiDDropTween?.stop?.();
+        this.antiDDropTween = null;
+        this.antiDDropSprite?.destroy?.();
+        this.antiDDropSprite = null;
+    }
+
+    playAntiDDropAnimation(fromX, fromY, well) {
+        if (!this.scene?.textures?.exists?.('anticorpo-anti-d') || !this.scene?.tweens?.add) {
+            return;
+        }
+        this.clearAntiDDropAnimation();
+
+        const targetX = well.area.x + well.area.width / 2;
+        const targetY = well.area.y + well.area.height / 2;
+        const startX = typeof fromX === 'number' ? fromX : ANTI_D_START.x;
+        const startY = typeof fromY === 'number' ? fromY : ANTI_D_START.y;
+
+        const sprite = this.scene.add.image(startX, startY, 'anticorpo-anti-d');
+        sprite.setOrigin(0.5);
+        sprite.setScale(0.65);
+        sprite.setDepth(35);
+        if (sprite.texture) {
+            sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+        this.antiDDropSprite = sprite;
+
+        this.antiDDropTween = this.scene.tweens.add({
+            targets: sprite,
+            x: targetX,
+            y: targetY,
+            scale: 0.9,
+            alpha: 0,
+            duration: 320,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+                this.antiDDropTween = null;
+                this.antiDDropSprite?.destroy?.();
+                this.antiDDropSprite = null;
+            }
+        });
     }
 
     updateWellImage(well) {
@@ -573,10 +617,15 @@ export class TypingPhase {
         }
 
         playSfx(this.scene, 'clique');
+        const dropX = item.sprite.x;
+        const dropY = item.sprite.y;
         well.state = 'SERUM';
         this.updateWellImage(well);
         item.sprite.setVisible(false);
         this.scene.input.setDraggable(item.sprite, false);
+        if (item === this.items.antiD) {
+            this.playAntiDDropAnimation(dropX, dropY, well);
+        }
     }
 
     dropTube(item) {
@@ -834,8 +883,8 @@ export class TypingPhase {
         this.well2Overlay?.destroy?.();
         this.well2Label?.destroy?.();
         this.stageBadge?.destroy?.();
-        this.antiDIcon?.destroy?.();
         this.antiDLabel?.destroy?.();
+        this.clearAntiDDropAnimation();
         this.retryButton?.destroy?.();
         this.retryLabel?.destroy?.();
         this.returnButton?.destroy?.();

@@ -6,16 +6,19 @@ import { playSfx } from './AudioManager.js';
  * isolado para futura substituicao pela arte oficial sem alterar a cena.
  */
 export class ConfirmPopup {
-    constructor(scene) {
+    constructor(scene, { depth = 2000 } = {}) {
         this.scene = scene;
+        this.defaultDepth = depth;
         this.elements = [];
         this.isOpen = false;
+        this.onCancelCallback = null;
     }
 
     open({
         message = 'Tem certeza? Todo o progresso (ATPs, cidades desbloqueadas e personagens atendidos) será apagado.',
         onConfirm = null,
-        onCancel = null
+        onCancel = null,
+        depth = this.defaultDepth
     } = {}) {
         if (this.isOpen) {
             this.close();
@@ -26,9 +29,9 @@ export class ConfirmPopup {
         const height = scene.cameras?.main?.height || 512;
         const centerX = width / 2;
         const centerY = height / 2;
-        const depth = 500;
 
         this.isOpen = true;
+        this.onCancelCallback = onCancel;
         this.elements = [];
 
         // Fundo escurecido bloqueando cliques na tela de tras
@@ -175,11 +178,21 @@ export class ConfirmPopup {
         this.elements.push(gfx, hitArea, labelText);
     }
 
+    cancel() {
+        if (!this.isOpen) return;
+        const cb = this.onCancelCallback;
+        this.close();
+        if (typeof cb === 'function') {
+            cb();
+        }
+    }
+
     close() {
         if (!this.isOpen) return;
         this.elements.forEach((el) => el?.destroy?.());
         this.elements = [];
         this.isOpen = false;
+        this.onCancelCallback = null;
     }
 
     destroy() {

@@ -23,6 +23,19 @@ export const ABO_GUIDE_EXPLANATIONS = {
     O: 'Tem Anti-A e Anti-B; é o doador universal.'
 };
 
+export const RH_GUIDE_RULE_SUMMARY = 'Regra do Rh: Rh+ recebe + e −  |  Rh− só recebe −';
+
+export const RH_GUIDE_EXPLANATIONS = {
+    'A+': 'A+, A−, O+, O−',
+    'A-': 'Só Rh− (A−, O−)',
+    'B+': 'B+, B−, O+, O−',
+    'B-': 'Só Rh− (B−, O−)',
+    'AB+': 'Todos os 8 tipos (receptor universal)',
+    'AB-': 'Todos os Rh− (A−, B−, AB−, O−)',
+    'O+': 'O+, O−',
+    'O-': 'Só O− (doador universal)'
+};
+
 function getAbo(typeStr) {
     if (!typeStr || typeof typeStr !== 'string') return '';
     return typeStr.trim().toUpperCase().replace(/[+-]/g, '');
@@ -91,7 +104,9 @@ export function getCompatibilityGuideEntries({ rhEnabled = RH_ENABLED } = {}) {
             patientLabel: 'Paciente ' + type,
             hemaciaKey: 'hemacia-' + abo,
             compatibleBags: getCompatibleBags(type, { rhEnabled }),
-            explanation: ABO_GUIDE_EXPLANATIONS[abo] || ''
+            explanation: rhEnabled
+                ? (RH_GUIDE_EXPLANATIONS[type] || ABO_GUIDE_EXPLANATIONS[abo] || '')
+                : (ABO_GUIDE_EXPLANATIONS[abo] || '')
         };
     });
 }

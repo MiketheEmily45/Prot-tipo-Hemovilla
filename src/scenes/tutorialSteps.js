@@ -5,6 +5,7 @@
 //   intro                    A1-A3  mapa, Cidade 1, primeira vez
 //   ocorrenciaInicial        A4     alerta do Seu Joaquim (legenda fica na tela sem bloquear)
 //   minigameFase1/2/3        C1-C7  primeira vez que cada fase abre
+//   minigameFase2Rh          C8-C9  primeira vez que a Etapa 2 (Anti-D / Rh) abre na Cidade 2
 //   aposPrimeiroAtendimento  D1-D2  de volta ao mapa depois do primeiro atendimento
 //   selecaoCidade            E1     primeira vez que a selecao de cidade abre
 
@@ -26,6 +27,10 @@ export const TUTORIAL_STEPS = Object.freeze({
         { id: 'C4', text: 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.' },
         { id: 'C5', text: 'Em dúvida? O botão de guia, no canto superior direito, mostra os tipos e as compatibilidades.' }
     ],
+    minigameFase2Rh: [
+        { id: 'C8', text: 'Etapa 2 — Fator Rh: pingue o soro Anti-D e o sangue só no Poço 1 e misture (o Poço 2 não é usado aqui).' },
+        { id: 'C9', text: 'Aglutinou (formou grumos) é Rh+. Ficou liso é Rh−. Depois escolha o fator Rh certo — o guia mostra as regras.' }
+    ],
     minigameFase3: [
         { id: 'C6', text: 'Fase 3 — Transfusão: arraste a bolsa de sangue compatível até o paciente.' },
         { id: 'C7', text: 'Bolsa errada tira um coração. Se os três acabarem, você tenta de novo.' }
@@ -46,6 +51,7 @@ export const TUTORIAL_SECTION_BLOCKING = Object.freeze({
     ocorrenciaInicial: false,
     minigameFase1: false,
     minigameFase2: false,
+    minigameFase2Rh: false,
     minigameFase3: false,
     aposPrimeiroAtendimento: true,
     selecaoCidade: true
@@ -57,6 +63,7 @@ export const TUTORIAL_SECTION_BLOCKING = Object.freeze({
 export const TUTORIAL_CAPTION_BOTTOM_Y = Object.freeze({
     minigameFase1: 392,
     minigameFase2: 463,
+    minigameFase2Rh: 452,
     minigameFase3: 398
 });
 

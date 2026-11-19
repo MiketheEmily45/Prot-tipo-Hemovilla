@@ -22,5 +22,5 @@ export const CONTAMINATED_SCREENING_INFO = {
             description: 'Infecção parasitária causada pelo Trypanosoma cruzi.'
         }
     ],
-    footerNotice: 'Bolsas contaminadas são incompatíveis com qualquer paciente e fazem você perder 1 coração.'
+    footerNotice: 'Selo amarelo de perigo: bolsa contaminada (aparece na Cidade 3). Não serve para nenhum paciente e custa 1 coração.'
 };

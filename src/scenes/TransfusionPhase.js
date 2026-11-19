@@ -2,11 +2,14 @@
 import { CHAIR_AREA } from './Minigame.js';
 import { characterData } from './characterData.js';
 import {
-    RH_ENABLED,
     canReceive,
     incompatibilityReason,
     drawRound
 } from './bloodCompatibility.js';
+import {
+    getCharacterOccurrenceRules,
+    resolveBloodTypeWithRh
+} from './cityOccurrenceConfig.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { addATP, markCharacterAttended } from './atpStore.js';
@@ -15,9 +18,8 @@ import { markAttendanceJustCompleted } from './tutorialState.js';
 import { GuidePanel } from './GuidePanel.js';
 import { playSfx } from './AudioManager.js';
 
-// Configuracao da Fase 3
+// Configuracao da Fase 3 (regras de Rh e bolsas contaminadas por cidade ficam em cityOccurrenceConfig.js)
 const REQUIRED_BAGS = 1;
-const CONTAMINATED_COUNT = 0;
 const GREEN_GLOW_MS = 600;
 const BAG_SCALE = 1.4;
 
@@ -32,12 +34,39 @@ const HEARTS_POSITION = { x: 100, y: 16 };
 const PORTRAIT_POSITION = { x: 456, y: 56 };
 const TYPE_LABEL_OFFSET = { x: 0, y: 32 };
 const TYPE_BOX_HEIGHT = 22;
-const BAG_SLOTS = [
-    { x: 80, y: 440 },
-    { x: 196, y: 440 },
-    { x: 312, y: 440 },
-    { x: 428, y: 440 }
+const BAG_SLOT_Y = 440;
+const DEFAULT_FOUR_BAG_SLOTS = [
+    { x: 80, y: BAG_SLOT_Y },
+    { x: 196, y: BAG_SLOT_Y },
+    { x: 312, y: BAG_SLOT_Y },
+    { x: 428, y: BAG_SLOT_Y }
 ];
+
+export function getBagSlots(count) {
+    if (count === 4) {
+        return DEFAULT_FOUR_BAG_SLOTS;
+    }
+    if (count === 5) {
+        return [
+            { x: 64, y: BAG_SLOT_Y },
+            { x: 160, y: BAG_SLOT_Y },
+            { x: 256, y: BAG_SLOT_Y },
+            { x: 352, y: BAG_SLOT_Y },
+            { x: 448, y: BAG_SLOT_Y }
+        ];
+    }
+    const safeCount = Math.max(1, count);
+    if (safeCount === 1) {
+        return [{ x: 256, y: BAG_SLOT_Y }];
+    }
+    const minX = 56;
+    const maxX = 456;
+    const step = (maxX - minX) / (safeCount - 1);
+    return Array.from({ length: safeCount }, (_, i) => ({
+        x: Math.round(minX + i * step),
+        y: BAG_SLOT_Y
+    }));
+}
 
 const MESSAGE_BOX = { x: 256, y: 365 };
 const FAILURE_RETRY_BUTTON = { x: 176, y: 400, width: 144, height: 32 };
@@ -47,10 +76,16 @@ const RESULT_PANEL = { x: 256, y: 256, width: 380, height: 240 };
 const RESULT_RETURN_BUTTON = { x: 256, y: 340, width: 180, height: 40 };
 
 export class TransfusionPhase {
-    constructor(scene, state, { characterId } = {}) {
+    constructor(scene, state, { characterId, cityIndex } = {}) {
         this.scene = scene;
         this.state = state;
         this.characterId = characterId;
+        this.cityIndex = typeof cityIndex === 'number' ? cityIndex : scene?.cityIndex;
+        this.occurrenceRules = getCharacterOccurrenceRules(characterId, this.cityIndex);
+        this.rhEnabled = this.occurrenceRules.rhEnabled;
+        this.contaminatedCount = this.occurrenceRules.contaminatedBags;
+        this.bagCount = this.occurrenceRules.totalBags;
+        this.bagSlots = getBagSlots(this.bagCount);
         this.patientType = this.resolvePatientType(characterId);
         this.compatibleCount = 0;
         this.isActive = true;
@@ -65,10 +100,8 @@ export class TransfusionPhase {
 
     resolvePatientType(characterId) {
         const data = characterData[characterId];
-        if (data && data.tipoSanguineo) {
-            return data.tipoSanguineo;
-        }
-        return 'A';
+        const baseAbo = (data && data.tipoSanguineo) ? data.tipoSanguineo : 'A';
+        return resolveBloodTypeWithRh(characterId, baseAbo, this.occurrenceRules?.city);
     }
 
     setupHUD() {
@@ -79,24 +112,13 @@ export class TransfusionPhase {
             this.portrait.setDepth(40);
         }
 
-        const displayType = RH_ENABLED
+        const displayType = this.rhEnabled
             ? this.patientType
             : this.patientType.replace(/[+-]/g, '');
 
         const typeX = PORTRAIT_POSITION.x + TYPE_LABEL_OFFSET.x;
         const typeY = PORTRAIT_POSITION.y + TYPE_LABEL_OFFSET.y;
         const portraitWidth = this.portrait?.displayWidth || 64;
-
-        this.typeBg = this.scene.add.rectangle(
-            typeX,
-            typeY,
-            portraitWidth,
-            TYPE_BOX_HEIGHT,
-            0x000000,
-            0.65
-        );
-        this.typeBg.setOrigin(0.5, 0);
-        this.typeBg.setDepth(40);
 
         this.typeText = this.scene.add.text(typeX, typeY + TYPE_BOX_HEIGHT / 2, `Tipo: ${displayType}`, createTextStyle({
             fontFamily: 'monospace',
@@ -106,6 +128,18 @@ export class TransfusionPhase {
         }));
         this.typeText.setOrigin(0.5, 0.5);
         this.typeText.setDepth(41);
+
+        const typeBoxWidth = Math.max(portraitWidth, Math.ceil((this.typeText.width || 64) + 10));
+        this.typeBg = this.scene.add.rectangle(
+            typeX,
+            typeY,
+            typeBoxWidth,
+            TYPE_BOX_HEIGHT,
+            0x000000,
+            0.65
+        );
+        this.typeBg.setOrigin(0.5, 0);
+        this.typeBg.setDepth(40);
 
         this.heartsDisplay = new HeartsDisplay(this.scene, this.state, {
             x: HEARTS_POSITION.x,
@@ -245,15 +279,17 @@ export class TransfusionPhase {
 
         const bagTypes = drawRound({
             patientType: this.patientType,
-            count: 4,
-            contaminatedCount: CONTAMINATED_COUNT,
-            rhEnabled: RH_ENABLED
+            count: this.bagCount,
+            contaminatedCount: this.contaminatedCount,
+            rhEnabled: this.rhEnabled
         });
+
+        this.bagSlots = getBagSlots(bagTypes.length);
 
         const slotWidth = BAG_VISIBLE_WIDTH * BAG_SCALE;
         const slotHeight = BAG_VISIBLE_HEIGHT * BAG_SCALE;
 
-        this.slotPlates = BAG_SLOTS.map((slot) => {
+        this.slotPlates = this.bagSlots.map((slot) => {
             const plate = this.scene.add.rectangle(
                 slot.x,
                 slot.y,
@@ -268,12 +304,15 @@ export class TransfusionPhase {
         });
 
         this.bagItems = bagTypes.map((bagType, index) => {
-            const slot = BAG_SLOTS[index];
+            const slot = this.bagSlots[index];
             const textureKey = `bolsa-${bagType}`;
             const sprite = this.scene.add.image(slot.x, slot.y, textureKey);
             sprite.setOrigin(BAG_ORIGIN.x, BAG_ORIGIN.y);
             sprite.setScale(BAG_SCALE);
             sprite.setDepth(30);
+            if (sprite.texture) {
+                sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
 
             // Area de clique/arrasto centralizada no conteudo visivel da bolsa
             sprite.setInteractive({
@@ -366,7 +405,7 @@ export class TransfusionPhase {
 
         this.scene.tutorialManager?.completeCurrentSection();
 
-        const isCompatible = canReceive(this.patientType, bagItem.bagType, { rhEnabled: RH_ENABLED });
+        const isCompatible = canReceive(this.patientType, bagItem.bagType, { rhEnabled: this.rhEnabled });
 
         if (isCompatible) {
             this.handleCompatibleDrop(bagItem);
@@ -425,7 +464,7 @@ export class TransfusionPhase {
             this.handleFailure();
         } else {
             playSfx(this.scene, 'erro');
-            const reason = incompatibilityReason(this.patientType, bagItem.bagType, { rhEnabled: RH_ENABLED });
+            const reason = incompatibilityReason(this.patientType, bagItem.bagType, { rhEnabled: this.rhEnabled });
             this.showMessage(reason);
         }
     }
@@ -443,7 +482,7 @@ export class TransfusionPhase {
         });
 
         const compatibleBags = this.bagItems
-            .filter((b) => canReceive(this.patientType, b.bagType, { rhEnabled: RH_ENABLED }))
+            .filter((b) => canReceive(this.patientType, b.bagType, { rhEnabled: this.rhEnabled }))
             .map((b) => b.bagType);
 
         this.showMessage(`Atendimento falhou!\nBolsas compatíveis nesta rodada: ${compatibleBags.join(', ')}`);
@@ -574,7 +613,7 @@ export class TransfusionPhase {
         const width = BAG_VISIBLE_WIDTH * BAG_SCALE;
         const height = BAG_VISIBLE_HEIGHT * BAG_SCALE;
 
-        BAG_SLOTS.forEach((slot) => {
+        this.bagSlots.forEach((slot) => {
             this.debugGraphics.strokeRect(slot.x - width / 2, slot.y - height / 2, width, height);
         });
 

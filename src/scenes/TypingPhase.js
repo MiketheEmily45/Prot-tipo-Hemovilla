@@ -6,6 +6,7 @@ import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { GuidePanel } from './GuidePanel.js';
 import { playSfx } from './AudioManager.js';
+import { getCharacterOccurrenceRules } from './cityOccurrenceConfig.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -41,10 +42,11 @@ const DEBUG_FORCE_TYPE = null;
 const DEFAULT_TYPE = 'A';
 
 export class TypingPhase {
-    constructor(scene, state, { characterId, onComplete } = {}) {
+    constructor(scene, state, { characterId, cityIndex, onComplete } = {}) {
         this.scene = scene;
         this.state = state;
         this.characterId = characterId;
+        this.cityIndex = typeof cityIndex === 'number' ? cityIndex : scene?.cityIndex;
         this.onComplete = onComplete;
         this.patientType = this.resolvePatientType(characterId);
         this.isDragging = false;
@@ -439,7 +441,9 @@ export class TypingPhase {
         if (this.guidePanel?.isOpen) {
             this.guidePanel.close();
         }
-        setDiscoveredType(this.characterId, type);
+        const occRules = getCharacterOccurrenceRules(this.characterId, this.cityIndex);
+        const discoveredLabel = occRules.rhEnabled ? `${type}${occRules.rh}` : type;
+        setDiscoveredType(this.characterId, discoveredLabel);
         this.state.advance();
         const cellKey = `hemacia-${type}`;
         if (this.scene.textures.exists(cellKey)) {
@@ -452,7 +456,7 @@ export class TypingPhase {
             }
         }
         this.hintText.setPosition(HINT_POSITION.x + 25, HINT_POSITION.y);
-        this.hintText.setText(`Tipo ${type} confirmado`);
+        this.hintText.setText(`Tipo ${discoveredLabel} confirmado`);
 
         this.scene.time.delayedCall(CONFIRM_MS, () => {
             if (this.cellSprite) {

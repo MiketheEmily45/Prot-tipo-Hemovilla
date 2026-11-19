@@ -200,9 +200,10 @@ export class PauseMenu {
             }
         }
 
-        // Limpa ultimo ponto de mistura na Fase 2 para evitar salto ao retomar.
+        // Limpa ultimo ponto de mistura na Fase 2 e pausa temporizadores internos da tipagem.
         if (scene.typingPhase) {
             scene.typingPhase.lastPointer = null;
+            scene.typingPhase.setTimersPaused?.(true);
         }
 
         // Congela a fisica dos personagens no mapa.
@@ -251,6 +252,10 @@ export class PauseMenu {
             scene.attendanceState.resume();
         }
         this.wasAttendanceClockRunning = false;
+
+        if (scene.typingPhase) {
+            scene.typingPhase.setTimersPaused?.(false);
+        }
 
         if (scene.physics?.world && !this.wasPhysicsPaused && typeof scene.physics.world.resume === 'function') {
             scene.physics.world.resume();

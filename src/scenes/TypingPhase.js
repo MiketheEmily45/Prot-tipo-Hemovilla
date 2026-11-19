@@ -1,12 +1,20 @@
-// Fase 2 do minigame: tipagem ABO (a etapa do Rh ainda nao existe).
-import { BENCH_RESULT_FRAMES } from './minigameAssets.js';
+// Fase 2 do minigame: tipagem na bancada (Etapa 1: ABO; Etapa 2: fator Rh com soro Anti-D nas Cidades 2 e 3).
+import { BENCH_RESULT_FRAMES, RH_RESULT_FRAMES } from './minigameAssets.js';
 import { characterData } from './characterData.js';
 import { setDiscoveredType } from './discoveredTypes.js';
 import { HeartsDisplay } from './HeartsDisplay.js';
 import { createTextStyle } from './textUtils.js';
 import { GuidePanel } from './GuidePanel.js';
+import { GreenButton } from './GreenButton.js';
 import { playSfx } from './AudioManager.js';
 import { getCharacterOccurrenceRules } from './cityOccurrenceConfig.js';
+import {
+    RH_DIAGNOSIS_OPTIONS,
+    RH_NEUTRAL_ERROR_HINT,
+    aboAgglutinates,
+    getRhFailureExplanation,
+    formatConfirmedBloodType
+} from './typingLogic.js';
 
 // Valores ajustaveis da Fase 2. Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -16,6 +24,8 @@ const BENCH_HEIGHT = 256;
 // Posicao inicial dos frascos de soro e do tubo de coleta.
 const ANTI_A_START = { x: 100, y: 64 };
 const ANTI_B_START = { x: 412, y: 64 };
+const ANTI_D_START = { x: 148, y: 74 };
+const ANTI_D_ICON_POS = { x: 94, y: 74 };
 const TUBE_START = { x: 256, y: 64 };
 // Retangulos dos pocos (poco 1 a esquerda, poco 2 a direita).
 const WELL_AREAS = [
@@ -28,6 +38,11 @@ const MIX_BAR = { height: 4, offsetY: 4 };
 // Botoes de diagnostico, na base da tela.
 const DIAGNOSIS_TYPES = ['A', 'B', 'AB', 'O'];
 const DIAGNOSIS_BUTTONS = { startX: 112, spacing: 96, y: 485, width: 80, height: 36 };
+const RH_BUTTON_POSITIONS = [
+    { x: 176, y: 478 },
+    { x: 336, y: 478 }
+];
+const RH_BUTTON_SIZE = { width: 132, height: 44 };
 const RETRY_BUTTON = { x: 176, y: 452, width: 144, height: 30 };
 const RETURN_BUTTON = { x: 336, y: 452, width: 144, height: 30 };
 const HINT_POSITION = { x: 256, y: 415 };
@@ -47,15 +62,22 @@ export class TypingPhase {
         this.state = state;
         this.characterId = characterId;
         this.cityIndex = typeof cityIndex === 'number' ? cityIndex : scene?.cityIndex;
+        this.occurrenceRules = getCharacterOccurrenceRules(characterId, this.cityIndex);
+        this.rhEnabled = this.occurrenceRules.rhEnabled;
+        this.patientRh = this.occurrenceRules.rh;
         this.onComplete = onComplete;
         this.patientType = this.resolvePatientType(characterId);
+        this.stage = 'ABO'; // 'ABO' (Etapa 1) -> 'RH' (Etapa 2 nas Cidades 2 e 3)
         this.isDragging = false;
         this.lastPointer = null;
         this.isActive = true;
         this.isConfirmed = false;
         this.cellSprite = null;
+        this.hintTimer = null;
+        this.confirmTimer = null;
 
         this.createBench();
+        this.createRhElements();
         this.createBottles();
         this.createDiagnosisButtons();
         this.createTexts();
@@ -70,6 +92,16 @@ export class TypingPhase {
         });
         this.createGuideButton();
         this.reset();
+    }
+
+    setTimersPaused(paused) {
+        const isPaused = Boolean(paused);
+        if (this.hintTimer) {
+            this.hintTimer.paused = isPaused;
+        }
+        if (this.confirmTimer) {
+            this.confirmTimer.paused = isPaused;
+        }
     }
 
     createGuideButton() {
@@ -97,7 +129,7 @@ export class TypingPhase {
 
         const data = characterData[characterId];
         if (data && data.tipoSanguineo) {
-            // Ignora o fator Rh (ex.: 'A+' vira 'A').
+            // Na Etapa 1 usa apenas o tipo ABO (ex.: 'A-' vira 'A').
             return data.tipoSanguineo.replace(/[+-]/g, '');
         }
 
@@ -125,19 +157,79 @@ export class TypingPhase {
         this.progressBar.setDepth(21);
     }
 
+    createRhElements() {
+        // Centro e raio visiveis do poco 2 circular na bancada 512x512 (256x256 em escala 2x).
+        const well2CenterX = 347;
+        const well2CenterY = 256;
+
+        // Poco 2 escurecido e marcado como nao usado na Etapa 2 (Rh).
+        this.well2Overlay = this.scene.add.circle
+            ? this.scene.add.circle(well2CenterX, well2CenterY, 94, 0x000000, 0.62)
+            : this.scene.add.rectangle(well2CenterX, well2CenterY, 184, 184, 0x000000, 0.62);
+        this.well2Overlay.setDepth(23);
+        this.well2Overlay.setVisible(false);
+
+        this.well2Label = this.scene.add.text(well2CenterX, well2CenterY, 'Não usado\nnesta etapa', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontStyle: 'bold',
+            color: '#e5e7eb',
+            align: 'center'
+        }));
+        this.well2Label.setOrigin(0.5);
+        this.well2Label.setDepth(24);
+        this.well2Label.setVisible(false);
+
+        this.stageBadge = this.scene.add.text(146, 22, 'Etapa 2: Fator Rh', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.72)',
+            padding: { x: 6, y: 3 }
+        }));
+        this.stageBadge.setOrigin(0.5);
+        this.stageBadge.setDepth(42);
+        this.stageBadge.setVisible(false);
+
+        this.antiDIcon = this.scene.add.image(ANTI_D_ICON_POS.x, ANTI_D_ICON_POS.y, 'anticorpo-anti-d');
+        this.antiDIcon.setScale(0.5);
+        this.antiDIcon.setDepth(30);
+        if (this.antiDIcon.texture) {
+            this.antiDIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+        this.antiDIcon.setVisible(false);
+
+        this.antiDLabel = this.scene.add.text(ANTI_D_START.x, ANTI_D_START.y + 52, 'Anti-D', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            padding: { x: 4, y: 1 }
+        }));
+        this.antiDLabel.setOrigin(0.5);
+        this.antiDLabel.setDepth(31);
+        this.antiDLabel.setVisible(false);
+    }
+
     createBottles() {
         this.items = {
             antiA: this.createItem('frasco-anti-a', ANTI_A_START),
             antiB: this.createItem('frasco-anti-b', ANTI_B_START),
+            antiD: this.createItem('frasco-anti-d', ANTI_D_START),
             tube: this.createItem('frasco-cheio', TUBE_START)
         };
         this.items.antiA.wellIndex = 0;
         this.items.antiA.hint = 'O poço 1 é o do Anti-A';
         this.items.antiB.wellIndex = 1;
         this.items.antiB.hint = 'O poço 2 é o do Anti-B';
+        this.items.antiD.wellIndex = 0;
+        this.items.antiD.hint = 'O poço 2 não é usado nesta etapa. Use o poço 1.';
 
         this.items.antiA.sprite.on('dragend', () => this.dropSerum(this.items.antiA));
         this.items.antiB.sprite.on('dragend', () => this.dropSerum(this.items.antiB));
+        this.items.antiD.sprite.on('dragend', () => this.dropSerum(this.items.antiD));
         this.items.tube.sprite.on('dragend', () => this.dropTube(this.items.tube));
     }
 
@@ -185,6 +277,24 @@ export class TypingPhase {
             rect.on('pointerup', () => this.handleDiagnosis(type));
 
             return { type, rect, label };
+        });
+
+        // Botoes da Etapa 2 (Rh+ e Rh-) usando o GreenButton reutilizavel.
+        this.rhDiagnosisButtons = RH_DIAGNOSIS_OPTIONS.map((option, index) => {
+            const pos = RH_BUTTON_POSITIONS[index];
+            const button = new GreenButton(this.scene, {
+                x: pos.x,
+                y: pos.y,
+                width: RH_BUTTON_SIZE.width,
+                height: RH_BUTTON_SIZE.height,
+                label: option.label,
+                fontSize: '18px',
+                depth: 40,
+                onClick: () => this.handleRhDiagnosis(option.value)
+            });
+            button.setVisible(false);
+            button.setEnabled(false);
+            return { value: option.value, label: option.label, button };
         });
 
         this.retryButton = this.scene.add.rectangle(
@@ -235,7 +345,6 @@ export class TypingPhase {
     }
 
     createTexts() {
-        // Corações provisorios: virao de arte depois.
         this.heartsDisplay = new HeartsDisplay(this.scene, this.state, {
             x: HEARTS_POSITION.x,
             y: HEARTS_POSITION.y,
@@ -281,37 +390,70 @@ export class TypingPhase {
         // Tecla D liga e desliga os contornos de depuracao.
         this.debugKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.debugKey.on('down', () => {
-            if (this.isActive) {
+            if (this.isActive && !this.scene?.pauseMenu?.isOpen) {
                 this.debugGraphics.setVisible(!this.debugGraphics.visible);
             }
         });
     }
 
-    // Volta a Fase 2 para o inicio: pocos vazios, frascos e tubo nos lugares.
+    setAboButtonsVisible(visible) {
+        this.diagnosisButtons.forEach(({ rect, label }) => {
+            rect.setVisible(visible);
+            label.setVisible(visible);
+            if (!visible && rect.input) {
+                rect.input.enabled = false;
+            }
+        });
+    }
+
+    setRhButtonsVisible(visible) {
+        this.rhDiagnosisButtons.forEach(({ button }) => {
+            button.setVisible(visible);
+        });
+    }
+
+    setRhDiagnosisEnabled(enabled) {
+        this.rhDiagnosisButtons.forEach(({ button }) => {
+            button.setEnabled(enabled);
+            button.setAlpha(enabled ? 1 : 0.4);
+        });
+    }
+
+    setRhVisualsVisible(visible) {
+        this.well2Overlay?.setVisible(visible);
+        this.well2Label?.setVisible(visible);
+        this.stageBadge?.setVisible(visible);
+        this.antiDIcon?.setVisible(visible);
+        this.antiDLabel?.setVisible(visible);
+    }
+
+    // Volta a Etapa 1 (ABO) para o inicio: pocos vazios, frascos Anti-A/Anti-B e tubo nos lugares.
     reset() {
+        this.stage = 'ABO';
+        this.setRhVisualsVisible(false);
+        this.setRhButtonsVisible(false);
+        this.setRhDiagnosisEnabled(false);
+        this.setAboButtonsVisible(true);
+
         this.wells.forEach((well) => {
             well.state = 'EMPTY';
             well.mixDistance = 0;
             this.updateWellImage(well);
         });
 
-        Object.values(this.items).forEach(({ sprite, start }) => {
+        ['antiA', 'antiB', 'tube'].forEach((key) => {
+            const { sprite, start } = this.items[key];
             sprite.setPosition(start.x, start.y);
             sprite.setVisible(true);
             this.scene.input.setDraggable(sprite, true);
         });
 
+        this.items.antiD.sprite.setVisible(false);
+        this.scene.input.setDraggable(this.items.antiD.sprite, false);
+
         this.setDiagnosisEnabled(false);
-        this.retryButton.setVisible(false);
-        this.retryButton.input.enabled = false;
-        this.retryLabel.setVisible(false);
-        this.returnButton.setVisible(false);
-        this.returnButton.input.enabled = false;
-        this.returnLabel.setVisible(false);
-        if (this.cellSprite) {
-            this.cellSprite.destroy();
-            this.cellSprite = null;
-        }
+        this.hideFailureButtons();
+        this.clearCellSprite();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -319,7 +461,80 @@ export class TypingPhase {
         this.updateHearts();
     }
 
+    // Inicia ou reinicia apenas a Etapa 2 (fator Rh com soro Anti-D no poco 1).
+    startRhStage() {
+        this.resetRhStage();
+    }
+
+    resetRhStage() {
+        this.stage = 'RH';
+        this.isConfirmed = false;
+        this.setAboButtonsVisible(false);
+        this.setRhVisualsVisible(true);
+        this.setRhButtonsVisible(true);
+        this.setRhDiagnosisEnabled(false);
+
+        this.wells.forEach((well) => {
+            well.state = 'EMPTY';
+            well.mixDistance = 0;
+            this.updateWellImage(well);
+        });
+
+        ['antiA', 'antiB'].forEach((key) => {
+            const { sprite } = this.items[key];
+            sprite.setVisible(false);
+            this.scene.input.setDraggable(sprite, false);
+        });
+
+        ['antiD', 'tube'].forEach((key) => {
+            const { sprite, start } = this.items[key];
+            sprite.setPosition(start.x, start.y);
+            sprite.setVisible(true);
+            this.scene.input.setDraggable(sprite, true);
+        });
+
+        this.hideFailureButtons();
+        this.clearCellSprite();
+        this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
+        this.hintText.setText('');
+        this.progressBar.clear();
+        this.lastPointer = null;
+        this.updateHearts();
+    }
+
+    hideFailureButtons() {
+        this.retryButton.setVisible(false);
+        this.retryButton.input.enabled = false;
+        this.retryLabel.setVisible(false);
+        this.returnButton.setVisible(false);
+        this.returnButton.input.enabled = false;
+        this.returnLabel.setVisible(false);
+    }
+
+    clearCellSprite() {
+        if (this.cellSprite) {
+            this.cellSprite.destroy();
+            this.cellSprite = null;
+        }
+    }
+
     updateWellImage(well) {
+        if (this.stage === 'RH') {
+            if (well.index === 1) {
+                well.image.setTexture('bancada-vazia');
+            } else {
+                const rhKeys = {
+                    EMPTY: 'bancada-vazia',
+                    SERUM: 'bancada-antid-soro',
+                    BLOOD: 'bancada-antid-sangue',
+                    MIXED: RH_RESULT_FRAMES[this.patientRh]
+                };
+                well.image.setTexture(rhKeys[well.state]);
+            }
+            well.image.setCrop(well.index * BENCH_HALF_WIDTH, 0, BENCH_HALF_WIDTH, BENCH_HEIGHT);
+            return;
+        }
+
         const keys = {
             EMPTY: 'bancada-vazia',
             SERUM: 'bancada-soros',
@@ -349,7 +564,7 @@ export class TypingPhase {
         }
 
         if (well.index !== item.wellIndex) {
-            // Poco trocado: nao e erro, so uma dica.
+            // Poco trocado ou poco 2 na Etapa 2: nao e erro, so uma dica.
             playSfx(this.scene, 'bloqueado');
             this.returnItem(item);
             this.showHint(item.hint);
@@ -371,9 +586,19 @@ export class TypingPhase {
             return;
         }
 
+        if (this.stage === 'RH' && well.index === 1) {
+            playSfx(this.scene, 'bloqueado');
+            this.showHint('O poço 2 não é usado nesta etapa. Use o poço 1.');
+            return;
+        }
+
         if (well.state === 'EMPTY') {
             playSfx(this.scene, 'bloqueado');
-            this.showHint('Pingue o soro no poço antes do sangue');
+            this.showHint(
+                this.stage === 'RH'
+                    ? 'Pingue o soro Anti-D no poço 1 antes do sangue'
+                    : 'Pingue o soro no poço antes do sangue'
+            );
             return;
         }
 
@@ -413,13 +638,15 @@ export class TypingPhase {
         }
     }
 
-    // Aglutinacao: poco 1 (Anti-A) reage em A e AB; poco 2 (Anti-B) reage em B e AB.
+    // Aglutinacao na Etapa 1: poco 1 (Anti-A) reage em A e AB; poco 2 (Anti-B) reage em B e AB.
     agglutinates(wellIndex) {
-        const antigen = wellIndex === 0 ? 'A' : 'B';
-        return this.patientType.includes(antigen);
+        return aboAgglutinates(this.patientType, wellIndex);
     }
 
     handleDiagnosis(type) {
+        if (this.stage !== 'ABO' || this.isConfirmed || this.state.isFailed) {
+            return;
+        }
         this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (type === this.patientType) {
@@ -441,10 +668,7 @@ export class TypingPhase {
         if (this.guidePanel?.isOpen) {
             this.guidePanel.close();
         }
-        const occRules = getCharacterOccurrenceRules(this.characterId, this.cityIndex);
-        const discoveredLabel = occRules.rhEnabled ? `${type}${occRules.rh}` : type;
-        setDiscoveredType(this.characterId, discoveredLabel);
-        this.state.advance();
+
         const cellKey = `hemacia-${type}`;
         if (this.scene.textures.exists(cellKey)) {
             this.cellSprite = this.scene.add.image(HINT_POSITION.x - 110, HINT_POSITION.y, cellKey);
@@ -456,53 +680,170 @@ export class TypingPhase {
             }
         }
         this.hintText.setPosition(HINT_POSITION.x + 25, HINT_POSITION.y);
-        this.hintText.setText(`Tipo ${discoveredLabel} confirmado`);
 
-        this.scene.time.delayedCall(CONFIRM_MS, () => {
-            if (this.cellSprite) {
-                this.cellSprite.destroy();
-                this.cellSprite = null;
-            }
-            this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
-            this.hintText.setText('');
-            this.isActive = false;
-            this.debugGraphics.setVisible(false);
+        // Nas Cidades 2 e 3 (rhEnabled), nao revela +/− nem grava ainda: segue para a Etapa 2 (Anti-D).
+        if (this.rhEnabled) {
+            this.hintText.setText(`Tipo ${type} confirmado!\nAgora teste o fator Rh.`);
+            this.confirmTimer = this.scene.time.delayedCall(CONFIRM_MS, () => {
+                this.confirmTimer = null;
+                this.clearCellSprite();
+                this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
+                this.hintText.setText('');
+                if (this.guideButton) {
+                    this.guideButton.setVisible(true);
+                    this.guideButton.input.enabled = true;
+                }
+                this.startRhStage();
+            });
+            return;
+        }
 
-            if (typeof this.onComplete === 'function') {
-                this.destroy();
-                this.onComplete(type);
-            } else {
-                this.phaseText.setText('Fase 3 em breve');
-            }
+        // Cidade 1: apenas ABO, grava e segue direto para a Fase 3.
+        const confirmedType = formatConfirmedBloodType(type, this.patientRh, false);
+        setDiscoveredType(this.characterId, confirmedType);
+        this.state.advance();
+        this.hintText.setText(`Tipo ${confirmedType} confirmado`);
+
+        this.confirmTimer = this.scene.time.delayedCall(CONFIRM_MS, () => {
+            this.confirmTimer = null;
+            this.finishTypingPhase(confirmedType);
         });
+    }
+
+    handleRhDiagnosis(rhValue) {
+        if (this.stage !== 'RH' || this.isConfirmed || this.state.isFailed) {
+            return;
+        }
+        this.hintText.setDepth(45);
+        if (rhValue === this.patientRh) {
+            this.handleRhCorrect();
+            return;
+        }
+
+        this.handleRhWrong();
+    }
+
+    handleRhCorrect() {
+        this.isConfirmed = true;
+        playSfx(this.scene, 'acerto');
+        this.setRhDiagnosisEnabled(false);
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
+
+        const fullType = formatConfirmedBloodType(this.patientType, this.patientRh, true);
+        setDiscoveredType(this.characterId, fullType);
+        this.state.advance();
+
+        const rhCellKey = this.patientRh === '+' ? 'hemacia-rh-pos' : 'hemacia-rh-neg';
+        if (this.scene.textures.exists(rhCellKey)) {
+            this.cellSprite = this.scene.add.image(HINT_POSITION.x - 115, HINT_POSITION.y, rhCellKey);
+            this.cellSprite.setOrigin(0.5);
+            this.cellSprite.setDepth(45);
+            this.cellSprite.setScale(1);
+            if (this.cellSprite.texture) {
+                this.cellSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+        }
+        this.hintText.setPosition(HINT_POSITION.x + 25, HINT_POSITION.y);
+        this.hintText.setText(`Tipo ${fullType} confirmado`);
+
+        this.confirmTimer = this.scene.time.delayedCall(CONFIRM_MS, () => {
+            this.confirmTimer = null;
+            this.finishTypingPhase(fullType);
+        });
+    }
+
+    handleRhWrong() {
+        const result = this.state.registerError();
+        this.updateHearts();
+
+        if (!result.failed) {
+            playSfx(this.scene, 'erro');
+            this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
+            this.hintText.setText(RH_NEUTRAL_ERROR_HINT);
+            return;
+        }
+
+        playSfx(this.scene, 'derrota');
+        this.setRhDiagnosisEnabled(false);
+        this.setRhButtonsVisible(false);
+        if (this.guideButton) {
+            this.guideButton.setVisible(false);
+            this.guideButton.input.enabled = false;
+        }
+        if (this.guidePanel?.isOpen) {
+            this.guidePanel.close();
+        }
+        this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y - 12);
+        this.hintText.setText(getRhFailureExplanation(this.patientRh));
+        this.showFailureButtons();
+    }
+
+    finishTypingPhase(confirmedType) {
+        this.clearCellSprite();
+        this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
+        this.hintText.setText('');
+        this.isActive = false;
+        this.debugGraphics.setVisible(false);
+
+        if (typeof this.onComplete === 'function') {
+            this.destroy();
+            this.onComplete(confirmedType);
+        } else {
+            this.phaseText.setText('Fase 3 em breve');
+        }
+    }
+
+    showFailureButtons() {
+        this.retryButton.setVisible(true);
+        this.retryButton.input.enabled = true;
+        this.retryLabel.setVisible(true);
+        this.returnButton.setVisible(true);
+        this.returnButton.input.enabled = true;
+        this.returnLabel.setVisible(true);
     }
 
     destroy() {
         this.isActive = false;
+        if (this.hintTimer) {
+            this.hintTimer.remove(false);
+            this.hintTimer = null;
+        }
+        if (this.confirmTimer) {
+            this.confirmTimer.remove(false);
+            this.confirmTimer = null;
+        }
         if (this.debugKey) {
             this.debugKey.removeAllListeners();
         }
-        this.wells.forEach((well) => well.image.destroy());
-        Object.values(this.items).forEach((item) => item.sprite.destroy());
+        this.wells.forEach((well) => well.image?.destroy?.());
+        Object.values(this.items).forEach((item) => item.sprite?.destroy?.());
         this.diagnosisButtons.forEach(({ rect, label }) => {
-            rect.destroy();
-            label.destroy();
+            rect?.destroy?.();
+            label?.destroy?.();
         });
-        this.retryButton.destroy();
-        this.retryLabel.destroy();
-        this.returnButton.destroy();
-        this.returnLabel.destroy();
-        if (this.heartsDisplay) {
-            this.heartsDisplay.destroy();
-        }
-        if (this.cellSprite) {
-            this.cellSprite.destroy();
-            this.cellSprite = null;
-        }
-        this.hintText.destroy();
-        this.phaseText.destroy();
-        this.progressBar.destroy();
-        this.debugGraphics.destroy();
+        this.rhDiagnosisButtons.forEach(({ button }) => button?.destroy?.());
+        this.rhDiagnosisButtons = [];
+        this.well2Overlay?.destroy?.();
+        this.well2Label?.destroy?.();
+        this.stageBadge?.destroy?.();
+        this.antiDIcon?.destroy?.();
+        this.antiDLabel?.destroy?.();
+        this.retryButton?.destroy?.();
+        this.retryLabel?.destroy?.();
+        this.returnButton?.destroy?.();
+        this.returnLabel?.destroy?.();
+        this.heartsDisplay?.destroy?.();
+        this.clearCellSprite();
+        this.hintText?.destroy?.();
+        this.phaseText?.destroy?.();
+        this.progressBar?.destroy?.();
+        this.debugGraphics?.destroy?.();
         if (this.guideButton) {
             this.guideButton.destroy();
             this.guideButton = null;
@@ -537,12 +878,7 @@ export class TypingPhase {
             this.guidePanel.close();
         }
         this.hintText.setText(`${explanation}\nA resposta correta era o tipo ${this.patientType}.`);
-        this.retryButton.setVisible(true);
-        this.retryButton.input.enabled = true;
-        this.retryLabel.setVisible(true);
-        this.returnButton.setVisible(true);
-        this.returnButton.input.enabled = true;
-        this.returnLabel.setVisible(true);
+        this.showFailureButtons();
     }
 
     retry() {
@@ -550,6 +886,10 @@ export class TypingPhase {
         if (this.guideButton) {
             this.guideButton.setVisible(true);
             this.guideButton.input.enabled = true;
+        }
+        if (this.stage === 'RH') {
+            this.resetRhStage();
+            return;
         }
         this.reset();
     }
@@ -583,6 +923,13 @@ export class TypingPhase {
         }
 
         this.lastPointer = { x: pointer.x, y: pointer.y };
+
+        if (this.stage === 'RH') {
+            if (this.wells[0].state === 'MIXED' && !this.state.isFailed && !this.isConfirmed) {
+                this.setRhDiagnosisEnabled(true);
+            }
+            return;
+        }
 
         if (this.wells.every(({ state }) => state === 'MIXED') && !this.state.isFailed && !this.isConfirmed) {
             this.setDiagnosisEnabled(true);

@@ -223,6 +223,7 @@ export class Minigame extends Phaser.Scene {
 
         this.typingPhase = new TypingPhase(this, this.attendanceState, {
             characterId: this.characterId,
+            cityIndex: this.cityIndex,
             onComplete: () => {
                 this.startTransfusionPhase();
             }
@@ -245,7 +246,8 @@ export class Minigame extends Phaser.Scene {
         }
 
         this.transfusionPhase = new TransfusionPhase(this, this.attendanceState, {
-            characterId: this.characterId
+            characterId: this.characterId,
+            cityIndex: this.cityIndex
         });
         this.tutorialManager?.startMinigamePhase('minigameFase3');
     }

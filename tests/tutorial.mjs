@@ -76,7 +76,11 @@ function openMap(initData = {}) {
         tweens: { add: () => ({ stop() {} }) },
         time: { now: 100, delayedCall: () => ({ remove() {} }) },
         anims: { exists: () => false, create() {} },
-        sound: { play: (key) => { soundsPlayed.push(key); }, get: () => null }
+        sound: {
+            play: (key) => { soundsPlayed.push(key); },
+            get: () => null,
+            add: () => ({ play() {}, stop() {}, setVolume() {}, isPlaying: false })
+        }
     });
     scene.init(initData);
     scene.preload();
@@ -325,4 +329,21 @@ csScene2.tutorialManager.startCitySelect();
 assert.equal(caption(csScene2).isOpen, false, 'E1 nao repete na 2a vez');
 csScene2.events.emit('shutdown');
 
-console.log('OK: legendas, estado do tutorial, secoes A-E, ocorrencia inicial, relogios parados e botao TUTORIAL.');
+// Etapa 2 (Anti-D / Rh) na Cidade 2: aparece uma vez (C8-C9, sem bloquear) e nao repete.
+assert.equal(progress().minigameFase2Rh, false);
+const rhScene = createDummyScene(512, 512);
+rhScene.tutorialManager = new TutorialManager(rhScene);
+rhScene.tutorialManager.startMinigamePhase('minigameFase2Rh');
+assert.equal(caption(rhScene).isOpen, true);
+assert.equal(caption(rhScene).blocking, false);
+assert.equal(pageText(rhScene), TUTORIAL_STEPS.minigameFase2Rh[0].text);
+caption(rhScene).advance();
+assert.equal(pageText(rhScene), TUTORIAL_STEPS.minigameFase2Rh[1].text);
+caption(rhScene).advance();
+assert.equal(caption(rhScene).isOpen, false);
+assert.equal(progress().minigameFase2Rh, true);
+rhScene.tutorialManager.startMinigamePhase('minigameFase2Rh');
+assert.equal(caption(rhScene).isOpen, false, 'minigameFase2Rh nao repete na 2a vez');
+rhScene.events.emit('shutdown');
+
+console.log('OK: legendas, estado do tutorial, secoes A-E e Etapa 2 (Rh), ocorrencia inicial, relogios parados e botao TUTORIAL.');

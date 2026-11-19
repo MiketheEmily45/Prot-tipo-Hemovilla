@@ -1,8 +1,12 @@
-// Valores ajustaveis do atendimento (alterar aqui para testar o balanceamento).
+import { BASE_TEMPO, MULT_CIDADE, BONUS_RAPIDO } from './atpConfig.js';
+import { getOccurrence } from './occurrenceState.js';
+
+// Valores ajustaveis do atendimento (constantes de ATP ficam juntas em atpConfig.js).
 export const ATTENDANCE_CONFIG = {
     MAX_HEARTS: 3,
-    BASE_ATP: 100,
-    TIME_BONUS_ATP: 20,
+    BASE_TEMPO,
+    MULT_CIDADE,
+    BONUS_RAPIDO,
     // Indice = numero de erros; 2 ou mais erros usam o ultimo valor.
     ERROR_MULTIPLIERS: [1.0, 0.75, 0.5],
     // Tempo esperado em segundos.
@@ -10,10 +14,73 @@ export const ATTENDANCE_CONFIG = {
     EXPECTED_SECONDS_WITHOUT_TYPING: 60
 };
 
+export function round5(value) {
+    return Math.round(value / 5) * 5;
+}
+
+export function resolveBaseAtp(intervalMinutes) {
+    if (typeof intervalMinutes === 'number' && Number.isFinite(intervalMinutes) && intervalMinutes in BASE_TEMPO) {
+        return BASE_TEMPO[intervalMinutes];
+    }
+
+    const keys = Object.keys(BASE_TEMPO)
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+
+    if (keys.length === 0) {
+        return 0;
+    }
+
+    if (typeof intervalMinutes !== 'number' || !Number.isFinite(intervalMinutes)) {
+        return BASE_TEMPO[keys[0]];
+    }
+
+    let closestKey = keys[0];
+    let minDiff = Math.abs(intervalMinutes - closestKey);
+    for (let i = 1; i < keys.length; i++) {
+        const diff = Math.abs(intervalMinutes - keys[i]);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestKey = keys[i];
+        }
+    }
+
+    return BASE_TEMPO[closestKey];
+}
+
+export function resolveCityMultiplier(city) {
+    if (typeof city === 'number' && Number.isFinite(city) && city in MULT_CIDADE) {
+        return MULT_CIDADE[city];
+    }
+
+    return MULT_CIDADE[1] ?? 1.0;
+}
+
+export function calculateAttendanceATP({ characterIntervalMinutes, errors = 0, city = 1, withinTime = false }) {
+    const base = resolveBaseAtp(characterIntervalMinutes);
+    const multipliers = ATTENDANCE_CONFIG.ERROR_MULTIPLIERS;
+    const performance = multipliers[Math.min(Math.max(0, errors), multipliers.length - 1)];
+    const cityMult = resolveCityMultiplier(city);
+    const bonus = withinTime ? BONUS_RAPIDO : 0;
+
+    return round5(base * performance * cityMult) + bonus;
+}
+
 export class AttendanceState {
-    constructor({ characterId, typeKnown }) {
+    constructor({ characterId, typeKnown, cityIndex, city, characterIntervalMinutes } = {}) {
+        const occurrence = getOccurrence(characterId);
+
         this.characterId = characterId;
         this.typeKnown = Boolean(typeKnown);
+        this.city = typeof city === 'number'
+            ? city
+            : (typeof cityIndex === 'number'
+                ? cityIndex + 1
+                : (occurrence && typeof occurrence.cityIndex === 'number' ? occurrence.cityIndex + 1 : 1));
+        this.characterIntervalMinutes = typeof characterIntervalMinutes === 'number'
+            ? characterIntervalMinutes
+            : (occurrence && typeof occurrence.intervalMs === 'number' ? occurrence.intervalMs / 60000 : 1);
         this.phase = 'COLETA';
         this.hasTyping = !this.typeKnown;
         this.exposedHearts = ATTENDANCE_CONFIG.MAX_HEARTS;
@@ -87,14 +154,16 @@ export class AttendanceState {
             throw new Error('Atendimento falhou: use retry() antes de concluir.');
         }
 
-        const multipliers = ATTENDANCE_CONFIG.ERROR_MULTIPLIERS;
-        const multiplier = multipliers[Math.min(this.totalErrors, multipliers.length - 1)];
         const expectedSeconds = this.hasTyping
             ? ATTENDANCE_CONFIG.EXPECTED_SECONDS_WITH_TYPING
             : ATTENDANCE_CONFIG.EXPECTED_SECONDS_WITHOUT_TYPING;
         const withinTime = this.elapsedSeconds <= expectedSeconds;
-        const atp = Math.round(ATTENDANCE_CONFIG.BASE_ATP * multiplier)
-            + (withinTime ? ATTENDANCE_CONFIG.TIME_BONUS_ATP : 0);
+        const atp = calculateAttendanceATP({
+            characterIntervalMinutes: this.characterIntervalMinutes,
+            errors: this.totalErrors,
+            city: this.city,
+            withinTime
+        });
 
         this.phase = 'RESULTADO';
 

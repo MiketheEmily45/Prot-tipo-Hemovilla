@@ -115,6 +115,7 @@ export class Minigame extends Phaser.Scene {
     setupAttendanceState() {
         this.attendanceState = new AttendanceState({
             characterId: this.characterId,
+            cityIndex: this.cityIndex,
             typeKnown: isProgressSavingDisabled() ? false : (getDiscoveredType(this.characterId) !== null)
         });
     }

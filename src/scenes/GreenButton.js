@@ -215,10 +215,16 @@ export class GreenButton {
         return this;
     }
 
+    setAlpha(alpha) {
+        this.background?.setAlpha(alpha);
+        this.label?.setAlpha(alpha);
+        return this;
+    }
+
     setEnabled(enabled) {
         this.enabled = Boolean(enabled);
         if (this.background?.input) {
-            this.background.input.enabled = this.enabled;
+            this.background.input.enabled = Boolean(this.enabled && this.background.visible);
         }
         return this;
     }

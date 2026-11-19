@@ -18,6 +18,10 @@ export const MINIGAME_ASSETS = {
     'bancada-resultado-6': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoB.png',
     'bancada-resultado-8': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoAB.png',
     'bancada-resultado-9': 'assets/Minigame/Cenario/SalaAnalise/ResultadoTipoO.png',
+    'bancada-antid-soro': 'assets/Minigame/Cenario/SalaAnalise/AntiDSozinho.png',
+    'bancada-antid-sangue': 'assets/Minigame/Cenario/SalaAnalise/AntiDcomSangue.png',
+    'bancada-antid-positivo': 'assets/Minigame/Cenario/SalaAnalise/AntiDAglutinado.png',
+    'bancada-antid-negativo': 'assets/Minigame/Cenario/SalaAnalise/AntiDsemAglutinar.png',
     'bolsa-A+': 'assets/Minigame/BolsasDeSangue/APos.png',
     'bolsa-A-': 'assets/Minigame/BolsasDeSangue/ANeg.png',
     'bolsa-AB+': 'assets/Minigame/BolsasDeSangue/ABPos.png',
@@ -74,6 +78,12 @@ export const BENCH_RESULT_FRAMES = {
     B: 'bancada-resultado-6',
     AB: 'bancada-resultado-8',
     O: 'bancada-resultado-9'
+};
+
+// Fator Rh -> chave da imagem de resultado da bancada na Etapa 2 (Anti-D).
+export const RH_RESULT_FRAMES = {
+    '+': 'bancada-antid-positivo',
+    '-': 'bancada-antid-negativo'
 };
 
 // Mapa characterId -> chave da imagem do sprite do paciente na poltrona.

@@ -1,7 +1,8 @@
 import { BASE_TEMPO, MULT_CIDADE, BONUS_RAPIDO } from './atpConfig.js';
 import { getOccurrence } from './occurrenceState.js';
+import { EXPECTED_TYPING_SECONDS_BY_CITY, getExpectedTypingSecondsForCity } from './cityOccurrenceConfig.js';
 
-// Valores ajustaveis do atendimento (constantes de ATP ficam juntas em atpConfig.js).
+// Valores ajustaveis do atendimento (constantes de ATP em atpConfig.js; tempos com tipagem por cidade em cityOccurrenceConfig.js).
 export const ATTENDANCE_CONFIG = {
     MAX_HEARTS: 3,
     BASE_TEMPO,
@@ -9,8 +10,9 @@ export const ATTENDANCE_CONFIG = {
     BONUS_RAPIDO,
     // Indice = numero de erros; 2 ou mais erros usam o ultimo valor.
     ERROR_MULTIPLIERS: [1.0, 0.75, 0.5],
-    // Tempo esperado em segundos.
-    EXPECTED_SECONDS_WITH_TYPING: 120,
+    // Tempo esperado em segundos (por cidade quando tem tipagem; fixo sem tipagem).
+    EXPECTED_TYPING_SECONDS_BY_CITY,
+    EXPECTED_SECONDS_WITH_TYPING: EXPECTED_TYPING_SECONDS_BY_CITY[1],
     EXPECTED_SECONDS_WITHOUT_TYPING: 60
 };
 
@@ -155,7 +157,7 @@ export class AttendanceState {
         }
 
         const expectedSeconds = this.hasTyping
-            ? ATTENDANCE_CONFIG.EXPECTED_SECONDS_WITH_TYPING
+            ? getExpectedTypingSecondsForCity(this.city)
             : ATTENDANCE_CONFIG.EXPECTED_SECONDS_WITHOUT_TYPING;
         const withinTime = this.elapsedSeconds <= expectedSeconds;
         const atp = calculateAttendanceATP({

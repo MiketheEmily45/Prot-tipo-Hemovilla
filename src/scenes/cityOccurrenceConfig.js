@@ -40,6 +40,14 @@ export const CONTAMINATED_BAGS_BY_CITY = {
 // Quantidade padrao de bolsas normais sorteadas na Fase 3 (as contaminadas entram como extras).
 export const NORMAL_BAGS_PER_ROUND = 4;
 
+// Tempo esperado (em segundos) para o bonus rapido quando o atendimento inclui a Fase 2 (tipagem).
+// Cidade 1: 1 etapa (ABO) = 120 s. Cidades 2 e 3: 2 etapas (ABO + Anti-D) = 150 s.
+export const EXPECTED_TYPING_SECONDS_BY_CITY = {
+    1: 120,
+    2: 150,
+    3: 150
+};
+
 export function getCityNumberForCharacter(characterId) {
     if (!characterId) return 1;
     for (const [cityKey, ids] of Object.entries(CITY_CHARACTER_IDS)) {
@@ -84,6 +92,12 @@ export function getContaminatedBagCountForCity(cityNumber) {
     return Math.max(0, Number.isFinite(count) ? count : 0);
 }
 
+export function getExpectedTypingSecondsForCity(cityNumber) {
+    const city = Number(cityNumber) || 1;
+    const seconds = EXPECTED_TYPING_SECONDS_BY_CITY[city];
+    return typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0 ? seconds : 120;
+}
+
 export function getCityOccurrenceRules(cityIndex = 0) {
     const city = typeof cityIndex === 'number' && Number.isFinite(cityIndex) ? cityIndex + 1 : 1;
     const characters = CITY_CHARACTER_IDS[city] || [];
@@ -92,6 +106,7 @@ export function getCityOccurrenceRules(cityIndex = 0) {
     const contaminatedBags = getContaminatedBagCountForCity(city);
     const normalBags = NORMAL_BAGS_PER_ROUND;
     const totalBags = normalBags + contaminatedBags;
+    const expectedTypingSeconds = getExpectedTypingSecondsForCity(city);
 
     return {
         city,
@@ -101,7 +116,8 @@ export function getCityOccurrenceRules(cityIndex = 0) {
         rhNegativeCharacters,
         contaminatedBags,
         normalBags,
-        totalBags
+        totalBags,
+        expectedTypingSeconds
     };
 }
 

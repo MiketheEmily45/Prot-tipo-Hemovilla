@@ -1,8 +1,11 @@
 // Painel do Guia do Minigame (estrutura base com abas, overlay bloqueador e pausa de tempo).
 import { createTextStyle } from './textUtils.js';
-import { getCompatibilityGuideEntries } from './bloodCompatibility.js';
+import { getCompatibilityGuideEntries, RH_GUIDE_RULE_SUMMARY } from './bloodCompatibility.js';
+import { isRhEnabledForCity } from './cityOccurrenceConfig.js';
 import { CONTAMINATED_SCREENING_INFO } from './contaminatedInfo.js';
 import { playSfx } from './AudioManager.js';
+
+const BAG_ORIGIN = { x: 33.5 / 64, y: 20.5 / 64 };
 
 export const GUIDE_PANEL_CONFIG = {
     panelWidth: 448,
@@ -192,6 +195,11 @@ export class GuidePanel {
         }
     }
 
+    isRhEnabled() {
+        const cityNumber = (this.scene?.cityIndex ?? 0) + 1;
+        return isRhEnabledForCity(cityNumber);
+    }
+
     renderTiposTab() {
         const scene = this.scene;
         const { panelX } = GUIDE_PANEL_CONFIG;
@@ -200,45 +208,45 @@ export class GuidePanel {
             {
                 tipo: 'Tipo A',
                 hemaciaKey: 'hemacia-A',
-                antigenos: 'Antígenos na membrana: Antígeno A.',
-                reacao: 'Reação: reage (aglutina) com soro Anti-A (não reage com Anti-B).',
+                antigenos: 'Antígeno A na membrana.',
+                reacao: 'Aglutina com soro Anti-A (não reage com Anti-B).',
                 antibodies: ['anticorpo-anti-a'],
-                textWrapWidth: 268
+                textWrapWidth: 270
             },
             {
                 tipo: 'Tipo B',
                 hemaciaKey: 'hemacia-B',
-                antigenos: 'Antígenos na membrana: Antígeno B.',
-                reacao: 'Reação: reage (aglutina) com soro Anti-B (não reage com Anti-A).',
+                antigenos: 'Antígeno B na membrana.',
+                reacao: 'Aglutina com soro Anti-B (não reage com Anti-A).',
                 antibodies: ['anticorpo-anti-b'],
-                textWrapWidth: 268
+                textWrapWidth: 270
             },
             {
                 tipo: 'Tipo AB',
                 hemaciaKey: 'hemacia-AB',
-                antigenos: 'Antígenos na membrana: Antígenos A e B.',
-                reacao: 'Reação: reage (aglutina) com Anti-A e com Anti-B.',
+                antigenos: 'Antígenos A e B na membrana.',
+                reacao: 'Aglutina com Anti-A e com Anti-B.',
                 antibodies: ['anticorpo-anti-a', 'anticorpo-anti-b'],
-                textWrapWidth: 240
+                textWrapWidth: 244
             },
             {
                 tipo: 'Tipo O',
                 hemaciaKey: 'hemacia-O',
-                antigenos: 'Antígenos na membrana: nenhum antígeno A ou B.',
-                reacao: 'Reação: não reage com Anti-A nem com Anti-B.',
+                antigenos: 'Nenhum antígeno A ou B na membrana.',
+                reacao: 'Não aglutina com Anti-A nem com Anti-B.',
                 antibodies: [],
-                textWrapWidth: 314
+                textWrapWidth: 312
             }
         ];
 
-        const startY = 134;
-        const rowHeight = 77;
+        const startY = 132;
+        const rowHeight = 53;
 
         tiposData.forEach((item, index) => {
             const rowY = startY + index * rowHeight;
-            const rowCenter = rowY + 38;
+            const rowCenter = rowY + 26;
 
-            // Linha divisoria sutil entre os itens (distribuicao uniforme aproveitando o espaco)
+            // Linha divisoria sutil entre os tipos ABO
             if (index < tiposData.length - 1) {
                 const separator = scene.add.line(
                     panelX,
@@ -253,63 +261,58 @@ export class GuidePanel {
                 this.contentElements.push(separator);
             }
 
-            // Hemacia no lado esquerdo com escala inteira e filtro NEAREST para maxima nitidez
             const hemacia = scene.add.image(94, rowCenter, item.hemaciaKey);
-            hemacia.setScale(1);
+            hemacia.setScale(0.72);
             if (hemacia.texture) {
                 hemacia.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
             }
             hemacia.setDepth(203);
             this.contentElements.push(hemacia);
 
-            // Nome do tipo (destaque, maior que a legenda)
-            const title = scene.add.text(126, rowY + 5, item.tipo, createTextStyle({
+            const title = scene.add.text(126, rowY + 3, item.tipo, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontStyle: 'bold',
                 color: '#8B2E40'
             })).setDepth(203);
             this.contentElements.push(title);
 
-            // Legenda de antigenos aprovada (resolucao 3, coordenadas inteiras)
-            const antigenText = scene.add.text(126, rowY + 22, item.antigenos, createTextStyle({
+            const antigenText = scene.add.text(126, rowY + 18, item.antigenos, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '11px',
+                fontSize: '10px',
                 color: '#3b2a20',
                 wordWrap: { width: item.textWrapWidth, useAdvancedWrap: true }
             })).setDepth(203);
             this.contentElements.push(antigenText);
 
-            // Legenda de reacao aprovada (resolucao 3, coordenadas inteiras)
-            const reacaoText = scene.add.text(126, rowY + 37, item.reacao, createTextStyle({
+            const reacaoText = scene.add.text(126, rowY + 31, item.reacao, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '11px',
+                fontSize: '10px',
                 color: '#3b2a20',
-                lineSpacing: 2,
+                lineSpacing: 1,
                 wordWrap: { width: item.textWrapWidth, useAdvancedWrap: true }
             })).setDepth(203);
             this.contentElements.push(reacaoText);
 
-            // Icones de anticorpo ao lado da reacao com escala inteira 1 (dobro do tamanho anterior) e filtro NEAREST
             if (item.antibodies.length === 1) {
                 const abIcon = scene.add.image(418, rowCenter, item.antibodies[0]);
-                abIcon.setScale(1);
+                abIcon.setScale(0.75);
                 if (abIcon.texture) {
                     abIcon.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
                 }
                 abIcon.setDepth(203);
                 this.contentElements.push(abIcon);
             } else if (item.antibodies.length === 2) {
-                const ab1 = scene.add.image(388, rowCenter, item.antibodies[0]);
-                ab1.setScale(1);
+                const ab1 = scene.add.image(392, rowCenter, item.antibodies[0]);
+                ab1.setScale(0.75);
                 if (ab1.texture) {
                     ab1.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
                 }
                 ab1.setDepth(203);
                 this.contentElements.push(ab1);
 
-                const ab2 = scene.add.image(424, rowCenter, item.antibodies[1]);
-                ab2.setScale(1);
+                const ab2 = scene.add.image(422, rowCenter, item.antibodies[1]);
+                ab2.setScale(0.75);
                 if (ab2.texture) {
                     ab2.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
                 }
@@ -317,23 +320,90 @@ export class GuidePanel {
                 this.contentElements.push(ab2);
             }
         });
+
+        // Bloco do Fator Rh (teste com soro Anti-D)
+        const rhBox = scene.add.rectangle(panelX, 391, 366, 82, 0x8B2E40, 0.09);
+        rhBox.setStrokeStyle(1, 0x8B2E40, 0.45);
+        rhBox.setDepth(203);
+        this.contentElements.push(rhBox);
+
+        const rhTitle = scene.add.text(80, 355, 'Fator Rh — Teste com soro Anti-D', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            fontStyle: 'bold',
+            color: '#8B2E40'
+        })).setDepth(203);
+        this.contentElements.push(rhTitle);
+
+        const rhRows = [
+            {
+                key: 'hemacia-rh-pos',
+                scale: 0.48,
+                y: 385,
+                text: 'Rh+: tem antígeno D. Aglutina com Anti-D.'
+            },
+            {
+                key: 'hemacia-rh-neg',
+                scale: 0.52,
+                y: 415,
+                text: 'Rh−: sem antígeno D. Não aglutina (liso).'
+            }
+        ];
+
+        rhRows.forEach((row) => {
+            if (scene.textures?.exists?.(row.key)) {
+                const cell = scene.add.image(94, row.y, row.key);
+                cell.setScale(row.scale);
+                if (cell.texture) {
+                    cell.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                cell.setDepth(203);
+                this.contentElements.push(cell);
+            }
+
+            const label = scene.add.text(114, row.y, row.text, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fontStyle: 'bold',
+                color: '#3b2a20',
+                wordWrap: { width: 274, useAdvancedWrap: true }
+            })).setOrigin(0, 0.5).setDepth(203);
+            this.contentElements.push(label);
+        });
+
+        if (scene.textures?.exists?.('anticorpo-anti-d')) {
+            const antiD = scene.add.image(416, 398, 'anticorpo-anti-d');
+            antiD.setScale(0.85);
+            if (antiD.texture) {
+                antiD.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+            antiD.setDepth(203);
+            this.contentElements.push(antiD);
+        }
     }
 
-    
-
     renderCompatibilidadeTab() {
+        const rhEnabled = this.isRhEnabled();
+        const entries = getCompatibilityGuideEntries({ rhEnabled });
+
+        if (rhEnabled) {
+            this.renderRhCompatibilityRows(entries);
+            return;
+        }
+
+        this.renderAboCompatibilityRows(entries);
+    }
+
+    renderAboCompatibilityRows(entries) {
         const scene = this.scene;
         const { panelX } = GUIDE_PANEL_CONFIG;
-        const entries = getCompatibilityGuideEntries();
 
         const startY = 134;
         const rowHeight = 77;
-        const bagOrigin = { x: 33.5 / 64, y: 20.5 / 64 };
 
         entries.forEach((item, index) => {
             const rowY = startY + index * rowHeight;
 
-            // Linha divisoria sutil entre os itens (distribuicao uniforme aproveitando o espaco)
             if (index < entries.length - 1) {
                 const separator = scene.add.line(
                     panelX,
@@ -348,7 +418,6 @@ export class GuidePanel {
                 this.contentElements.push(separator);
             }
 
-            // Coluna esquerda: rotulo "Paciente X" em vinho (#8B2E40) com a hemacia do tipo
             const patientLabel = scene.add.text(94, rowY + 8, item.patientLabel, createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '12px',
@@ -365,7 +434,6 @@ export class GuidePanel {
             hemacia.setDepth(203);
             this.contentElements.push(hemacia);
 
-            // Coluna direita: rotulo "Pode receber:", miniaturas das bolsas compativeis e explicacao
             const receiveLabel = scene.add.text(144, rowY + 20, 'Pode receber:', createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '11px',
@@ -374,14 +442,13 @@ export class GuidePanel {
             })).setOrigin(0, 0.5).setDepth(203);
             this.contentElements.push(receiveLabel);
 
-            // Miniaturas das bolsas compativeis (mesmos sprites que a Fase 3 usa hoje)
             const bagStartX = 248;
             const bagSpacing = 36;
             item.compatibleBags.forEach((bagType, bagIdx) => {
                 const bagX = bagStartX + bagIdx * bagSpacing;
                 const bagY = rowY + 20;
                 const bagSprite = scene.add.image(bagX, bagY, 'bolsa-' + bagType);
-                bagSprite.setOrigin(bagOrigin.x, bagOrigin.y);
+                bagSprite.setOrigin(BAG_ORIGIN.x, BAG_ORIGIN.y);
                 bagSprite.setScale(1);
                 if (bagSprite.texture) {
                     bagSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
@@ -390,11 +457,93 @@ export class GuidePanel {
                 this.contentElements.push(bagSprite);
             });
 
-            // Linha curta de explicacao (resolucao 3, coordenadas inteiras)
             const explanationText = scene.add.text(144, rowY + 54, item.explanation, createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '11px',
                 color: '#3b2a20'
+            })).setOrigin(0, 0.5).setDepth(203);
+            this.contentElements.push(explanationText);
+        });
+    }
+
+    renderRhCompatibilityRows(entries) {
+        const scene = this.scene;
+        const { panelX } = GUIDE_PANEL_CONFIG;
+
+        // Faixa superior com a regra geral do fator Rh
+        const ruleBg = scene.add.rectangle(panelX, 144, 366, 22, 0x8B2E40, 0.12);
+        ruleBg.setStrokeStyle(1, 0x8B2E40, 0.45);
+        ruleBg.setDepth(203);
+        this.contentElements.push(ruleBg);
+
+        const ruleText = scene.add.text(panelX, 144, RH_GUIDE_RULE_SUMMARY, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '10px',
+            fontStyle: 'bold',
+            color: '#8B2E40'
+        })).setOrigin(0.5, 0.5).setDepth(203);
+        this.contentElements.push(ruleText);
+
+        const startY = 160;
+        const rowHeight = 34;
+
+        entries.forEach((item, index) => {
+            const rowY = startY + index * rowHeight;
+            const rowCenter = rowY + rowHeight / 2;
+
+            if (index < entries.length - 1) {
+                const separator = scene.add.line(
+                    panelX,
+                    rowY + rowHeight,
+                    0,
+                    0,
+                    364,
+                    0,
+                    0x8c7355,
+                    0.3
+                ).setDepth(203);
+                this.contentElements.push(separator);
+            }
+
+            const patientLabel = scene.add.text(76, rowCenter, item.patientLabel, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fontStyle: 'bold',
+                color: '#8B2E40'
+            })).setOrigin(0, 0.5).setDepth(203);
+            this.contentElements.push(patientLabel);
+
+            // AB+ recebe os 8 tipos: mostra texto resumido para caber com clareza na moldura
+            if (item.compatibleBags.length > 4) {
+                const allText = scene.add.text(168, rowCenter, item.explanation, createTextStyle({
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    fontStyle: 'bold',
+                    color: '#3b2a20'
+                })).setOrigin(0, 0.5).setDepth(203);
+                this.contentElements.push(allText);
+                return;
+            }
+
+            const bagStartX = 178;
+            const bagSpacing = 28;
+            item.compatibleBags.forEach((bagType, bagIdx) => {
+                const bagX = bagStartX + bagIdx * bagSpacing;
+                const bagSprite = scene.add.image(bagX, rowCenter, 'bolsa-' + bagType);
+                bagSprite.setOrigin(BAG_ORIGIN.x, BAG_ORIGIN.y);
+                bagSprite.setScale(0.72);
+                if (bagSprite.texture) {
+                    bagSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                }
+                bagSprite.setDepth(203);
+                this.contentElements.push(bagSprite);
+            });
+
+            const explanationText = scene.add.text(294, rowCenter, item.explanation, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                color: '#3b2a20',
+                wordWrap: { width: 144, useAdvancedWrap: true }
             })).setOrigin(0, 0.5).setDepth(203);
             this.contentElements.push(explanationText);
         });
@@ -406,7 +555,7 @@ export class GuidePanel {
         const info = CONTAMINATED_SCREENING_INFO;
 
         // Titulo unico da aba ("TRIAGEM E SEGURANCA") em vinho (#8B2E40)
-        const title = scene.add.text(panelX, 142, info.title, createTextStyle({
+        const title = scene.add.text(panelX, 138, info.title, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '13px',
             fontStyle: 'bold',
@@ -415,7 +564,7 @@ export class GuidePanel {
         this.contentElements.push(title);
 
         // Texto introdutorio sobre a triagem sorologica em 11px
-        const introText = scene.add.text(panelX, 160, info.intro, createTextStyle({
+        const introText = scene.add.text(panelX, 156, info.intro, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '11px',
             color: '#3b2a20',
@@ -428,7 +577,7 @@ export class GuidePanel {
         // Linha divisoria sutil abaixo da introducao
         const headerSeparator = scene.add.line(
             panelX,
-            205,
+            200,
             0,
             0,
             364,
@@ -438,15 +587,14 @@ export class GuidePanel {
         ).setDepth(203);
         this.contentElements.push(headerSeparator);
 
-        // Lista das 4 doencas rastreadas (distribuicao uniforme em linhas de 44px)
-        const startY = 207;
-        const rowHeight = 44;
+        // Lista das 4 doencas rastreadas (distribuicao uniforme em linhas de 41px)
+        const startY = 202;
+        const rowHeight = 41;
 
         info.diseases.forEach((item, index) => {
             const rowY = startY + index * rowHeight;
 
-            // Marcador pontual em vinho
-            const bullet = scene.add.text(84, rowY + 6, '•', createTextStyle({
+            const bullet = scene.add.text(84, rowY + 4, '•', createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '14px',
                 fontStyle: 'bold',
@@ -454,8 +602,7 @@ export class GuidePanel {
             })).setOrigin(0.5, 0).setDepth(203);
             this.contentElements.push(bullet);
 
-            // Nome da doenca em destaque
-            const diseaseName = scene.add.text(96, rowY + 6, item.name, createTextStyle({
+            const diseaseName = scene.add.text(96, rowY + 4, item.name, createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '12px',
                 fontStyle: 'bold',
@@ -463,15 +610,13 @@ export class GuidePanel {
             })).setOrigin(0, 0).setDepth(203);
             this.contentElements.push(diseaseName);
 
-            // Descricao da doenca em 11px
-            const diseaseDesc = scene.add.text(96, rowY + 22, item.description, createTextStyle({
+            const diseaseDesc = scene.add.text(96, rowY + 20, item.description, createTextStyle({
                 fontFamily: 'monospace',
                 fontSize: '11px',
                 color: '#3b2a20'
             })).setOrigin(0, 0).setDepth(203);
             this.contentElements.push(diseaseDesc);
 
-            // Linha divisoria entre as doencas
             if (index < info.diseases.length - 1) {
                 const separator = scene.add.line(
                     panelX,
@@ -487,21 +632,34 @@ export class GuidePanel {
             }
         });
 
-        // Caixa de alerta / rodape
-        const footerBg = scene.add.rectangle(panelX, 408, 364, 38, 0x8B2E40, 0.12);
+        // Caixa de alerta / rodape com miniaturas das bolsas contaminadas (selo de perigo)
+        const footerY = 401;
+        const footerBg = scene.add.rectangle(panelX, footerY, 366, 60, 0x8B2E40, 0.12);
         footerBg.setStrokeStyle(1, 0x8B2E40, 0.5);
         footerBg.setDepth(203);
         this.contentElements.push(footerBg);
 
-        const footerText = scene.add.text(panelX, 408, info.footerNotice, createTextStyle({
+        ['bolsa-C+', 'bolsa-C-'].forEach((bagKey, idx) => {
+            if (!scene.textures?.exists?.(bagKey)) return;
+            const bag = scene.add.image(96 + idx * 32, footerY, bagKey);
+            bag.setOrigin(BAG_ORIGIN.x, BAG_ORIGIN.y);
+            bag.setScale(0.95);
+            if (bag.texture) {
+                bag.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+            bag.setDepth(203);
+            this.contentElements.push(bag);
+        });
+
+        const footerText = scene.add.text(150, footerY, info.footerNotice, createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '11px',
+            fontSize: '10px',
             fontStyle: 'bold',
             color: '#8B2E40',
-            align: 'center',
+            align: 'left',
             lineSpacing: 2,
-            wordWrap: { width: 348, useAdvancedWrap: true }
-        })).setOrigin(0.5, 0.5).setDepth(203);
+            wordWrap: { width: 280, useAdvancedWrap: true }
+        })).setOrigin(0, 0.5).setDepth(203);
         this.contentElements.push(footerText);
     }
 

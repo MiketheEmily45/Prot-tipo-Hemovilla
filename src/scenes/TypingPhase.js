@@ -464,6 +464,7 @@ export class TypingPhase {
     // Inicia ou reinicia apenas a Etapa 2 (fator Rh com soro Anti-D no poco 1).
     startRhStage() {
         this.resetRhStage();
+        this.scene.tutorialManager?.startMinigamePhase('minigameFase2Rh');
     }
 
     resetRhStage() {
@@ -714,6 +715,7 @@ export class TypingPhase {
         if (this.stage !== 'RH' || this.isConfirmed || this.state.isFailed) {
             return;
         }
+        this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (rhValue === this.patientRh) {
             this.handleRhCorrect();

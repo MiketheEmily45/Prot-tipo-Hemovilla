@@ -7,6 +7,7 @@ export const TUTORIAL_FLAG_KEYS = Object.freeze([
     'ocorrenciaInicial',
     'minigameFase1',
     'minigameFase2',
+    'minigameFase2Rh',
     'minigameFase3',
     'aposPrimeiroAtendimento',
     'selecaoCidade'
@@ -18,6 +19,7 @@ export const DEFAULT_TUTORIAL_PROGRESS = Object.freeze({
     ocorrenciaInicial: false,
     minigameFase1: false,
     minigameFase2: false,
+    minigameFase2Rh: false,
     minigameFase3: false,
     aposPrimeiroAtendimento: false,
     selecaoCidade: false,

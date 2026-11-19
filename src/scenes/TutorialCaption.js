@@ -90,7 +90,7 @@ export class TutorialCaption {
         this.callbacks = {};
         this.isOpen = false;
         this.keyHandler = (event) => {
-            if (event?.repeat) return;
+            if (event?.repeat || this.scene?.pauseMenu?.isOpen) return;
             this.advance();
         };
         this.keyboard = null;

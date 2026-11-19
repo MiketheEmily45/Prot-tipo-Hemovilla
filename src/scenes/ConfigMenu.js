@@ -1,4 +1,4 @@
-// Tela de configuracoes
+// Tela e minitela de configuracoes (pode rodar como Scene isolada ou como minitela sobre o menu de pause).
 import { getSettings, saveSettings, restoreDefaultVolumes, reactivateTutorial } from './settingsStore.js';
 import { ConfirmPopup } from './ConfirmPopup.js';
 import { clearAllProgress } from './debugTools.js';
@@ -21,6 +21,15 @@ export const CONFIG_ASSETS = {
     'config-btn-return': 'assets/Telas/Config/BotaoRetornar.png'
 };
 
+export function preloadConfigAssets(scene) {
+    if (!scene || !scene.load) return;
+    Object.entries(CONFIG_ASSETS).forEach(([key, path]) => {
+        if (!scene.textures?.exists?.(key)) {
+            scene.load.image(key, path);
+        }
+    });
+}
+
 // Trilhos dos sliders na tela 512x512 (com marcador 20x33 contido dentro do trilho x103-420).
 const TRACK_MIN_X = 103;
 const TRACK_MAX_X = 420;
@@ -40,31 +49,69 @@ const RESTORE_BUTTON_Y = 280;
 const RESET_BUTTON_Y = 362;
 const TUTORIAL_BUTTON_Y = 444;
 
-// Botao voltar na posicao recortada (x423 y413, 80x79), alinhado com a engrenagem do menu.
+// Botao voltar na posicao recortada (x423 y413, 80x79) na cena cheia, e dentro da moldura na minitela.
 const RETURN_BUTTON_POS = { x: 423, y: 413 };
+const RETURN_BUTTON_OVERLAY_POS = { x: 400, y: 400 };
+const OVERLAY_PANEL = { x: 14, y: 14, width: 484, height: 484 };
 
 export class ConfigMenu extends Phaser.Scene {
 
     constructor() {
         super('ConfigMenu');
+        this.hostScene = this;
+        this.isOverlay = false;
+        this.isOpen = false;
+        this.baseDepth = 0;
+        this.onCloseOverlay = null;
+        this.overlayElements = [];
+        this.inputCleanups = [];
+        this.confirmPopup = null;
+        this.feedbackTimer = null;
     }
 
     init(data) {
         this.fromScene = (data && data.fromScene) ? data.fromScene : 'Start';
         this.returnData = (data && data.returnData) ? data.returnData : undefined;
+        this.isOverlay = false;
+        this.baseDepth = 0;
+        this.onCloseOverlay = null;
         this.confirmPopup = null;
         this.feedbackTimer = null;
     }
 
     preload() {
-        Object.entries(CONFIG_ASSETS).forEach(([key, path]) => {
-            this.load.image(key, path);
-        });
+        preloadConfigAssets(this);
         preloadAudio(this);
     }
 
     create() {
+        this.hostScene = this;
+        this.isOverlay = false;
+        this.baseDepth = 0;
         this.setupViewport();
+        this.mountUI();
+    }
+
+    /**
+     * Abre o ConfigMenu como minitela por cima de outra cena (ex: por cima do menu de pause).
+     */
+    openAsOverlay(hostScene, { depth = 1600, onClose = null } = {}) {
+        if (this.isOpen) {
+            this.closeOverlay(false);
+        }
+        this.hostScene = hostScene;
+        this.isOverlay = true;
+        this.baseDepth = depth;
+        this.onCloseOverlay = onClose;
+        this.mountUI();
+        return this;
+    }
+
+    mountUI() {
+        this.overlayElements = [];
+        this.inputCleanups = [];
+        this.isOpen = true;
+
         this.applyNearestFilter();
         this.setupBackground();
         this.setupTitle();
@@ -77,7 +124,14 @@ export class ConfigMenu extends Phaser.Scene {
         this.setupReturnButton();
         this.setupFeedbackText();
 
-        this.confirmPopup = new ConfirmPopup(this);
+        this.confirmPopup = new ConfirmPopup(this.hostScene, { depth: this.baseDepth + 300 });
+    }
+
+    trackElement(el) {
+        if (el) {
+            this.overlayElements.push(el);
+        }
+        return el;
     }
 
     setupViewport() {
@@ -86,22 +140,62 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applyNearestFilter() {
+        const scene = this.hostScene;
         Object.keys(CONFIG_ASSETS).forEach((key) => {
-            if (this.textures.exists(key)) {
-                this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+            if (scene.textures?.exists?.(key)) {
+                scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
             }
         });
     }
 
     setupBackground() {
-        this.background = this.add.image(256, 256, 'config-bg');
+        const scene = this.hostScene;
+        if (!this.isOverlay) {
+            this.background = this.trackElement(
+                scene.add.image(256, 256, 'config-bg').setDepth(this.baseDepth)
+            );
+            return;
+        }
+
+        const camW = scene.cameras?.main?.width || 512;
+        const camH = scene.cameras?.main?.height || 512;
+
+        // Bloqueador de cliques atras da minitela de configuracoes
+        const blocker = scene.add.rectangle(camW / 2, camH / 2, camW, camH, 0x000000, 0.35);
+        blocker.setDepth(this.baseDepth);
+        blocker.setInteractive();
+        blocker.on('pointerdown', (_p, _x, _y, event) => event?.stopPropagation?.());
+        this.trackElement(blocker);
+
+        // Moldura da minitela centralizada nos 512x512 superiores
+        const { x: boxX, y: boxY, width: boxW, height: boxH } = OVERLAY_PANEL;
+        const panelGfx = scene.add.graphics();
+        panelGfx.setDepth(this.baseDepth + 1);
+
+        panelGfx.fillStyle(0x000000, 1);
+        panelGfx.fillRect(boxX - 4, boxY - 4, boxW + 8, boxH + 8);
+
+        panelGfx.fillStyle(0x674430, 1);
+        panelGfx.fillRect(boxX, boxY, boxW, boxH);
+
+        panelGfx.fillStyle(0x331d11, 1);
+        panelGfx.fillRect(boxX + 10, boxY + 10, boxW - 20, boxH - 20);
+
+        panelGfx.fillStyle(0xd7c8a9, 1);
+        panelGfx.fillRect(boxX + 14, boxY + 14, boxW - 28, boxH - 28);
+
+        this.background = this.trackElement(panelGfx);
     }
 
     setupTitle() {
-        this.titleImage = this.add.image(63, 42, 'config-title').setOrigin(0, 0);
+        const scene = this.hostScene;
+        this.titleImage = this.trackElement(
+            scene.add.image(63, 42, 'config-title').setOrigin(0, 0).setDepth(this.baseDepth + 2)
+        );
     }
 
     setupSliders(settings) {
+        const scene = this.hostScene;
         this.musicSlider = this.createSlider({
             barKey: 'config-music-bar',
             knobKey: 'config-music-knob',
@@ -110,7 +204,7 @@ export class ConfigMenu extends Phaser.Scene {
             trackY: MUSIC_TRACK_CENTER_Y,
             initialValue: settings.musicVolume,
             onChange: (val) => {
-                saveSettings({ musicVolume: val }, this.game);
+                saveSettings({ musicVolume: val }, scene.game);
                 this.applyMenuMusicVolume(val);
             }
         });
@@ -123,17 +217,20 @@ export class ConfigMenu extends Phaser.Scene {
             trackY: SFX_TRACK_CENTER_Y,
             initialValue: settings.sfxVolume,
             onChange: (val) => {
-                saveSettings({ sfxVolume: val }, this.game);
+                saveSettings({ sfxVolume: val }, scene.game);
             },
             onRelease: () => {
                 // Ponto unico para tocar o efeito sonoro de teste ao soltar o slider:
-                playSfx(this, 'clique');
+                playSfx(scene, 'clique');
             }
         });
     }
 
     createSlider({ barKey, knobKey, barX, barY, trackY, initialValue, onChange, onRelease }) {
-        const bar = this.add.image(barX, barY, barKey).setOrigin(0, 0);
+        const scene = this.hostScene;
+        const bar = this.trackElement(
+            scene.add.image(barX, barY, barKey).setOrigin(0, 0).setDepth(this.baseDepth + 2)
+        );
 
         const valueToX = (val) => {
             const clamped = Phaser.Math.Clamp(val, 0, 1);
@@ -147,23 +244,26 @@ export class ConfigMenu extends Phaser.Scene {
         };
 
         let currentValue = Math.round(Phaser.Math.Clamp(initialValue, 0, 1) * 20) / 20;
-        const knob = this.add.image(valueToX(currentValue), trackY, knobKey).setOrigin(0.5, 0.5);
-        knob.setDepth(5);
+        const knob = this.trackElement(
+            scene.add.image(valueToX(currentValue), trackY, knobKey).setOrigin(0.5, 0.5).setDepth(this.baseDepth + 5)
+        );
 
         // Area clicavel no trilho (x103-420)
         const trackWidth = TRACK_MAX_X - TRACK_MIN_X;
-        const trackHit = this.add.rectangle(
-            TRACK_MIN_X + trackWidth / 2,
-            trackY,
-            trackWidth,
-            34,
-            0x000000,
-            0
-        ).setDepth(4);
+        const trackHit = this.trackElement(
+            scene.add.rectangle(
+                TRACK_MIN_X + trackWidth / 2,
+                trackY,
+                trackWidth,
+                34,
+                0x000000,
+                0
+            ).setDepth(this.baseDepth + 4)
+        );
         trackHit.setInteractive({ useHandCursor: true });
 
         knob.setInteractive({ useHandCursor: true, draggable: true });
-        this.input.setDraggable(knob);
+        scene.input.setDraggable(knob);
 
         const applyPointerX = (pointerX) => {
             if (this.confirmPopup?.isOpen) return;
@@ -186,18 +286,25 @@ export class ConfigMenu extends Phaser.Scene {
             applyPointerX(pointer.x);
         });
 
-        this.input.on('pointermove', (pointer) => {
+        const onPointerMove = (pointer) => {
             if (!trackDragging || !pointer.isDown) return;
             applyPointerX(pointer.x);
-        });
+        };
 
-        this.input.on('pointerup', () => {
+        const onPointerUp = () => {
             if (!trackDragging) return;
             trackDragging = false;
             knob.clearTint();
             if (typeof onRelease === 'function') {
                 onRelease(currentValue);
             }
+        };
+
+        scene.input.on('pointermove', onPointerMove);
+        scene.input.on('pointerup', onPointerUp);
+        this.inputCleanups.push(() => {
+            scene.input?.off?.('pointermove', onPointerMove);
+            scene.input?.off?.('pointerup', onPointerUp);
         });
 
         knob.on('pointerdown', () => {
@@ -206,7 +313,7 @@ export class ConfigMenu extends Phaser.Scene {
         });
 
         knob.on('pointerout', () => {
-            if (!trackDragging && !this.input.activePointer.isDown) {
+            if (!trackDragging && !scene.input.activePointer.isDown) {
                 knob.clearTint();
             }
         });
@@ -263,23 +370,33 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     setupReturnButton() {
-        // Posicao recortada x423 y413 (80x79) -> centro em (463, 452.5)
+        const pos = this.isOverlay ? RETURN_BUTTON_OVERLAY_POS : RETURN_BUTTON_POS;
         this.returnButton = this.createImageButton(
-            RETURN_BUTTON_POS.x,
-            RETURN_BUTTON_POS.y,
+            pos.x,
+            pos.y,
             'config-btn-return',
-            () => this.scene.start(this.fromScene, this.returnData),
+            () => {
+                if (this.isOverlay) {
+                    this.closeOverlay();
+                } else {
+                    this.scene.start(this.fromScene, this.returnData);
+                }
+            },
             { originX: 0, originY: 0 }
         );
     }
 
     createImageButton(x, y, textureKey, onClick, { originX = 0.5, originY = 0.5 } = {}) {
-        const btn = this.add.image(x, y, textureKey).setOrigin(originX, originY);
+        const scene = this.hostScene;
+        const btn = this.trackElement(
+            scene.add.image(x, y, textureKey).setOrigin(originX, originY).setDepth(this.baseDepth + 3)
+        );
         btn.setInteractive({ useHandCursor: true });
 
         let isPressed = false;
 
-        btn.on('pointerdown', () => {
+        btn.on('pointerdown', (_p, _lx, _ly, event) => {
+            event?.stopPropagation?.();
             if (this.confirmPopup?.isOpen) return;
             isPressed = true;
             btn.setTint(0x8B2E40);
@@ -290,7 +407,8 @@ export class ConfigMenu extends Phaser.Scene {
             btn.clearTint();
         });
 
-        btn.on('pointerup', () => {
+        btn.on('pointerup', (_p, _lx, _ly, event) => {
+            event?.stopPropagation?.();
             if (!isPressed || this.confirmPopup?.isOpen) {
                 btn.clearTint();
                 isPressed = false;
@@ -298,7 +416,7 @@ export class ConfigMenu extends Phaser.Scene {
             }
             isPressed = false;
             btn.clearTint();
-            playSfx(this, 'clique');
+            playSfx(scene, 'clique');
             onClick();
         });
 
@@ -306,35 +424,43 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     setupFeedbackText() {
-        this.feedbackText = this.add.text(256, 494, '', createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            fontStyle: 'bold',
-            color: '#ffffff',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            padding: { x: 10, y: 4 }
-        })).setOrigin(0.5).setDepth(200).setVisible(false);
+        const scene = this.hostScene;
+        const feedbackY = this.isOverlay ? 484 : 494;
+        this.feedbackText = this.trackElement(
+            scene.add.text(256, feedbackY, '', createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '13px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: { x: 10, y: 4 }
+            })).setOrigin(0.5).setDepth(this.baseDepth + 200).setVisible(false)
+        );
     }
 
     showFeedback(message) {
         if (!this.feedbackText) return;
+        const scene = this.hostScene;
         this.feedbackText.setText(message);
         this.feedbackText.setVisible(true);
 
         if (this.feedbackTimer) {
             this.feedbackTimer.remove(false);
         }
-        this.feedbackTimer = this.time.delayedCall(2000, () => {
-            this.feedbackText?.setVisible(false);
-        });
+        if (scene.time?.delayedCall) {
+            this.feedbackTimer = scene.time.delayedCall(2000, () => {
+                this.feedbackText?.setVisible(false);
+            });
+        }
     }
 
     applyMenuMusicVolume(volume) {
-        updateMusicVolume(volume, this);
+        updateMusicVolume(volume, this.hostScene);
     }
 
     handleRestoreDefaults() {
-        const updated = restoreDefaultVolumes(this.game);
+        const scene = this.hostScene;
+        const updated = restoreDefaultVolumes(scene.game);
         this.musicSlider?.setValue(updated.musicVolume);
         this.sfxSlider?.setValue(updated.sfxVolume);
         this.applyMenuMusicVolume(updated.musicVolume);
@@ -348,15 +474,44 @@ export class ConfigMenu extends Phaser.Scene {
                 resetPurchasedCitiesMemory();
                 resetInMemoryATP();
                 resetOccurrenceState();
+                this.hostScene?.atpDisplay?.update?.();
+                this.hostScene?.syncActiveCityAlerts?.(true);
                 this.showFeedback('Progresso apagado com sucesso!');
             }
         });
     }
 
     handleReactivateTutorial() {
+        const scene = this.hostScene;
         // Limpa todas as flags do tutorial e religa as dicas (o progresso do jogo nao muda).
-        reactivateTutorial(this.game);
+        reactivateTutorial(scene.game);
         this.showFeedback('Dicas do tutorial reativadas.');
+    }
+
+    closeOverlay(triggerCallback = true) {
+        if (!this.isOpen) return;
+        this.isOpen = false;
+
+        if (this.feedbackTimer) {
+            this.feedbackTimer.remove(false);
+            this.feedbackTimer = null;
+        }
+        if (this.confirmPopup) {
+            this.confirmPopup.destroy();
+            this.confirmPopup = null;
+        }
+
+        this.inputCleanups.forEach((cleanup) => cleanup());
+        this.inputCleanups = [];
+
+        this.overlayElements.forEach((el) => el?.destroy?.());
+        this.overlayElements = [];
+
+        const cb = this.onCloseOverlay;
+        this.onCloseOverlay = null;
+        if (triggerCallback && typeof cb === 'function') {
+            cb();
+        }
     }
 
     update() {

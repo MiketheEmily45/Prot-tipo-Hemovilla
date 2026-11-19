@@ -35,9 +35,7 @@ export class MapControls {
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
             playSfx(this.scene, 'clique');
-            stopMusic(this.scene, 'city-music');
-            closeCharacterDescription(this.scene);
-            this.scene.scene.start('Start');
+            this.scene.pauseMenu?.open();
         });
         this.pauseButton = pauseButton;
         return pauseButton;

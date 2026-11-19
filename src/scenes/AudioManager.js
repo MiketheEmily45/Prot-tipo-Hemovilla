@@ -243,6 +243,28 @@ class AudioManager {
             this.currentMusicKey = null;
         }
     }
+
+    stopAllSfx(scene = null) {
+        const soundManager = scene?.sound || this.boundGame?.sound;
+        if (!soundManager) {
+            return;
+        }
+
+        if (Array.isArray(soundManager.sounds)) {
+            soundManager.sounds.slice().forEach((snd) => {
+                if (snd && snd.key in SFX_ASSETS && snd.isPlaying) {
+                    snd.stop();
+                }
+            });
+            return;
+        }
+
+        if (typeof soundManager.stopByKey === 'function') {
+            Object.keys(SFX_ASSETS).forEach((sfxKey) => {
+                soundManager.stopByKey(sfxKey);
+            });
+        }
+    }
 }
 
 export const audioManager = new AudioManager();
@@ -253,6 +275,10 @@ export function preloadAudio(scene) {
 
 export function playSfx(scene, key, config = {}) {
     return audioManager.playSfx(scene, key, config);
+}
+
+export function stopAllSfx(scene = null) {
+    audioManager.stopAllSfx(scene);
 }
 
 export function playMusic(scene, key, config = {}) {

@@ -6,9 +6,10 @@ import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
-import { endMinigameSession } from './occurrenceState.js';
+import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSfx } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
+import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -39,12 +40,14 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = false;
         this.patientSprite = null;
         this.tutorialManager = null;
+        this.pauseMenu = null;
     }
 
     preload() {
         Object.entries(MINIGAME_ASSETS).forEach(([key, path]) => {
             this.load.image(key, path);
         });
+        preloadPauseMenu(this);
         preloadAudio(this);
     }
 
@@ -52,6 +55,7 @@ export class Minigame extends Phaser.Scene {
         this.setupViewport();
         this.setupBackground();
         this.setupPauseButton();
+        this.pauseMenu = new PauseMenu(this, { mode: 'minigame' });
         this.setupAttendanceState();
         this.setupPatientSprite();
         this.setupCollectionPhase();
@@ -78,6 +82,7 @@ export class Minigame extends Phaser.Scene {
 
         const data = { cityIndex };
         if (options && options.failed && this.characterId) {
+            triggerOccurrence(this.characterId);
             data.alertCharacterId = this.characterId;
         }
 
@@ -103,11 +108,14 @@ export class Minigame extends Phaser.Scene {
             pauseButton.setTint(0x8B2E40);
         });
 
+        pauseButton.on('pointerout', () => {
+            pauseButton.clearTint();
+        });
+
         pauseButton.on('pointerup', () => {
             pauseButton.clearTint();
             playSfx(this, 'clique');
-            endMinigameSession();
-            this.scene.start('Start');
+            this.pauseMenu?.open();
         });
         this.pauseButton = pauseButton;
     }
@@ -305,6 +313,10 @@ export class Minigame extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.pauseMenu?.isOpen) {
+            return;
+        }
+
         this.attendanceState.update(delta);
         this.updateFilling(delta);
 

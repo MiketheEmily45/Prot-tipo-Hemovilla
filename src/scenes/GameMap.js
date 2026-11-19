@@ -12,6 +12,7 @@ import { AtpDisplay } from './AtpDisplay.js';
 import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSceneMusic } from './AudioManager.js';
 import { TutorialManager, MAP_CAPTION_BOTTOM_Y } from './TutorialManager.js';
+import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -28,9 +29,8 @@ export class GameMap extends Phaser.Scene {
     preload() {
         preloadCities(this);
         preloadCityCharacters(this);
-        this.load.image('pause-button', 'assets/Telas/Botoes/botao_pausa.png');
+        preloadPauseMenu(this);
         this.load.image('city-select-button', 'assets/Telas/Botoes/escolher_cidade.png');
-        this.load.image('start-button', 'assets/Telas/Botoes/botao_start.png');
         // Moldura usada como painel da descricao dos personagens.
         this.load.image('character-frame', 'assets/Personagens/moldura_personagens.png');
         // Balao temporario exibido quando um personagem clicavel esta parado.
@@ -60,6 +60,7 @@ export class GameMap extends Phaser.Scene {
 
         this.mapControls = new MapControls(this);
         this.mapControls.create();
+        this.pauseMenu = new PauseMenu(this, { mode: 'city' });
 
         // Painel de exibicao de saldo de ATP na barra inferior (canto superior direito da barra preta)
         this.atpDisplay = new AtpDisplay(this, { x: 504, y: 520, width: 84, height: 24 });
@@ -101,6 +102,10 @@ export class GameMap extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.pauseMenu?.isOpen) {
+            return;
+        }
+
         if (typeof delta === 'number' && delta > 0) {
             const newlyAlerted = updateActiveCityTimers(this.currentCityIndex ?? 0, delta);
             if (newlyAlerted && newlyAlerted.length > 0) {

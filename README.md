@@ -2,7 +2,7 @@
 
 Jogo educativo sobre tipagem sanguínea (sistema ABO e fator Rh), desenvolvido em **Phaser 3** para apoio a aulas de Biologia no **CEFET-MG — Campus Varginha**. O jogador assume o papel de responsável pelos atendimentos em Hemovilla, coletando amostras, identificando o tipo sanguíneo dos moradores e realizando transfusões seguras.
 
-**Jogue online:** [LINK DO ITCH.IO]
+**Jogue online:** (https://miketheemily45.itch.io/hemovilla)
 
 <!-- Espaço reservado para screenshots ou GIFs do jogo (menu inicial, mapa da cidade e fases do minigame). -->
 

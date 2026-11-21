@@ -95,7 +95,7 @@ export class ClickableCharacterManager {
         character.balloon = scene.add.image(0, 0, 'balao_temporario');
         character.balloon.setDepth(character.sprite.depth + 2);
 
-        const characterName = characterData[character.iconButtonKey]?.nome || '';
+        const characterName = character.displayName || characterData[character.iconButtonKey]?.nome || '';
         character.balloonTitle = scene.add.text(0, 0, characterName, createTextStyle({
             fontFamily: 'monospace',
             fontSize: '11px',

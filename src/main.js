@@ -3,6 +3,7 @@ import { GameMap } from './scenes/GameMap.js'
 import { ConfigMenu } from './scenes/ConfigMenu.js'
 import { Minigame } from './scenes/Minigame.js'
 import { CitySelect } from './scenes/CitySelect.js'
+import { Shop } from './scenes/Shop.js'
 import { initDebugTools } from './scenes/debugTools.js'
 
 const config = {
@@ -27,7 +28,8 @@ const config = {
         GameMap,
         ConfigMenu,
         Minigame,
-        CitySelect
+        CitySelect,
+        Shop
     ],
     scale: {
         mode: Phaser.Scale.FIT,

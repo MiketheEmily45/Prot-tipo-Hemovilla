@@ -31,6 +31,7 @@ export class GameMap extends Phaser.Scene {
         preloadCityCharacters(this);
         preloadPauseMenu(this);
         this.load.image('city-select-button', 'assets/Telas/Botoes/escolher_cidade.png');
+        this.load.image('shop-hud-button', 'assets/Telas/Loja/btn_loja_hud.png');
         // Moldura usada como painel da descricao dos personagens.
         this.load.image('character-frame', 'assets/Personagens/moldura_personagens.png');
         // Balao temporario exibido quando um personagem clicavel esta parado.

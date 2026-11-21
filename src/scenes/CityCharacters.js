@@ -3,6 +3,11 @@ import { registerClickableCharacter } from './ClickableCharacterManager.js';
 import { createCharacterIconButtons } from './IconButtons.js';
 import { isDebugEnabled } from './debugTools.js';
 import { getOccurrence } from './occurrenceState.js';
+import { getCharacterReplacement } from './shopStore.js';
+import {
+    getShopCharacterPresentation,
+    preloadShopCharacterMapAssets
+} from './shopCharacterPresentation.js';
 
 export const joaquimCharacter = {
     id: 'joaquim',
@@ -78,6 +83,7 @@ export function preloadCityCharacters(scene) {
             [1, 2].forEach((frame) => load(`${id}-${direction}-${frame}`, `Andar${side}${frame}`));
         });
     });
+    preloadShopCharacterMapAssets(scene);
 }
 
 
@@ -89,14 +95,29 @@ export function createCityCharacter(scene, config) {
         animFrameRate = config.animFrameRate || 4,
         axis = config.axis || 'horizontal'
     } = config;
+    const replacementId = getCharacterReplacement(id);
+    const presentation = getShopCharacterPresentation(replacementId);
+    const visualId = presentation ? `extra-${replacementId}` : id;
+    const idleTextures = presentation
+        ? {
+            up: `${visualId}-idle-left`,
+            down: `${visualId}-idle-right`,
+            left: `${visualId}-idle-left`,
+            right: `${visualId}-idle-right`
+        }
+        : config.idleTextures;
 
     if (axis === 'vertical') {
-        const animDown = config.walkDownAnim || `walk_${id}_down`;
-        const animUp = config.walkUpAnim || `walk_${id}_up`;
+        const animDown = presentation
+            ? `walk_${visualId}_down`
+            : config.walkDownAnim || `walk_${visualId}_down`;
+        const animUp = presentation
+            ? `walk_${visualId}_up`
+            : config.walkUpAnim || `walk_${visualId}_up`;
         if (!scene.anims.exists(animDown)) {
             scene.anims.create({
                 key: animDown,
-                frames: config.downFrames || [1, 2].map((frame) => ({ key: `${id}-right-${frame}` })),
+                frames: config.downFrames || [1, 2].map((frame) => ({ key: `${visualId}-right-${frame}` })),
                 frameRate: animFrameRate,
                 repeat: -1
             });
@@ -104,18 +125,18 @@ export function createCityCharacter(scene, config) {
         if (!scene.anims.exists(animUp)) {
             scene.anims.create({
                 key: animUp,
-                frames: config.upFrames || [1, 2].map((frame) => ({ key: `${id}-left-${frame}` })),
+                frames: config.upFrames || [1, 2].map((frame) => ({ key: `${visualId}-left-${frame}` })),
                 frameRate: animFrameRate,
                 repeat: -1
             });
         }
     } else {
         ['left', 'right'].forEach((dir) => {
-            const key = `walk_${id}_${dir}`;
+            const key = `walk_${visualId}_${dir}`;
             if (!scene.anims.exists(key)) {
                 scene.anims.create({
                     key,
-                    frames: [1, 2].map((frame) => ({ key: `${id}-${dir}-${frame}` })),
+                    frames: [1, 2].map((frame) => ({ key: `${visualId}-${dir}-${frame}` })),
                     frameRate: animFrameRate,
                     repeat: -1
                 });
@@ -124,20 +145,21 @@ export function createCityCharacter(scene, config) {
     }
 
     const initialTexture = axis === 'vertical'
-        ? (config.idleTextures?.down || `${id}-idle-right`)
-        : `${id}-idle-${direction}`;
+        ? (idleTextures?.down || `${visualId}-idle-right`)
+        : `${visualId}-idle-${direction}`;
 
     const sprite = scene.physics.add.sprite(config.x, config.y, initialTexture);
 
     const movement = new CharacterMovement(scene, sprite, {
         ...config,
         direction,
-        walkLeftAnim: `walk_${id}_left`,
-        walkRightAnim: `walk_${id}_right`,
-        walkUpAnim: config.walkUpAnim || `walk_${id}_up`,
-        walkDownAnim: config.walkDownAnim || `walk_${id}_down`,
-        idleLeft: `${id}-idle-left`,
-        idleRight: `${id}-idle-right`
+        walkLeftAnim: `walk_${visualId}_left`,
+        walkRightAnim: `walk_${visualId}_right`,
+        walkUpAnim: presentation ? `walk_${visualId}_up` : config.walkUpAnim || `walk_${visualId}_up`,
+        walkDownAnim: presentation ? `walk_${visualId}_down` : config.walkDownAnim || `walk_${visualId}_down`,
+        idleLeft: `${visualId}-idle-left`,
+        idleRight: `${visualId}-idle-right`,
+        idleTextures
     });
 
     if (config.sceneProperty) {
@@ -154,7 +176,8 @@ export function createCityCharacter(scene, config) {
         alertInterval: config.alertInterval,
         balloonOffset,
         movement,
-        gender: config.gender,
+        gender: presentation?.gender || config.gender,
+        displayName: presentation?.name,
         stop: () => movement.stop(),
         resume: () => movement.resume()
     });

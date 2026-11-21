@@ -2,6 +2,7 @@ import { openCharacterDescription } from './CharacterDescriptionPanel.js';
 import { characterData } from './characterData.js';
 import { allCity1Characters } from './CityCharacters.js';
 import { playSfx } from './AudioManager.js';
+import { getCharacterReplacement } from './shopStore.js';
 
 export class CityNavigationButtons {
     constructor(scene, pauseButton, onNavigate) {
@@ -42,9 +43,14 @@ export class CharacterIconButtonBar {
         const iconSpacing = 80;
         const centerX = 256;
         const ids = this.ids;
-        const icons = ids.map((id, index) => ({
-            id, key: `${id}-icon`, x: centerX + (index - (ids.length - 1) / 2) * iconSpacing
-        }));
+        const icons = ids.map((id, index) => {
+            const replacementId = getCharacterReplacement(id);
+            return {
+                id,
+                key: replacementId ? `extra-${replacementId}-icon` : `${id}-icon`,
+                x: centerX + (index - (ids.length - 1) / 2) * iconSpacing
+            };
+        });
 
         this.scene.characterIconButtons = {};
 

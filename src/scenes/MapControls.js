@@ -8,14 +8,16 @@ export class MapControls {
         this.scene = scene;
         this.pauseButton = null;
         this.citySelectButton = null;
+        this.shopButton = null;
         this.alertButton = null;
     }
 
     create() {
         const pauseButton = this.createPauseButton();
         const citySelectButton = this.createCitySelectButton(pauseButton);
+        const shopButton = this.createShopButton(citySelectButton);
         const alertButton = this.createAlertButton();
-        return { pauseButton, citySelectButton, alertButton };
+        return { pauseButton, citySelectButton, shopButton, alertButton };
     }
 
     createPauseButton() {
@@ -92,5 +94,30 @@ export class MapControls {
             });
         }
         return alertButton;
+    }
+
+    createShopButton(citySelectButton) {
+        const x = citySelectButton
+            ? citySelectButton.x + citySelectButton.displayWidth + 8
+            : 104;
+        const y = citySelectButton ? citySelectButton.y : 8;
+        const shopButton = this.scene.add.image(x, y, 'shop-hud-button');
+        shopButton.setOrigin(0);
+        shopButton.setDepth(100);
+        shopButton.texture?.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        shopButton.setInteractive({ useHandCursor: true });
+        shopButton.on('pointerdown', () => shopButton.setTint(0x8B2E40));
+        shopButton.on('pointerout', () => shopButton.clearTint());
+        shopButton.on('pointerup', () => {
+            shopButton.clearTint();
+            playSfx(this.scene, 'clique');
+            closeCharacterDescription(this.scene);
+            this.scene.scene.start('Shop', {
+                fromScene: 'GameMap',
+                returnData: { targetCityIndex: this.scene.currentCityIndex ?? 0 }
+            });
+        });
+        this.shopButton = shopButton;
+        return shopButton;
     }
 }

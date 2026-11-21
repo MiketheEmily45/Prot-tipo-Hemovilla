@@ -17,6 +17,7 @@ import { onAttendanceSuccess } from './occurrenceState.js';
 import { markAttendanceJustCompleted } from './tutorialState.js';
 import { GuidePanel } from './GuidePanel.js';
 import { playSfx } from './AudioManager.js';
+import { getCharacterReplacement } from './shopStore.js';
 
 // Configuracao da Fase 3 (regras de Rh e bolsas contaminadas por cidade ficam em cityOccurrenceConfig.js)
 const REQUIRED_BAGS = 1;
@@ -41,6 +42,13 @@ const DEFAULT_FOUR_BAG_SLOTS = [
     { x: 312, y: BAG_SLOT_Y },
     { x: 428, y: BAG_SLOT_Y }
 ];
+
+export function getCharacterPortraitKey(characterId) {
+    const displayedCharacterId = getCharacterReplacement(characterId);
+    return displayedCharacterId
+        ? `extra-${displayedCharacterId}-icon`
+        : `${characterId}-icon`;
+}
 
 export function getBagSlots(count) {
     if (count === 4) {
@@ -105,7 +113,7 @@ export class TransfusionPhase {
     }
 
     setupHUD() {
-        const portraitKey = `${this.characterId}-icon`;
+        const portraitKey = getCharacterPortraitKey(this.characterId);
         if (this.scene.textures.exists(portraitKey)) {
             this.portrait = this.scene.add.image(PORTRAIT_POSITION.x, PORTRAIT_POSITION.y, portraitKey);
             this.portrait.setOrigin(0.5, 0.5);

@@ -4,6 +4,8 @@
 import { getDiscoveredType } from './discoveredTypes.js';
 import { createTextStyle } from './textUtils.js';
 import { playSfx } from './AudioManager.js';
+import { getCharacterReplacement } from './shopStore.js';
+import { getShopCharacterPresentation } from './shopCharacterPresentation.js';
 
 export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
@@ -24,7 +26,11 @@ export class CharacterDescriptionPanel {
     open(characterId) {
         const scene = this.scene;
         const characterData = this.characterData;
-        const data = characterData[characterId];
+        const baseData = characterData[characterId];
+        const replacement = getShopCharacterPresentation(getCharacterReplacement(characterId));
+        const data = baseData && replacement
+            ? { ...baseData, nome: replacement.name, descricao: replacement.description }
+            : baseData;
 
         if (!data) {
             return;

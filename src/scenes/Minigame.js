@@ -10,6 +10,7 @@ import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSfx } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
 import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
+import { getCharacterReplacement } from './shopStore.js';
 
 // Valores ajustaveis da Fase 1 (coleta). Coordenadas em pixels da tela 512x512.
 const SPRITE_SCALE = 2;
@@ -23,6 +24,11 @@ const TUBE_DROP_RADIUS = 70;
 const FILL_HALF_MS = 1500;
 const FILL_FULL_MS = 3000;
 const PROGRESS_BAR = { width: 64, height: 4, offsetY: 72 };
+
+export function getPatientSpriteKey(characterId) {
+    const displayedCharacterId = getCharacterReplacement(characterId) || characterId;
+    return PATIENT_SPRITES[displayedCharacterId] ?? null;
+}
 
 export class Minigame extends Phaser.Scene {
 
@@ -337,7 +343,7 @@ export class Minigame extends Phaser.Scene {
 
 
     setupPatientSprite() {
-        const spriteKey = PATIENT_SPRITES[this.characterId];
+        const spriteKey = getPatientSpriteKey(this.characterId);
         if (!spriteKey || !this.textures.exists(spriteKey)) {
             return;
         }

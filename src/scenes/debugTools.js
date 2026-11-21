@@ -23,12 +23,16 @@ import {
 } from './occurrenceState.js';
 import { addATP, resetInMemoryATP } from './atpStore.js';
 import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
+import { resetShopMemory } from './shopStore.js';
 
 export const STORAGE_KEYS = [
     'hemovilla-atp',
     'hemovilla-attended-characters',
     'hemovilla-discovered-types',
-    'hemovilla-purchased-cities'
+    'hemovilla-purchased-cities',
+    'hemovilla-shop-purchases',
+    'hemovilla-equipped-shop-character',
+    'hemovilla-character-replacements'
 ];
 
 let currentGame = null;
@@ -40,6 +44,7 @@ export function clearAllProgress() {
     } catch (e) {
         console.warn('Erro ao limpar localStorage no modo debug:', e);
     }
+    resetShopMemory();
 }
 
 export function showToast(message, duration = 1800) {

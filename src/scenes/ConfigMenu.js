@@ -45,9 +45,12 @@ const KNOB_MAX_X = TRACK_MAX_X - KNOB_HALF_WIDTH; // 410
 
 const MUSIC_BAR_POS = { x: 67, y: 125 };
 const MUSIC_TRACK_CENTER_Y = 145; // Centro vertical do trilho y133-158
+const MUSIC_ICON_CENTER = { x: 82, y: 142 }; // Centro do icone de nota musical (x67-97, y125-159)
 
 const SFX_BAR_POS = { x: 59, y: 184 };
 const SFX_TRACK_CENTER_Y = 202; // Centro vertical do trilho y190-215
+const SFX_ICON_CENTER = { x: 77, y: 201 }; // Centro do icone de alto-falante (x59-95, y184-217)
+const MUTE_SLASH_HALF_SPAN = 16;
 
 // Botoes centralizados em x=256 com espacamento vertical igual (82 px entre centros).
 const ACTION_BUTTON_X = 256;
@@ -238,13 +241,35 @@ export class ConfigMenu extends Phaser.Scene {
         });
     }
 
+    createMuteSlash(centerX, centerY) {
+        const scene = this.hostScene;
+        const gfx = this.trackElement(
+            scene.add.graphics().setDepth(this.baseDepth + 4)
+        );
+        const cx = Math.round(centerX);
+        const cy = Math.round(centerY);
+
+        // Diagonal pixel art (canto superior esquerdo -> inferior direito) com contorno preto e miolo branco.
+        gfx.fillStyle(0x000000, 1);
+        for (let offset = -MUTE_SLASH_HALF_SPAN; offset <= MUTE_SLASH_HALF_SPAN; offset += 2) {
+            gfx.fillRect(cx + offset - 3, cy + offset - 3, 7, 7);
+        }
+        gfx.fillStyle(0xffffff, 1);
+        for (let offset = -MUTE_SLASH_HALF_SPAN; offset <= MUTE_SLASH_HALF_SPAN; offset += 2) {
+            gfx.fillRect(cx + offset - 1, cy + offset - 1, 3, 3);
+        }
+
+        return gfx;
+    }
+
     setupMusicMuteButton(settings) {
         const scene = this.hostScene;
         this.musicMuted = settings.musicMuted;
+        this.musicMuteSlash = this.createMuteSlash(MUSIC_ICON_CENTER.x, MUSIC_ICON_CENTER.y);
         this.applyMusicMuteState();
 
         const hitArea = this.trackElement(
-            scene.add.rectangle(81, MUSIC_TRACK_CENTER_Y, 34, 36, 0x000000, 0)
+            scene.add.rectangle(MUSIC_ICON_CENTER.x, MUSIC_ICON_CENTER.y, 34, 36, 0x000000, 0)
                 .setDepth(this.baseDepth + 6)
         );
         hitArea.setInteractive({ useHandCursor: true });
@@ -270,16 +295,17 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applyMusicMuteState() {
-        this.musicSlider?.bar?.setTexture(this.musicMuted ? 'config-mute-toggle' : 'config-music-bar');
+        this.musicMuteSlash?.setVisible(Boolean(this.musicMuted));
     }
 
     setupSfxMuteButton(settings) {
         const scene = this.hostScene;
         this.sfxMuted = settings.sfxMuted;
+        this.sfxMuteSlash = this.createMuteSlash(SFX_ICON_CENTER.x, SFX_ICON_CENTER.y);
         this.applySfxMuteState();
 
         const hitArea = this.trackElement(
-            scene.add.rectangle(78, SFX_TRACK_CENTER_Y, 40, 36, 0x000000, 0)
+            scene.add.rectangle(SFX_ICON_CENTER.x, SFX_ICON_CENTER.y, 40, 36, 0x000000, 0)
                 .setDepth(this.baseDepth + 6)
         );
         hitArea.setInteractive({ useHandCursor: true });
@@ -308,7 +334,7 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applySfxMuteState() {
-        this.sfxSlider?.bar?.setTexture(this.sfxMuted ? 'config-sfx-mute-toggle' : 'config-sfx-bar');
+        this.sfxMuteSlash?.setVisible(Boolean(this.sfxMuted));
     }
 
     setupFullscreenButton() {

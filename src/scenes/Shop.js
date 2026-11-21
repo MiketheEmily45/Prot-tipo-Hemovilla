@@ -55,6 +55,11 @@ const CARD_GRID = {
     ]
 };
 
+// Caixa branca interna de painel_saldo_atp.png (85x34 em x=512, y=2, origin 1,0): x431..507, y6..31.
+const BALANCE_BOX_CENTER_X = 469;
+const BALANCE_BOX_CENTER_Y = 19;
+const BALANCE_ICON_TEXT_GAP = 4;
+
 export class Shop extends Phaser.Scene {
     constructor() {
         super('Shop');
@@ -117,13 +122,26 @@ export class Shop extends Phaser.Scene {
         this.add.image(512, 2, 'shop-balance-panel')
             .setOrigin(1, 0)
             .setDepth(2);
-        this.add.image(442, 19, 'shop-atp-icon').setDepth(3);
-        this.balanceText = this.add.text(457, 19, String(getATP()), createTextStyle({
+        this.balanceIcon = this.add.image(BALANCE_BOX_CENTER_X, BALANCE_BOX_CENTER_Y, 'shop-atp-icon')
+            .setOrigin(0, 0.5)
+            .setDepth(3);
+        this.balanceText = this.add.text(BALANCE_BOX_CENTER_X, BALANCE_BOX_CENTER_Y, String(getATP()), createTextStyle({
             fontFamily: 'monospace',
             fontSize: '13px',
             fontStyle: 'bold',
             color: '#000000'
         })).setOrigin(0, 0.5).setDepth(3);
+        this.layoutBalanceDisplay();
+    }
+
+    layoutBalanceDisplay() {
+        if (!this.balanceIcon || !this.balanceText) return;
+        const iconWidth = this.balanceIcon.displayWidth || 21;
+        const textWidth = this.balanceText.displayWidth || this.balanceText.width || 0;
+        const totalWidth = iconWidth + BALANCE_ICON_TEXT_GAP + textWidth;
+        const startX = Math.round(BALANCE_BOX_CENTER_X - totalWidth / 2);
+        this.balanceIcon.setPosition(startX, BALANCE_BOX_CENTER_Y);
+        this.balanceText.setPosition(Math.round(startX + iconWidth + BALANCE_ICON_TEXT_GAP), BALANCE_BOX_CENTER_Y);
     }
 
     createBackButton() {
@@ -151,6 +169,7 @@ export class Shop extends Phaser.Scene {
 
     updateBalance() {
         this.balanceText?.setText(String(getATP()));
+        this.layoutBalanceDisplay();
     }
 
     renderCards() {

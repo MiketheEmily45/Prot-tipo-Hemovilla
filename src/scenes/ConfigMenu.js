@@ -58,6 +58,9 @@ const TUTORIAL_BUTTON_Y = 444;
 // Botao voltar na posicao recortada (x423 y413, 80x79) na cena cheia, e dentro da moldura na minitela.
 const RETURN_BUTTON_POS = { x: 423, y: 413 };
 const RETURN_BUTTON_OVERLAY_POS = { x: 400, y: 400 };
+const RETURN_BUTTON_SIZE = { width: 80, height: 79 };
+const FULLSCREEN_RETURN_GAP = 12;
+const FULLSCREEN_BUTTON_TINT = 0x6fff00; // Mesmo verde do BotaoRetornar.png
 const OVERLAY_PANEL = { x: 14, y: 14, width: 484, height: 484 };
 
 export class ConfigMenu extends Phaser.Scene {
@@ -309,13 +312,19 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     setupFullscreenButton() {
+        const returnPos = this.isOverlay ? RETURN_BUTTON_OVERLAY_POS : RETURN_BUTTON_POS;
+        const { width, height } = RETURN_BUTTON_SIZE;
+        const centerX = Math.round(returnPos.x + width / 2);
+        const centerY = Math.round(returnPos.y - FULLSCREEN_RETURN_GAP - height / 2);
+
         this.fullscreenButton = this.createImageButton(
-            480,
-            23,
+            centerX,
+            centerY,
             'config-fullscreen',
             () => this.toggleFullscreen(),
-            { originX: 0.5, originY: 0.5 }
+            { originX: 0.5, originY: 0.5, defaultTint: FULLSCREEN_BUTTON_TINT }
         );
+        this.fullscreenButton.setDisplaySize(width, height);
     }
 
     toggleFullscreen() {
@@ -507,11 +516,19 @@ export class ConfigMenu extends Phaser.Scene {
         );
     }
 
-    createImageButton(x, y, textureKey, onClick, { originX = 0.5, originY = 0.5 } = {}) {
+    createImageButton(x, y, textureKey, onClick, { originX = 0.5, originY = 0.5, defaultTint = null } = {}) {
         const scene = this.hostScene;
         const btn = this.trackElement(
             scene.add.image(x, y, textureKey).setOrigin(originX, originY).setDepth(this.baseDepth + 3)
         );
+        const resetTint = () => {
+            if (defaultTint !== null) {
+                btn.setTint(defaultTint);
+            } else {
+                btn.clearTint();
+            }
+        };
+        resetTint();
         btn.setInteractive({ useHandCursor: true });
 
         let isPressed = false;
@@ -525,18 +542,18 @@ export class ConfigMenu extends Phaser.Scene {
 
         btn.on('pointerout', () => {
             isPressed = false;
-            btn.clearTint();
+            resetTint();
         });
 
         btn.on('pointerup', (_p, _lx, _ly, event) => {
             event?.stopPropagation?.();
             if (!isPressed || this.confirmPopup?.isOpen) {
-                btn.clearTint();
+                resetTint();
                 isPressed = false;
                 return;
             }
             isPressed = false;
-            btn.clearTint();
+            resetTint();
             playSfx(scene, 'clique');
             onClick();
         });

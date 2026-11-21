@@ -28,7 +28,9 @@ export const DEFAULT_TUTORIAL_PROGRESS = Object.freeze({
 
 export const DEFAULT_SETTINGS = Object.freeze({
     musicVolume: 0.5,
+    musicMuted: false,
     sfxVolume: 0.7,
+    sfxMuted: false,
     tutorialHintsEnabled: true,
     tutorialProgress: DEFAULT_TUTORIAL_PROGRESS
 });
@@ -76,7 +78,13 @@ function normalizeRecord(parsed) {
     }
     return {
         musicVolume: clampVolume(parsed.musicVolume, DEFAULT_SETTINGS.musicVolume),
+        musicMuted: typeof parsed.musicMuted === 'boolean'
+            ? parsed.musicMuted
+            : DEFAULT_SETTINGS.musicMuted,
         sfxVolume: clampVolume(parsed.sfxVolume, DEFAULT_SETTINGS.sfxVolume),
+        sfxMuted: typeof parsed.sfxMuted === 'boolean'
+            ? parsed.sfxMuted
+            : DEFAULT_SETTINGS.sfxMuted,
         tutorialHintsEnabled: typeof parsed.tutorialHintsEnabled === 'boolean'
             ? parsed.tutorialHintsEnabled
             : DEFAULT_SETTINGS.tutorialHintsEnabled,
@@ -95,9 +103,15 @@ export function saveSettings(partialSettings, game = null) {
         musicVolume: 'musicVolume' in partial
             ? clampVolume(partial.musicVolume, current.musicVolume)
             : current.musicVolume,
+        musicMuted: typeof partial.musicMuted === 'boolean'
+            ? partial.musicMuted
+            : current.musicMuted,
         sfxVolume: 'sfxVolume' in partial
             ? clampVolume(partial.sfxVolume, current.sfxVolume)
             : current.sfxVolume,
+        sfxMuted: typeof partial.sfxMuted === 'boolean'
+            ? partial.sfxMuted
+            : current.sfxMuted,
         tutorialHintsEnabled: typeof partial.tutorialHintsEnabled === 'boolean'
             ? partial.tutorialHintsEnabled
             : current.tutorialHintsEnabled,
@@ -126,7 +140,9 @@ export function saveSettings(partialSettings, game = null) {
 export function restoreDefaultVolumes(game = null) {
     return saveSettings({
         musicVolume: DEFAULT_SETTINGS.musicVolume,
-        sfxVolume: DEFAULT_SETTINGS.sfxVolume
+        musicMuted: DEFAULT_SETTINGS.musicMuted,
+        sfxVolume: DEFAULT_SETTINGS.sfxVolume,
+        sfxMuted: DEFAULT_SETTINGS.sfxMuted
     }, game);
 }
 

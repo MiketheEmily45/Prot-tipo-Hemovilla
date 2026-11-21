@@ -6,7 +6,7 @@ import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetInMemoryATP } from './atpStore.js';
 import { resetOccurrenceState } from './occurrenceState.js';
 import { createTextStyle } from './textUtils.js';
-import { preloadAudio, playSfx, updateMusicVolume } from './AudioManager.js';
+import { preloadAudio, playSfx, stopAllSfx, updateMusicVolume } from './AudioManager.js';
 
 export const CONFIG_ASSETS = {
     'config-bg': 'assets/Telas/Config/Fundo.png',
@@ -18,7 +18,13 @@ export const CONFIG_ASSETS = {
     'config-btn-restore': 'assets/Telas/Config/BotaoRestaurar.png',
     'config-btn-reset': 'assets/Telas/Config/BotaoZerar.png',
     'config-btn-tutorial': 'assets/Telas/Config/BotaoTutorial.png',
-    'config-btn-return': 'assets/Telas/Config/BotaoRetornar.png'
+    'config-btn-return': 'assets/Telas/Config/BotaoRetornar.png',
+    'config-mute-toggle': 'assets/Telas/Config/Icone_Mutar.png',
+    'config-sfx-mute-toggle': 'assets/Telas/Config/Icone_MutarSom.png',
+    'config-fullscreen': 'assets/Telas/Config/Icone_TelaCheia.png',
+    'config-reset-popup': 'assets/Telas/Config/Moldura_PopUp.png',
+    'config-reset-yes': 'assets/Telas/Config/BotaoMoldura_Sim.png',
+    'config-reset-no': 'assets/Telas/Config/BotaoMoldura_Nao.png'
 };
 
 export function preloadConfigAssets(scene) {
@@ -120,7 +126,10 @@ export class ConfigMenu extends Phaser.Scene {
         this.applyMenuMusicVolume(currentSettings.musicVolume);
 
         this.setupSliders(currentSettings);
+        this.setupMusicMuteButton(currentSettings);
+        this.setupSfxMuteButton(currentSettings);
         this.setupActionButtons();
+        this.setupFullscreenButton();
         this.setupReturnButton();
         this.setupFeedbackText();
 
@@ -224,6 +233,118 @@ export class ConfigMenu extends Phaser.Scene {
                 playSfx(scene, 'clique');
             }
         });
+    }
+
+    setupMusicMuteButton(settings) {
+        const scene = this.hostScene;
+        this.musicMuted = settings.musicMuted;
+        this.applyMusicMuteState();
+
+        const hitArea = this.trackElement(
+            scene.add.rectangle(81, MUSIC_TRACK_CENTER_Y, 34, 36, 0x000000, 0)
+                .setDepth(this.baseDepth + 6)
+        );
+        hitArea.setInteractive({ useHandCursor: true });
+
+        let isPressed = false;
+        hitArea.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            if (this.confirmPopup?.isOpen) return;
+            isPressed = true;
+        });
+        hitArea.on('pointerout', () => {
+            isPressed = false;
+        });
+        hitArea.on('pointerup', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            if (!isPressed || this.confirmPopup?.isOpen) return;
+            isPressed = false;
+            this.musicMuted = !this.musicMuted;
+            saveSettings({ musicMuted: this.musicMuted }, scene.game);
+            this.applyMusicMuteState();
+            playSfx(scene, 'clique');
+        });
+    }
+
+    applyMusicMuteState() {
+        this.musicSlider?.bar?.setTexture(this.musicMuted ? 'config-mute-toggle' : 'config-music-bar');
+    }
+
+    setupSfxMuteButton(settings) {
+        const scene = this.hostScene;
+        this.sfxMuted = settings.sfxMuted;
+        this.applySfxMuteState();
+
+        const hitArea = this.trackElement(
+            scene.add.rectangle(78, SFX_TRACK_CENTER_Y, 40, 36, 0x000000, 0)
+                .setDepth(this.baseDepth + 6)
+        );
+        hitArea.setInteractive({ useHandCursor: true });
+
+        let isPressed = false;
+        hitArea.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            if (this.confirmPopup?.isOpen) return;
+            isPressed = true;
+        });
+        hitArea.on('pointerout', () => {
+            isPressed = false;
+        });
+        hitArea.on('pointerup', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            if (!isPressed || this.confirmPopup?.isOpen) return;
+            isPressed = false;
+            this.sfxMuted = !this.sfxMuted;
+            saveSettings({ sfxMuted: this.sfxMuted }, scene.game);
+            if (this.sfxMuted) {
+                stopAllSfx(scene);
+            }
+            this.applySfxMuteState();
+            playSfx(scene, 'clique');
+        });
+    }
+
+    applySfxMuteState() {
+        this.sfxSlider?.bar?.setTexture(this.sfxMuted ? 'config-sfx-mute-toggle' : 'config-sfx-bar');
+    }
+
+    setupFullscreenButton() {
+        this.fullscreenButton = this.createImageButton(
+            480,
+            23,
+            'config-fullscreen',
+            () => this.toggleFullscreen(),
+            { originX: 0.5, originY: 0.5 }
+        );
+    }
+
+    toggleFullscreen() {
+        const scale = this.hostScene?.scale;
+        if (!scale || typeof scale.startFullscreen !== 'function' || typeof scale.stopFullscreen !== 'function') {
+            this.showFeedback('Tela cheia não disponível neste navegador.');
+            return;
+        }
+
+        if (scale.isFullscreen) {
+            scale.stopFullscreen();
+            return;
+        }
+
+        const clearFullscreenListeners = () => {
+            scale.off('fullscreenunsupported', showFullscreenError);
+            scale.off('fullscreenfailed', showFullscreenError);
+            scale.off('enterfullscreen', clearFullscreenListeners);
+        };
+        const showFullscreenError = () => {
+            clearFullscreenListeners();
+            this.showFeedback('Não foi possível ativar a tela cheia.');
+        };
+
+        scale.once('fullscreenunsupported', showFullscreenError);
+        scale.once('fullscreenfailed', showFullscreenError);
+        scale.once('enterfullscreen', clearFullscreenListeners);
+        this.inputCleanups.push(clearFullscreenListeners);
+        scale.startFullscreen();
     }
 
     createSlider({ barKey, knobKey, barX, barY, trackY, initialValue, onChange, onRelease }) {
@@ -463,20 +584,25 @@ export class ConfigMenu extends Phaser.Scene {
         const updated = restoreDefaultVolumes(scene.game);
         this.musicSlider?.setValue(updated.musicVolume);
         this.sfxSlider?.setValue(updated.sfxVolume);
+        this.musicMuted = updated.musicMuted;
+        this.sfxMuted = updated.sfxMuted;
+        this.applyMusicMuteState();
+        this.applySfxMuteState();
         this.applyMenuMusicVolume(updated.musicVolume);
         this.showFeedback('Volumes restaurados para o padrão.');
     }
 
     handleResetProgress() {
+        const scene = this.hostScene;
         this.confirmPopup.open({
+            skin: 'config-reset',
             onConfirm: () => {
                 clearAllProgress();
                 resetPurchasedCitiesMemory();
                 resetInMemoryATP();
                 resetOccurrenceState();
-                this.hostScene?.atpDisplay?.update?.();
-                this.hostScene?.syncActiveCityAlerts?.(true);
-                this.showFeedback('Progresso apagado com sucesso!');
+                reactivateTutorial(scene.game);
+                scene.scene.start('Start');
             }
         });
     }

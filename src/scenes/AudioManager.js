@@ -103,7 +103,7 @@ class AudioManager {
 
         this.ensureGameListener(scene);
 
-        const { sfxVolume } = getSettings();
+        const { sfxVolume, sfxMuted } = getSettings();
         const safeSfxVolume = typeof sfxVolume === 'number' && !Number.isNaN(sfxVolume)
             ? Math.max(0, Math.min(1, sfxVolume))
             : 0;
@@ -118,7 +118,7 @@ class AudioManager {
 
         // O Web Audio API do Phaser suporta valores acima de 1.0 (amplificacao no GainNode)
         // caso o Mateus queira aumentar sons muito baixos na tabela SFX_BASE_VOLUMES.
-        const finalVolume = Math.max(0, baseVolume * configVolume * safeSfxVolume);
+        const finalVolume = sfxMuted ? 0 : Math.max(0, baseVolume * configVolume * safeSfxVolume);
 
         // Volume 0 nao gera erro e evita tocar som mudo desnecessariamente.
         if (finalVolume <= 0) {
@@ -153,7 +153,7 @@ class AudioManager {
 
         this.ensureGameListener(scene);
 
-        const { musicVolume } = getSettings();
+        const { musicVolume, musicMuted } = getSettings();
         const safeMusicVolume = typeof musicVolume === 'number' && !Number.isNaN(musicVolume)
             ? Math.max(0, Math.min(1, musicVolume))
             : 0;
@@ -162,7 +162,7 @@ class AudioManager {
         const configVolume = config && typeof config.volume === 'number' && !Number.isNaN(config.volume)
             ? config.volume
             : 1;
-        const finalVolume = Math.max(0, baseVolume * configVolume * safeMusicVolume);
+        const finalVolume = musicMuted ? 0 : Math.max(0, baseVolume * configVolume * safeMusicVolume);
 
         if (this.currentMusicKey && this.currentMusicKey !== key) {
             this.stopMusic(scene);
@@ -207,10 +207,11 @@ class AudioManager {
     }
 
     updateMusicVolume(volume = null, scene = null) {
+        const settings = getSettings();
         const rawVolume = typeof volume === 'number' && !Number.isNaN(volume)
             ? volume
-            : getSettings().musicVolume;
-        const safeVolume = Math.max(0, Math.min(1, rawVolume));
+            : settings.musicVolume;
+        const safeVolume = settings.musicMuted ? 0 : Math.max(0, Math.min(1, rawVolume));
         const baseVolume = this.getMusicBaseVolume(this.currentMusicKey);
         const finalVolume = Math.max(0, baseVolume * safeVolume);
 

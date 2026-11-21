@@ -15,6 +15,13 @@ const CORNER_HEX = '#4c631f';
 const DEFAULT_TEXT_COLOR = '#BDEE38';
 const PRESSED_TINT = 0x8B2E40;
 
+export const GREEN_BUTTON_COLORS = Object.freeze({
+    FILL: FILL_HEX,
+    CORNER: CORNER_HEX,
+    TEXT: DEFAULT_TEXT_COLOR,
+    PRESSED_TINT
+});
+
 export function preloadGreenButton(scene) {
     if (!scene || !scene.load) return;
     if (!scene.textures?.exists?.(GREEN_BUTTON_SOURCE_KEY)) {

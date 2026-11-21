@@ -45,9 +45,12 @@ const KNOB_MAX_X = TRACK_MAX_X - KNOB_HALF_WIDTH; // 410
 
 const MUSIC_BAR_POS = { x: 67, y: 125 };
 const MUSIC_TRACK_CENTER_Y = 145; // Centro vertical do trilho y133-158
+const MUSIC_ICON_CENTER = { x: 82, y: 142 }; // Centro do icone de nota musical (x67-97, y125-159)
 
 const SFX_BAR_POS = { x: 59, y: 184 };
 const SFX_TRACK_CENTER_Y = 202; // Centro vertical do trilho y190-215
+const SFX_ICON_CENTER = { x: 77, y: 201 }; // Centro do icone de alto-falante (x59-95, y184-217)
+const MUTE_SLASH_HALF_SPAN = 16;
 
 // Botoes centralizados em x=256 com espacamento vertical igual (82 px entre centros).
 const ACTION_BUTTON_X = 256;
@@ -58,6 +61,9 @@ const TUTORIAL_BUTTON_Y = 444;
 // Botao voltar na posicao recortada (x423 y413, 80x79) na cena cheia, e dentro da moldura na minitela.
 const RETURN_BUTTON_POS = { x: 423, y: 413 };
 const RETURN_BUTTON_OVERLAY_POS = { x: 400, y: 400 };
+const RETURN_BUTTON_SIZE = { width: 80, height: 79 };
+const FULLSCREEN_RETURN_GAP = 12;
+const FULLSCREEN_BUTTON_TINT = 0x6fff00; // Mesmo verde do BotaoRetornar.png
 const OVERLAY_PANEL = { x: 14, y: 14, width: 484, height: 484 };
 
 export class ConfigMenu extends Phaser.Scene {
@@ -235,13 +241,35 @@ export class ConfigMenu extends Phaser.Scene {
         });
     }
 
+    createMuteSlash(centerX, centerY) {
+        const scene = this.hostScene;
+        const gfx = this.trackElement(
+            scene.add.graphics().setDepth(this.baseDepth + 4)
+        );
+        const cx = Math.round(centerX);
+        const cy = Math.round(centerY);
+
+        // Diagonal pixel art (canto superior esquerdo -> inferior direito) com contorno preto e miolo branco.
+        gfx.fillStyle(0x000000, 1);
+        for (let offset = -MUTE_SLASH_HALF_SPAN; offset <= MUTE_SLASH_HALF_SPAN; offset += 2) {
+            gfx.fillRect(cx + offset - 3, cy + offset - 3, 7, 7);
+        }
+        gfx.fillStyle(0xffffff, 1);
+        for (let offset = -MUTE_SLASH_HALF_SPAN; offset <= MUTE_SLASH_HALF_SPAN; offset += 2) {
+            gfx.fillRect(cx + offset - 1, cy + offset - 1, 3, 3);
+        }
+
+        return gfx;
+    }
+
     setupMusicMuteButton(settings) {
         const scene = this.hostScene;
         this.musicMuted = settings.musicMuted;
+        this.musicMuteSlash = this.createMuteSlash(MUSIC_ICON_CENTER.x, MUSIC_ICON_CENTER.y);
         this.applyMusicMuteState();
 
         const hitArea = this.trackElement(
-            scene.add.rectangle(81, MUSIC_TRACK_CENTER_Y, 34, 36, 0x000000, 0)
+            scene.add.rectangle(MUSIC_ICON_CENTER.x, MUSIC_ICON_CENTER.y, 34, 36, 0x000000, 0)
                 .setDepth(this.baseDepth + 6)
         );
         hitArea.setInteractive({ useHandCursor: true });
@@ -267,16 +295,17 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applyMusicMuteState() {
-        this.musicSlider?.bar?.setTexture(this.musicMuted ? 'config-mute-toggle' : 'config-music-bar');
+        this.musicMuteSlash?.setVisible(Boolean(this.musicMuted));
     }
 
     setupSfxMuteButton(settings) {
         const scene = this.hostScene;
         this.sfxMuted = settings.sfxMuted;
+        this.sfxMuteSlash = this.createMuteSlash(SFX_ICON_CENTER.x, SFX_ICON_CENTER.y);
         this.applySfxMuteState();
 
         const hitArea = this.trackElement(
-            scene.add.rectangle(78, SFX_TRACK_CENTER_Y, 40, 36, 0x000000, 0)
+            scene.add.rectangle(SFX_ICON_CENTER.x, SFX_ICON_CENTER.y, 40, 36, 0x000000, 0)
                 .setDepth(this.baseDepth + 6)
         );
         hitArea.setInteractive({ useHandCursor: true });
@@ -305,17 +334,23 @@ export class ConfigMenu extends Phaser.Scene {
     }
 
     applySfxMuteState() {
-        this.sfxSlider?.bar?.setTexture(this.sfxMuted ? 'config-sfx-mute-toggle' : 'config-sfx-bar');
+        this.sfxMuteSlash?.setVisible(Boolean(this.sfxMuted));
     }
 
     setupFullscreenButton() {
+        const returnPos = this.isOverlay ? RETURN_BUTTON_OVERLAY_POS : RETURN_BUTTON_POS;
+        const { width, height } = RETURN_BUTTON_SIZE;
+        const centerX = Math.round(returnPos.x + width / 2);
+        const centerY = Math.round(returnPos.y - FULLSCREEN_RETURN_GAP - height / 2);
+
         this.fullscreenButton = this.createImageButton(
-            480,
-            23,
+            centerX,
+            centerY,
             'config-fullscreen',
             () => this.toggleFullscreen(),
-            { originX: 0.5, originY: 0.5 }
+            { originX: 0.5, originY: 0.5, defaultTint: FULLSCREEN_BUTTON_TINT }
         );
+        this.fullscreenButton.setDisplaySize(width, height);
     }
 
     toggleFullscreen() {
@@ -507,11 +542,19 @@ export class ConfigMenu extends Phaser.Scene {
         );
     }
 
-    createImageButton(x, y, textureKey, onClick, { originX = 0.5, originY = 0.5 } = {}) {
+    createImageButton(x, y, textureKey, onClick, { originX = 0.5, originY = 0.5, defaultTint = null } = {}) {
         const scene = this.hostScene;
         const btn = this.trackElement(
             scene.add.image(x, y, textureKey).setOrigin(originX, originY).setDepth(this.baseDepth + 3)
         );
+        const resetTint = () => {
+            if (defaultTint !== null) {
+                btn.setTint(defaultTint);
+            } else {
+                btn.clearTint();
+            }
+        };
+        resetTint();
         btn.setInteractive({ useHandCursor: true });
 
         let isPressed = false;
@@ -525,18 +568,18 @@ export class ConfigMenu extends Phaser.Scene {
 
         btn.on('pointerout', () => {
             isPressed = false;
-            btn.clearTint();
+            resetTint();
         });
 
         btn.on('pointerup', (_p, _lx, _ly, event) => {
             event?.stopPropagation?.();
             if (!isPressed || this.confirmPopup?.isOpen) {
-                btn.clearTint();
+                resetTint();
                 isPressed = false;
                 return;
             }
             isPressed = false;
-            btn.clearTint();
+            resetTint();
             playSfx(scene, 'clique');
             onClick();
         });

@@ -46,14 +46,19 @@ const SHOP_ITEMS = [
 
 const CARD_GRID = {
     x: 68,
-    y: 107.5,
+    y: 108,
     slots: [
         { x: 24, y: 21, width: 143, height: 110 },
         { x: 202, y: 21, width: 143, height: 110 },
-        { x: 24, y: 170, width: 143, height: 110 },
-        { x: 202, y: 170, width: 143, height: 110 }
+        { x: 24, y: 169, width: 143, height: 110 },
+        { x: 202, y: 169, width: 143, height: 110 }
     ]
 };
+
+// Caixa branca interna de painel_saldo_atp.png (85x34 em x=512, y=2, origin 1,0): x431..507, y6..31.
+const BALANCE_BOX_CENTER_X = 469;
+const BALANCE_BOX_CENTER_Y = 19;
+const BALANCE_ICON_TEXT_GAP = 4;
 
 export class Shop extends Phaser.Scene {
     constructor() {
@@ -93,7 +98,7 @@ export class Shop extends Phaser.Scene {
 
         this.add.image(256, 256, 'shop-background').setDepth(0);
         this.add.image(256, 41, 'shop-title').setDepth(1);
-        this.add.image(256, 266, 'shop-card-grid').setDepth(1);
+        this.add.image(CARD_GRID.x, CARD_GRID.y, 'shop-card-grid').setOrigin(0, 0).setDepth(1);
         this.createBalancePanel();
         this.createBackButton();
         this.createFeedbackText();
@@ -117,13 +122,26 @@ export class Shop extends Phaser.Scene {
         this.add.image(512, 2, 'shop-balance-panel')
             .setOrigin(1, 0)
             .setDepth(2);
-        this.add.image(442, 19, 'shop-atp-icon').setDepth(3);
-        this.balanceText = this.add.text(457, 19, String(getATP()), createTextStyle({
+        this.balanceIcon = this.add.image(BALANCE_BOX_CENTER_X, BALANCE_BOX_CENTER_Y, 'shop-atp-icon')
+            .setOrigin(0, 0.5)
+            .setDepth(3);
+        this.balanceText = this.add.text(BALANCE_BOX_CENTER_X, BALANCE_BOX_CENTER_Y, String(getATP()), createTextStyle({
             fontFamily: 'monospace',
             fontSize: '13px',
             fontStyle: 'bold',
             color: '#000000'
         })).setOrigin(0, 0.5).setDepth(3);
+        this.layoutBalanceDisplay();
+    }
+
+    layoutBalanceDisplay() {
+        if (!this.balanceIcon || !this.balanceText) return;
+        const iconWidth = this.balanceIcon.displayWidth || 21;
+        const textWidth = this.balanceText.displayWidth || this.balanceText.width || 0;
+        const totalWidth = iconWidth + BALANCE_ICON_TEXT_GAP + textWidth;
+        const startX = Math.round(BALANCE_BOX_CENTER_X - totalWidth / 2);
+        this.balanceIcon.setPosition(startX, BALANCE_BOX_CENTER_Y);
+        this.balanceText.setPosition(Math.round(startX + iconWidth + BALANCE_ICON_TEXT_GAP), BALANCE_BOX_CENTER_Y);
     }
 
     createBackButton() {
@@ -141,16 +159,17 @@ export class Shop extends Phaser.Scene {
     createFeedbackText() {
         this.feedbackText = this.add.text(256, 474, '', createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '10px',
+            fontSize: '12px',
             fontStyle: 'bold',
             color: '#ffffff',
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            padding: { x: 5, y: 3 }
+            padding: { x: 8, y: 4 }
         })).setOrigin(0.5).setDepth(20).setVisible(false);
     }
 
     updateBalance() {
         this.balanceText?.setText(String(getATP()));
+        this.layoutBalanceDisplay();
     }
 
     renderCards() {
@@ -161,8 +180,8 @@ export class Shop extends Phaser.Scene {
             const slot = CARD_GRID.slots[index];
             const left = CARD_GRID.x + slot.x;
             const top = CARD_GRID.y + slot.y;
-            const centerX = left + slot.width / 2;
-            const centerY = top + slot.height / 2;
+            const centerX = Math.round(left + slot.width / 2);
+            const centerY = Math.round(top + slot.height / 2);
             const depth = 2;
 
             this.cardElements.push(
@@ -170,9 +189,9 @@ export class Shop extends Phaser.Scene {
                     .setDepth(depth)
             );
             this.cardElements.push(
-                this.add.text(left + 4, top + slot.height - 8, item.name, createTextStyle({
+                this.add.text(left + 4, top + slot.height - 9, item.name, createTextStyle({
                     fontFamily: 'monospace',
-                    fontSize: '9px',
+                    fontSize: '10px',
                     fontStyle: 'bold',
                     color: '#000000',
                     backgroundColor: '#ffffff',
@@ -185,7 +204,7 @@ export class Shop extends Phaser.Scene {
                     .setDepth(depth + 1)
             );
 
-            this.createCardAction(item, centerX, top + slot.height + 13);
+            this.createCardAction(item, centerX, top + slot.height + 9);
         });
     }
 
@@ -198,11 +217,12 @@ export class Shop extends Phaser.Scene {
             if (targetId) {
                 const targetName = (characterData[targetId]?.nome || targetId).replace(/^(Dona|Seu) /, '');
                 this.cardElements.push(
-                    this.add.text(x, y + 17, `Substitui ${targetName}`, createTextStyle({
+                    this.add.text(Math.round(x), Math.round(y + 18), `Substitui ${targetName}`, createTextStyle({
                         fontFamily: 'monospace',
-                        fontSize: '7px',
+                        fontSize: '10px',
                         fontStyle: 'bold',
-                        color: '#ffffff'
+                        color: '#21161b',
+                        align: 'center'
                     })).setOrigin(0.5).setDepth(5)
                 );
             }
@@ -250,14 +270,14 @@ export class Shop extends Phaser.Scene {
                 .setDepth(101),
             this.add.text(256, 73, 'ESCOLHA QUEM SUBSTITUIR', createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '12px',
+                fontSize: '16px',
                 fontStyle: 'bold',
                 color: '#ffffff',
                 align: 'center'
             })).setOrigin(0.5).setDepth(102),
-            this.add.text(256, 94, 'Somente personagens de cidades liberadas', createTextStyle({
+            this.add.text(256, 96, 'Somente personagens de cidades liberadas', createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '8px',
+                fontSize: '11px',
                 color: '#f5d6dc',
                 align: 'center'
             })).setOrigin(0.5).setDepth(102)
@@ -287,26 +307,26 @@ export class Shop extends Phaser.Scene {
             this.modalElements.push(tile);
 
             this.modalElements.push(
-                this.add.text(x, y - 16, target.name, createTextStyle({
+                this.add.text(x, y - 20, target.name, createTextStyle({
                     fontFamily: 'monospace',
-                    fontSize: '8px',
+                    fontSize: '12px',
                     fontStyle: 'bold',
                     color: isAccessible ? '#ffffff' : '#aaaaaa',
                     align: 'center'
                 })).setOrigin(0.5).setDepth(103),
                 this.add.text(x, y, `Cidade ${target.cityNumber}`, createTextStyle({
                     fontFamily: 'monospace',
-                    fontSize: '7px',
+                    fontSize: '11px',
                     color: isAccessible ? '#e5f5e8' : '#bbbbbb',
                     align: 'center'
                 })).setOrigin(0.5).setDepth(103),
                 this.add.text(
                     x,
-                    y + 19,
-                    !isAccessible ? 'BLOQUEADA' : currentExtra ? `Atual: ${currentExtra.name}` : 'DISPONIVEL',
+                    y + 20,
+                    !isAccessible ? 'BLOQUEADA' : currentExtra ? `Atual: ${currentExtra.name}` : 'DISPONÍVEL',
                     createTextStyle({
                         fontFamily: 'monospace',
-                        fontSize: '7px',
+                        fontSize: '10px',
                         fontStyle: 'bold',
                         color: isAccessible ? '#bdee38' : '#cccccc',
                         align: 'center'
@@ -356,7 +376,7 @@ export class Shop extends Phaser.Scene {
             .setInteractive({ useHandCursor: true });
         const closeText = this.add.text(256, 425, 'CANCELAR', createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '9px',
+            fontSize: '13px',
             fontStyle: 'bold',
             color: '#ffffff'
         })).setOrigin(0.5).setDepth(103);
@@ -394,12 +414,12 @@ export class Shop extends Phaser.Scene {
     }
 
     createStatusButton(x, y, label) {
-        const background = this.add.rectangle(x, y, 89, 25, 0x3f3f3f)
+        const background = this.add.rectangle(Math.round(x), Math.round(y), 89, 25, 0x3f3f3f)
             .setStrokeStyle(2, 0x000000)
             .setDepth(4);
-        const text = this.add.text(x, y, label, createTextStyle({
+        const text = this.add.text(Math.round(x), Math.round(y), label, createTextStyle({
             fontFamily: 'monospace',
-            fontSize: '9px',
+            fontSize: '14px',
             fontStyle: 'bold',
             color: '#bdee38'
         })).setOrigin(0.5).setDepth(5);
@@ -418,16 +438,17 @@ export class Shop extends Phaser.Scene {
         this.modalElements.push(backdrop);
         this.modalElements.push(
             this.add.image(256, 256, 'shop-confirm-panel').setDepth(101),
-            this.add.text(256, 251, `Comprar ${item.name}?`, createTextStyle({
+            this.add.text(256, 250, `Comprar ${item.name}?`, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '10px',
+                fontSize: '11px',
                 fontStyle: 'bold',
                 color: '#000000',
                 align: 'center'
             })).setOrigin(0.5).setDepth(102),
-            this.add.text(256, 267, `Preço: ${item.price} ATP   Saldo: ${getATP()} ATP`, createTextStyle({
+            this.add.text(256, 267, `Preço: ${item.price} | Saldo: ${getATP()} ATP`, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '8px',
+                fontSize: '10px',
+                fontStyle: 'bold',
                 color: '#000000',
                 align: 'center'
             })).setOrigin(0.5).setDepth(102)

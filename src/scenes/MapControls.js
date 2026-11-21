@@ -2,6 +2,56 @@ import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
 import { playSfx, stopMusic } from './AudioManager.js';
+import { GREEN_BUTTON_COLORS } from './GreenButton.js';
+import { createTextStyle } from './textUtils.js';
+
+const SHOP_HUD_TEXTURE_KEY = 'shop-hud-green-btn';
+const SHOP_HUD_WIDTH = 60;
+const SHOP_HUD_HEIGHT = 40;
+
+function ensureShopHudTexture(scene, width, height) {
+    const textures = scene?.textures;
+    if (!textures || typeof textures.createCanvas !== 'function') {
+        return null;
+    }
+    const key = `${SHOP_HUD_TEXTURE_KEY}-${width}x${height}`;
+    if (textures.exists(key)) {
+        return key;
+    }
+    const canvasTex = textures.createCanvas(key, width, height);
+    const ctx = canvasTex?.getContext?.();
+    if (!ctx) {
+        return null;
+    }
+    ctx.imageSmoothingEnabled = false;
+
+    // Borda preta de 2 px, preenchimento verde e cantos escuros em L no padrao de botao_pausa e escolher_cidade.
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = GREEN_BUTTON_COLORS.FILL;
+    ctx.fillRect(2, 2, width - 4, height - 4);
+
+    ctx.fillStyle = GREEN_BUTTON_COLORS.CORNER;
+    // Superior esquerdo
+    ctx.fillRect(2, 2, 5, 2);
+    ctx.fillRect(2, 4, 2, 3);
+    // Superior direito
+    ctx.fillRect(width - 7, 2, 5, 2);
+    ctx.fillRect(width - 4, 4, 2, 3);
+    // Inferior esquerdo
+    ctx.fillRect(2, height - 4, 5, 2);
+    ctx.fillRect(2, height - 7, 2, 3);
+    // Inferior direito
+    ctx.fillRect(width - 7, height - 4, 5, 2);
+    ctx.fillRect(width - 4, height - 7, 2, 3);
+
+    canvasTex.refresh();
+    if (typeof Phaser !== 'undefined' && Phaser.Textures?.FilterMode?.NEAREST !== undefined) {
+        canvasTex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
+    return key;
+}
 
 export class MapControls {
     constructor(scene) {
@@ -101,15 +151,47 @@ export class MapControls {
             ? citySelectButton.x + citySelectButton.displayWidth + 8
             : 104;
         const y = citySelectButton ? citySelectButton.y : 8;
-        const shopButton = this.scene.add.image(x, y, 'shop-hud-button');
-        shopButton.setOrigin(0);
-        shopButton.setDepth(100);
-        shopButton.texture?.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        const height = Math.round(citySelectButton?.displayHeight || SHOP_HUD_HEIGHT);
+        const width = SHOP_HUD_WIDTH;
+
+        const textureKey = ensureShopHudTexture(this.scene, width, height);
+        const shopButton = textureKey
+            ? this.scene.add.image(x, y, textureKey).setOrigin(0).setDepth(100)
+            : this.scene.add.rectangle(x, y, width, height, 0x6c940f).setOrigin(0).setDepth(100);
         shopButton.setInteractive({ useHandCursor: true });
-        shopButton.on('pointerdown', () => shopButton.setTint(0x8B2E40));
-        shopButton.on('pointerout', () => shopButton.clearTint());
+
+        const label = this.scene.add.text(
+            Math.round(x + width / 2),
+            Math.round(y + height / 2),
+            'LOJA',
+            createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: GREEN_BUTTON_COLORS.TEXT,
+                align: 'center'
+            })
+        ).setOrigin(0.5).setDepth(101);
+
+        let isPressed = false;
+        const clearPressed = () => {
+            isPressed = false;
+            shopButton.clearTint?.();
+            label.clearTint?.();
+        };
+
+        shopButton.on('pointerdown', () => {
+            isPressed = true;
+            shopButton.setTint?.(GREEN_BUTTON_COLORS.PRESSED_TINT);
+            label.setTint?.(GREEN_BUTTON_COLORS.PRESSED_TINT);
+        });
+        shopButton.on('pointerout', () => {
+            clearPressed();
+        });
         shopButton.on('pointerup', () => {
-            shopButton.clearTint();
+            const shouldTrigger = isPressed;
+            clearPressed();
+            if (!shouldTrigger) return;
             playSfx(this.scene, 'clique');
             closeCharacterDescription(this.scene);
             this.scene.scene.start('Shop', {
@@ -117,7 +199,9 @@ export class MapControls {
                 returnData: { targetCityIndex: this.scene.currentCityIndex ?? 0 }
             });
         });
+
         this.shopButton = shopButton;
+        this.shopButtonLabel = label;
         return shopButton;
     }
 }

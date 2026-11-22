@@ -7,7 +7,7 @@ import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
-import { preloadAudio, playSfx } from './AudioManager.js';
+import { preloadAudio, playSfx, stopSfx, playSceneMusic, stopMusic } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
 import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
 import { getCharacterReplacement } from './shopStore.js';
@@ -47,6 +47,7 @@ export class Minigame extends Phaser.Scene {
         this.patientSprite = null;
         this.tutorialManager = null;
         this.pauseMenu = null;
+        this.isCollectingSfxPlaying = false;
     }
 
     preload() {
@@ -58,6 +59,10 @@ export class Minigame extends Phaser.Scene {
     }
 
     create() {
+        playSceneMusic(this, 'Minigame');
+        this.events.once('shutdown', () => {
+            this.stopCollectionSfx();
+        });
         this.setupViewport();
         this.setupBackground();
         this.setupPauseButton();
@@ -72,6 +77,8 @@ export class Minigame extends Phaser.Scene {
     }
 
     returnToMap(options = {}) {
+        this.stopCollectionSfx();
+        stopMusic(this, 'city-music');
         endMinigameSession();
         if (this.typingPhase) {
             this.typingPhase.destroy?.();
@@ -290,14 +297,46 @@ export class Minigame extends Phaser.Scene {
         }
 
         if (this.fillProgressMs >= FILL_FULL_MS) {
+            this.stopCollectionSfx();
             this.syringe.setTexture('agulha-cheia');
             this.collectionStep = 'MOVE_TO_TUBE';
             this.input.setDraggable(this.syringe, true);
-        } else if (this.fillProgressMs >= FILL_HALF_MS) {
-            this.syringe.setTexture('agulha-metade');
+        } else {
+            if (isHolding) {
+                this.startCollectionSfx();
+            } else {
+                this.stopCollectionSfx();
+            }
+            if (this.fillProgressMs >= FILL_HALF_MS) {
+                this.syringe.setTexture('agulha-metade');
+            }
         }
 
         this.drawProgressBar();
+    }
+
+    isCollectionSfxPlaying() {
+        if (Array.isArray(this.sound?.sounds)) {
+            return this.sound.sounds.some((snd) => snd && snd.key === 'transfusao' && snd.isPlaying);
+        }
+        return this.isCollectingSfxPlaying;
+    }
+
+    startCollectionSfx() {
+        if (this.isCollectionSfxPlaying()) {
+            return;
+        }
+        if (playSfx(this, 'transfusao', { loop: true })) {
+            this.isCollectingSfxPlaying = true;
+        }
+    }
+
+    stopCollectionSfx() {
+        if (!this.isCollectingSfxPlaying && !this.isCollectionSfxPlaying()) {
+            return;
+        }
+        stopSfx(this, 'transfusao');
+        this.isCollectingSfxPlaying = false;
     }
 
     drawProgressBar() {

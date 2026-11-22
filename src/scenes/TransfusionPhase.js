@@ -438,7 +438,6 @@ export class TransfusionPhase {
 
         this.compatibleCount++;
         this.clearMessage();
-        playSfx(this.scene, 'transfusao');
 
         if (this.compatibleCount >= REQUIRED_BAGS) {
             const result = this.state.complete();

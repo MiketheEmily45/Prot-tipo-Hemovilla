@@ -56,7 +56,7 @@ export const SCENE_MUSIC_KEYS = Object.freeze({
     ConfigMenu: 'start-music',
     GameMap: 'city-music',
     CitySelect: 'city-music',
-    Minigame: null
+    Minigame: 'city-music'
 });
 
 class AudioManager {
@@ -245,6 +245,29 @@ class AudioManager {
         }
     }
 
+    stopSfx(scene = null, key = null) {
+        if (!key) {
+            return;
+        }
+        const soundManager = scene?.sound || this.boundGame?.sound;
+        if (!soundManager) {
+            return;
+        }
+
+        if (Array.isArray(soundManager.sounds)) {
+            soundManager.sounds.slice().forEach((snd) => {
+                if (snd && snd.key === key && snd.isPlaying) {
+                    snd.stop();
+                }
+            });
+            return;
+        }
+
+        if (typeof soundManager.stopByKey === 'function') {
+            soundManager.stopByKey(key);
+        }
+    }
+
     stopAllSfx(scene = null) {
         const soundManager = scene?.sound || this.boundGame?.sound;
         if (!soundManager) {
@@ -276,6 +299,10 @@ export function preloadAudio(scene) {
 
 export function playSfx(scene, key, config = {}) {
     return audioManager.playSfx(scene, key, config);
+}
+
+export function stopSfx(scene = null, key = null) {
+    audioManager.stopSfx(scene, key);
 }
 
 export function stopAllSfx(scene = null) {

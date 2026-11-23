@@ -24,6 +24,7 @@ import {
 import { addATP, resetInMemoryATP } from './atpStore.js';
 import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetShopMemory } from './shopStore.js';
+import { resetTutorialSessionState } from './tutorialState.js';
 
 export const STORAGE_KEYS = [
     'hemovilla-atp',
@@ -188,6 +189,7 @@ export function resetProgressAndReload() {
     resetPurchasedCitiesMemory();
     resetInMemoryATP();
     resetOccurrenceState();
+    resetTutorialSessionState();
     showToast('Progresso e ocorrências zerados');
 
     if (currentGame && currentGame.scene) {

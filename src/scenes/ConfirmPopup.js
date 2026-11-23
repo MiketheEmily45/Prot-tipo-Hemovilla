@@ -1,6 +1,78 @@
 import { createTextStyle } from './textUtils.js';
 import { playSfx } from './AudioManager.js';
 
+// Recorta margens transparentes de assets de botao exportados em canvas 512x512,
+// evitando deslocamento visual e sobreposicao das areas clicaveis de SIM e NAO.
+function ensureTrimmedButtonTexture(scene, textureKey, expectedWidth, expectedHeight) {
+    const textures = scene?.textures;
+    if (!textureKey || !textures?.exists?.(textureKey) || typeof textures.createCanvas !== 'function') {
+        return textureKey;
+    }
+
+    const trimmedKey = `${textureKey}-trimmed`;
+    if (textures.exists(trimmedKey)) {
+        return trimmedKey;
+    }
+
+    const srcImg = textures.get(textureKey)?.getSourceImage?.();
+    if (!srcImg || !srcImg.width || !srcImg.height) {
+        return textureKey;
+    }
+
+    if (srcImg.width <= expectedWidth * 1.5 && srcImg.height <= expectedHeight * 1.5) {
+        return textureKey;
+    }
+
+    if (typeof document === 'undefined') {
+        return textureKey;
+    }
+
+    const probeCanvas = document.createElement('canvas');
+    probeCanvas.width = srcImg.width;
+    probeCanvas.height = srcImg.height;
+    const probeCtx = probeCanvas.getContext('2d');
+    if (!probeCtx) {
+        return textureKey;
+    }
+    probeCtx.drawImage(srcImg, 0, 0);
+    const { data, width: imgW, height: imgH } = probeCtx.getImageData(0, 0, srcImg.width, srcImg.height);
+
+    let minX = imgW;
+    let minY = imgH;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < imgH; y++) {
+        for (let x = 0; x < imgW; x++) {
+            if (data[(y * imgW + x) * 4 + 3] > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    if (maxX < minX || maxY < minY) {
+        return textureKey;
+    }
+
+    const trimW = maxX - minX + 1;
+    const trimH = maxY - minY + 1;
+    const canvasTex = textures.createCanvas(trimmedKey, trimW, trimH);
+    const ctx = canvasTex?.getContext?.();
+    if (!ctx) {
+        return textureKey;
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(srcImg, minX, minY, trimW, trimH, 0, 0, trimW, trimH);
+    canvasTex.refresh();
+    if (typeof Phaser !== 'undefined' && Phaser.Textures?.FilterMode?.NEAREST !== undefined) {
+        canvasTex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
+    return trimmedKey;
+}
+
 /**
  * Dialogo de confirmacao com arte opcional e fallback desenhado.
  */
@@ -129,7 +201,8 @@ export class ConfirmPopup {
         let drawBtn = () => {};
 
         if (textureKey) {
-            hitArea = scene.add.image(x, y, textureKey).setDepth(depth);
+            const resolvedKey = ensureTrimmedButtonTexture(scene, textureKey, width, height);
+            hitArea = scene.add.image(x, y, resolvedKey).setDepth(depth);
             hitArea.setInteractive({ useHandCursor: true });
         } else {
             gfx = scene.add.graphics();

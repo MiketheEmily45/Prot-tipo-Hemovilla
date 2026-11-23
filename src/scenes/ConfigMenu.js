@@ -4,9 +4,11 @@ import { ConfirmPopup } from './ConfirmPopup.js';
 import { clearAllProgress } from './debugTools.js';
 import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetInMemoryATP } from './atpStore.js';
-import { resetOccurrenceState } from './occurrenceState.js';
+import { resetOccurrenceState, endMinigameSession } from './occurrenceState.js';
+import { resetTutorialSessionState } from './tutorialState.js';
+import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createTextStyle } from './textUtils.js';
-import { preloadAudio, playSfx, stopAllSfx, updateMusicVolume } from './AudioManager.js';
+import { preloadAudio, playSfx, stopAllSfx, stopMusic, updateMusicVolume } from './AudioManager.js';
 
 export const CONFIG_ASSETS = {
     'config-bg': 'assets/Telas/Config/Fundo.png',
@@ -645,6 +647,24 @@ export class ConfigMenu extends Phaser.Scene {
                 resetInMemoryATP();
                 resetOccurrenceState();
                 reactivateTutorial(scene.game);
+                resetTutorialSessionState();
+
+                if (this.isOverlay) {
+                    this.closeOverlay(false);
+                    scene.pauseMenu?.cleanupBeforeSceneExit?.();
+                    closeCharacterDescription(scene);
+                    endMinigameSession();
+                    if (scene.typingPhase) {
+                        scene.typingPhase.destroy?.();
+                        scene.typingPhase = null;
+                    }
+                    if (scene.transfusionPhase) {
+                        scene.transfusionPhase.destroy?.();
+                        scene.transfusionPhase = null;
+                    }
+                    stopMusic(scene);
+                }
+
                 scene.scene.start('Start');
             }
         });
@@ -654,6 +674,7 @@ export class ConfigMenu extends Phaser.Scene {
         const scene = this.hostScene;
         // Limpa todas as flags do tutorial e religa as dicas (o progresso do jogo nao muda).
         reactivateTutorial(scene.game);
+        resetTutorialSessionState();
         this.showFeedback('Dicas do tutorial reativadas.');
     }
 

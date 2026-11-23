@@ -3,7 +3,7 @@
 
 // Alternar para true faz o tempo no minigame descontar dos relogios dos outros
 // personagens da mesma cidade (quem passar de zero volta com alerta).
-export let TIMERS_RUN_DURING_MINIGAME = false;
+export let TIMERS_RUN_DURING_MINIGAME = true;
 
 export function setTimersRunDuringMinigame(value) {
     TIMERS_RUN_DURING_MINIGAME = Boolean(value);
@@ -126,11 +126,12 @@ export function triggerOccurrence(characterId) {
     return entry;
 }
 
-export function startMinigameSession(characterId, cityIndex) {
+export function startMinigameSession(characterId, cityIndex, now = Date.now()) {
     activeMinigameSession = {
         characterId,
         cityIndex,
-        startedAt: Date.now()
+        startedAt: now,
+        frozenAtStart: occurrenceClocksFrozen
     };
 }
 
@@ -142,13 +143,13 @@ export function onAttendanceSuccess(characterId) {
     }
 }
 
-export function endMinigameSession() {
+export function endMinigameSession(now = Date.now()) {
     if (!activeMinigameSession) {
         return;
     }
 
-    if (TIMERS_RUN_DURING_MINIGAME) {
-        const elapsed = Date.now() - activeMinigameSession.startedAt;
+    if (TIMERS_RUN_DURING_MINIGAME && !occurrenceClocksFrozen && !activeMinigameSession.frozenAtStart) {
+        const elapsed = Math.max(0, now - activeMinigameSession.startedAt);
         const targetCityIndex = activeMinigameSession.cityIndex;
         const targetCharId = activeMinigameSession.characterId;
 

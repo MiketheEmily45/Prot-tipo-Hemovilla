@@ -2,21 +2,22 @@ import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
 import { playSfx, stopMusic } from './AudioManager.js';
-import { GreenButton, GREEN_BUTTON_COLORS } from './GreenButton.js';
+import { GREEN_BUTTON_COLORS } from './GreenButton.js';
 import { createTextStyle } from './textUtils.js';
 import { shouldFreezeOccurrenceClocks } from './tutorialState.js';
 import { getQuizCooldownRemainingSeconds, getQuizProgressDisplay } from './quizLogic.js';
 
-const SHOP_HUD_TEXTURE_KEY = 'shop-hud-green-btn';
+const HUD_GREEN_TEXTURE_KEY = 'hud-green-btn';
 const SHOP_HUD_WIDTH = 60;
 const SHOP_HUD_HEIGHT = 40;
+const QUIZ_HUD_WIDTH = 86;
 
-function ensureShopHudTexture(scene, width, height) {
+function ensureHudGreenTexture(scene, width, height) {
     const textures = scene?.textures;
     if (!textures || typeof textures.createCanvas !== 'function') {
         return null;
     }
-    const key = `${SHOP_HUD_TEXTURE_KEY}-${width}x${height}`;
+    const key = `${HUD_GREEN_TEXTURE_KEY}-${width}x${height}`;
     if (textures.exists(key)) {
         return key;
     }
@@ -159,7 +160,7 @@ export class MapControls {
         const height = Math.round(citySelectButton?.displayHeight || SHOP_HUD_HEIGHT);
         const width = SHOP_HUD_WIDTH;
 
-        const textureKey = ensureShopHudTexture(this.scene, width, height);
+        const textureKey = ensureHudGreenTexture(this.scene, width, height);
         const shopButton = textureKey
             ? this.scene.add.image(x, y, textureKey).setOrigin(0).setDepth(100)
             : this.scene.add.rectangle(x, y, width, height, 0x6c940f).setOrigin(0).setDepth(100);
@@ -216,23 +217,78 @@ export class MapControls {
             : 172;
         const topY = shopButton ? shopButton.y : 8;
         const height = Math.round(shopButton?.displayHeight || SHOP_HUD_HEIGHT);
-        const width = 84;
+        const width = QUIZ_HUD_WIDTH;
 
-        const quizButton = new GreenButton(this.scene, {
-            x: Math.round(leftX + width / 2),
-            y: Math.round(topY + height / 2),
-            width,
-            height,
-            label: 'Quiz',
-            fontSize: '14px',
-            depth: 100,
-            onClick: () => {
-                if (this.scene.pauseMenu?.isOpen || this.scene.quizPanel?.isOpen) {
-                    return;
+        const textureKey = ensureHudGreenTexture(this.scene, width, height);
+        const background = textureKey
+            ? this.scene.add.image(leftX, topY, textureKey).setOrigin(0).setDepth(100)
+            : this.scene.add.rectangle(leftX, topY, width, height, 0x6c940f).setOrigin(0).setDepth(100);
+        background.setInteractive({ useHandCursor: true });
+
+        const label = this.scene.add.text(
+            Math.round(leftX + width / 2),
+            Math.round(topY + height / 2),
+            'QUIZ',
+            createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: GREEN_BUTTON_COLORS.TEXT,
+                align: 'center'
+            })
+        ).setOrigin(0.5).setDepth(101);
+
+        const quizButton = {
+            background,
+            label,
+            enabled: true,
+            setText(newText) {
+                label.setText(newText);
+                label.setFontSize?.(newText.length > 4 ? '13px' : '15px');
+                return this;
+            },
+            setAlpha(alpha) {
+                background.setAlpha?.(alpha);
+                label.setAlpha?.(alpha);
+                return this;
+            },
+            setEnabled(enabled) {
+                this.enabled = Boolean(enabled);
+                if (background.input) {
+                    background.input.enabled = Boolean(this.enabled && background.visible);
                 }
-                closeCharacterDescription(this.scene);
-                this.scene.quizPanel?.open(this.scene.currentCityIndex ?? 0);
+                return this;
             }
+        };
+
+        let isPressed = false;
+        const clearPressed = () => {
+            isPressed = false;
+            background.clearTint?.();
+            label.clearTint?.();
+        };
+
+        background.on('pointerdown', (_pointer, _lx, _ly, event) => {
+            event?.stopPropagation?.();
+            if (!quizButton.enabled) return;
+            isPressed = true;
+            background.setTint?.(GREEN_BUTTON_COLORS.PRESSED_TINT);
+            label.setTint?.(GREEN_BUTTON_COLORS.PRESSED_TINT);
+        });
+        background.on('pointerout', () => {
+            clearPressed();
+        });
+        background.on('pointerup', (_pointer, _lx, _ly, event) => {
+            event?.stopPropagation?.();
+            const shouldTrigger = isPressed && quizButton.enabled;
+            clearPressed();
+            if (!shouldTrigger) return;
+            if (this.scene.pauseMenu?.isOpen || this.scene.quizPanel?.isOpen) {
+                return;
+            }
+            playSfx(this.scene, 'clique');
+            closeCharacterDescription(this.scene);
+            this.scene.quizPanel?.open(this.scene.currentCityIndex ?? 0);
         });
 
         this.quizButton = quizButton;
@@ -246,7 +302,7 @@ export class MapControls {
             || Boolean(this.scene?.tutorialManager?.caption?.isOpen);
 
         if (tutorialBlocked) {
-            this.quizButton.setText('Quiz');
+            this.quizButton.setText('QUIZ');
             this.quizButton.setEnabled(false);
             this.quizButton.setAlpha(0.55);
             return;
@@ -254,7 +310,7 @@ export class MapControls {
 
         const progress = getQuizProgressDisplay();
         if (progress) {
-            this.quizButton.setText(`Quiz ${progress.current}/${progress.total}`);
+            this.quizButton.setText(`QUIZ ${progress.current}/${progress.total}`);
             this.quizButton.setEnabled(true);
             this.quizButton.setAlpha(1);
             return;
@@ -262,13 +318,13 @@ export class MapControls {
 
         const remainingSeconds = getQuizCooldownRemainingSeconds(now);
         if (remainingSeconds > 0) {
-            this.quizButton.setText(`Quiz ${remainingSeconds}s`);
+            this.quizButton.setText(`QUIZ ${remainingSeconds}S`);
             this.quizButton.setEnabled(false);
             this.quizButton.setAlpha(0.65);
             return;
         }
 
-        this.quizButton.setText('Quiz');
+        this.quizButton.setText('QUIZ');
         this.quizButton.setEnabled(true);
         this.quizButton.setAlpha(1);
     }

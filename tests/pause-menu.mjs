@@ -77,8 +77,17 @@ const {
 } = await import('../src/scenes/PauseMenu.js');
 const { GameMap } = await import('../src/scenes/GameMap.js');
 const { Minigame } = await import('../src/scenes/Minigame.js');
-const { getOccurrence, resetOccurrenceState, triggerOccurrence } = await import('../src/scenes/occurrenceState.js');
+const {
+    TIMERS_RUN_DURING_MINIGAME,
+    getOccurrence,
+    resetOccurrenceState,
+    triggerOccurrence,
+    startMinigameSession,
+    endMinigameSession,
+    onAttendanceSuccess
+} = await import('../src/scenes/occurrenceState.js');
 const { skipTutorial, reactivateTutorial, getSettings } = await import('../src/scenes/settingsStore.js');
+const { refreshOccurrenceClockFreeze } = await import('../src/scenes/tutorialState.js');
 const { getATP, isCharacterAttended } = await import('../src/scenes/atpStore.js');
 const { clearAllProgress } = await import('../src/scenes/debugTools.js');
 
@@ -328,4 +337,41 @@ assert.equal(getATP(), 0);
 assert.equal(getOccurrence('joaquim').hasAlert, true);
 assert.deepEqual(mgScene.transitions.at(-1), { target: 'Start', data: undefined });
 
-console.log('OK: minitela de pause na cidade e no minigame, congelamento de relogios, configuracoes, confirmacoes e tutorial.');
+// 4. Timers continuos durante o minigame (TIMERS_RUN_DURING_MINIGAME = true).
+assert.equal(TIMERS_RUN_DURING_MINIGAME, true, 'TIMERS_RUN_DURING_MINIGAME deve estar ligado');
+resetOccurrenceState();
+skipTutorial();
+refreshOccurrenceClockFreeze();
+triggerOccurrence('joaquim');
+startMinigameSession('joaquim', 0, 10000);
+// 130s no minigame: Marlene (120s) estoura com alerta, Aparecida (240s) cai para 110s,
+// Joaquim continua em atendimento (alerta pendente) e outras cidades permanecem congeladas.
+endMinigameSession(10000 + 130000);
+assert.equal(getOccurrence('marlene').remainingMs, 0);
+assert.equal(getOccurrence('marlene').hasAlert, true, 'alerta da Marlene estoura durante o minigame');
+assert.equal(getOccurrence('aparecida').remainingMs, 110000);
+assert.equal(getOccurrence('aparecida').hasAlert, false);
+assert.equal(getOccurrence('joaquim').hasAlert, true, 'personagem atendido nao reinicia relogio sem concluir');
+assert.equal(getOccurrence('bruno').remainingMs, 60000, 'Cidade 2 continua congelada');
+assert.equal(getOccurrence('caue').remainingMs, 60000, 'Cidade 3 continua congelada');
+
+// Ao voltar para o mapa, o alerta da Marlene aparece na barra inferior sem tocar som de alerta.
+const playedSoundsOnReturn = [];
+const returnMap = attachMockPhaserScene(new GameMap(), { width: 512, height: 608 });
+returnMap.sound.play = (key) => { playedSoundsOnReturn.push(key); return true; };
+returnMap.init({ cityIndex: 0 });
+returnMap.preload();
+returnMap.create();
+assert.equal(returnMap.alertedIconKeys.has('marlene'), true, 'icone da Marlene fica marcado na barra inferior');
+assert.equal(returnMap.characterIconButtons.marlene.tint, 0xff5555, 'icone da Marlene fica avermelhado');
+assert.equal(playedSoundsOnReturn.includes('alert-sound'), false, 'sem som de alerta ao sincronizar retorno do minigame');
+
+// Ao concluir atendimento, apenas o personagem atendido reinicia o proprio relogio.
+startMinigameSession('joaquim', 0, 200000);
+onAttendanceSuccess('joaquim');
+endMinigameSession(200000 + 30000);
+assert.equal(getOccurrence('joaquim').hasAlert, false);
+assert.equal(getOccurrence('joaquim').remainingMs, 60000, 'relogio do personagem atendido reinicia ao concluir');
+assert.equal(getOccurrence('aparecida').remainingMs, 80000, 'outro personagem da mesma cidade continua descontando');
+
+console.log('OK: minitela de pause na cidade e no minigame, congelamento de relogios, timers continuos, configuracoes, confirmacoes e tutorial.');

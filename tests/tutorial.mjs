@@ -44,7 +44,13 @@ class DisplayObject extends EventEmitter {
 });
 
 const { GameMap } = await import('../src/scenes/GameMap.js');
-const { getOccurrence, updateActiveCityTimers, resetOccurrenceState } = await import('../src/scenes/occurrenceState.js');
+const {
+    getOccurrence,
+    updateActiveCityTimers,
+    resetOccurrenceState,
+    startMinigameSession,
+    endMinigameSession
+} = await import('../src/scenes/occurrenceState.js');
 const { getSettings, reactivateTutorial, DEFAULT_TUTORIAL_PROGRESS, TUTORIAL_FLAG_KEYS } = await import('../src/scenes/settingsStore.js');
 const { TUTORIAL_STEPS } = await import('../src/scenes/tutorialSteps.js');
 const { paginateCaption } = await import('../src/scenes/TutorialCaption.js');
@@ -256,6 +262,7 @@ assert.equal(pageText(scene), TUTORIAL_STEPS.ocorrenciaInicial[0].text);
 closeScene(scene);
 
 // Abre o minigame: cumpre A4 e mostra C1 (Fase 1) sem bloquear.
+startMinigameSession('joaquim', 0, 1000);
 const mgScene = createDummyScene(512, 512);
 mgScene.tutorialManager = new TutorialManager(mgScene);
 mgScene.tutorialManager.startMinigame();
@@ -293,10 +300,13 @@ addATP(120);
 markCharacterAttended('joaquim');
 markAttendanceJustCompleted();
 mgScene.tutorialManager.onAttendanceCompleted();
+endMinigameSession(1000 + 180000);
 mgScene.events.emit('shutdown');
 
 assert.equal(getATP(), 120);
 assert.equal(isCharacterAttended('joaquim'), true);
+assert.equal(getOccurrence('marlene').remainingMs, 120000, 'relogios nao descontam durante o minigame do tutorial');
+assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos concluir o minigame');
 
 // Volta ao mapa: secao D (D1 e D2, bloqueando).

@@ -6,7 +6,7 @@ import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetInMemoryATP } from './atpStore.js';
 import { resetOccurrenceState, endMinigameSession } from './occurrenceState.js';
 import { resetTutorialSessionState } from './tutorialState.js';
-import { resetQuizCooldown } from './quizLogic.js';
+import { resetQuizState } from './quizLogic.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createTextStyle } from './textUtils.js';
 import { preloadAudio, playSfx, stopAllSfx, stopMusic, updateMusicVolume } from './AudioManager.js';
@@ -647,7 +647,7 @@ export class ConfigMenu extends Phaser.Scene {
                 resetPurchasedCitiesMemory();
                 resetInMemoryATP();
                 resetOccurrenceState();
-                resetQuizCooldown();
+                resetQuizState();
                 reactivateTutorial(scene.game);
                 resetTutorialSessionState();
 

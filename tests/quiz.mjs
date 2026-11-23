@@ -17,7 +17,14 @@ const {
     getQuizCooldownRemainingMs,
     getQuizCooldownRemainingSeconds,
     isQuizOnCooldown,
-    resetQuizCooldown
+    resetQuizCooldown,
+    startOrResumeQuizSession,
+    getActiveQuizSession,
+    recordQuizAnswer,
+    advanceActiveQuizQuestion,
+    completeActiveQuizSession,
+    getQuizProgressDisplay,
+    resetQuizState
 } = await import('../src/scenes/quizLogic.js');
 const { canReceive } = await import('../src/scenes/bloodCompatibility.js');
 
@@ -145,6 +152,57 @@ startQuizCooldown(50000);
 assert.equal(getQuizCooldownRemainingSeconds(50000), 3);
 assert.equal(isQuizOnCooldown(53000), false);
 setQuizCooldownMs(60000);
-resetQuizCooldown();
+resetQuizState();
 
-console.log('OK: quiz de compatibilidade (Cidades 1-3, unicidade, biologia, ATP com bonus 7/7 e cooldown).');
+// 5. Retomada de rodada em andamento: fechar e reabrir no meio, mesma rodada ao trocar de cidade,
+//    cooldown so ao terminar, bonus so no 7/7 e descarte ao ZERAR (resetQuizState).
+const session1 = startOrResumeQuizSession({ cityIndex: 0 });
+const originalKeys = session1.questions.map((q) => q.key);
+assert.equal(originalKeys.length, 7);
+assert.deepEqual(getQuizProgressDisplay(), { current: 1, total: 7 });
+
+// Responde Q1 certo e avanca para Q2
+const r1 = recordQuizAnswer(session1.questions[0].correctAnswer);
+assert.equal(r1.isCorrect, true);
+assert.equal(r1.atpEarned, 10);
+advanceActiveQuizQuestion();
+
+// Responde Q2 certo e "fecha" com a explicacao ainda na tela (sem clicar Proxima)
+const r2 = recordQuizAnswer(session1.questions[1].correctAnswer);
+assert.equal(r2.isCorrect, true);
+assert.equal(r2.atpEarned, 10);
+assert.equal(isQuizOnCooldown(), false, 'fechar no meio nao inicia intervalo de 60 s');
+assert.deepEqual(getQuizProgressDisplay(), { current: 3, total: 7 }, 'botao mostra Quiz 3/7');
+
+// Reabre (mesmo em outra cidade): mantem as mesmas 7 perguntas e ja abre na Q3 (indice 2)
+const resumed = startOrResumeQuizSession({ cityIndex: 2 });
+assert.deepEqual(resumed.questions.map((q) => q.key), originalKeys, 'nao sorteia perguntas de novo');
+assert.equal(resumed.cityIndex, 0, 'mantem a rodada original mesmo trocando de cidade');
+assert.equal(resumed.currentIndex, 2, 'retoma na 3a pergunta (indice 2)');
+assert.equal(resumed.correctCount, 2);
+assert.equal(resumed.paidAtp, 20);
+assert.equal(resumed.answeredCurrent, false);
+
+// Responde Q3..Q7 todas certas (7/7) e conclui: bonus de 20 ATP + inicia intervalo de 60 s
+for (let i = 2; i < 7; i++) {
+    const res = recordQuizAnswer(resumed.questions[i].correctAnswer);
+    assert.equal(res.isCorrect, true);
+    if (i < 6) advanceActiveQuizQuestion();
+}
+const finalReward = completeActiveQuizSession(100000);
+assert.deepEqual(finalReward, { correctCount: 7, totalQuestions: 7, baseAtp: 70, perfectBonus: 20, totalAtp: 90 });
+assert.equal(getActiveQuizSession(), null, 'rodada encerrada');
+assert.equal(isQuizOnCooldown(100000), true, 'intervalo de 60 s inicia ao terminar a rodada');
+assert.equal(getQuizCooldownRemainingSeconds(100000), 60);
+
+// Descarte ao ZERAR (resetQuizState)
+resetQuizState();
+assert.equal(isQuizOnCooldown(100000), false);
+const sessionToDiscard = startOrResumeQuizSession({ cityIndex: 1 });
+recordQuizAnswer(sessionToDiscard.questions[0].correctAnswer);
+assert.ok(getActiveQuizSession() !== null);
+resetQuizState();
+assert.equal(getActiveQuizSession(), null, 'rodada em andamento descartada no ZERAR');
+assert.equal(getQuizProgressDisplay(), null);
+
+console.log('OK: quiz de compatibilidade (Cidades 1-3, unicidade, biologia, retomada de rodada, ATP com bonus 7/7, cooldown e ZERAR).');

@@ -10,9 +10,11 @@ import {
     QUIZ_PERFECT_BONUS_ATP
 } from './quizConfig.js';
 import {
-    generateQuizRound,
-    calculateQuizReward,
-    startQuizCooldown,
+    startOrResumeQuizSession,
+    getActiveQuizSession,
+    recordQuizAnswer,
+    advanceActiveQuizQuestion,
+    completeActiveQuizSession,
     isQuizOnCooldown
 } from './quizLogic.js';
 
@@ -42,33 +44,53 @@ export class QuizPanel {
     }
 
     open(cityIndex = 0) {
-        if (this.isOpen || !this.scene || isQuizOnCooldown()) {
+        if (this.isOpen || !this.scene) {
+            return false;
+        }
+        // So bloqueia por cooldown se nao houver rodada em andamento para retomar.
+        if (!getActiveQuizSession() && isQuizOnCooldown()) {
             return false;
         }
 
-        this.cityIndex = typeof cityIndex === 'number' ? cityIndex : (this.scene.currentCityIndex ?? 0);
-        this.questions = generateQuizRound({
-            cityIndex: this.cityIndex,
+        const requestedCity = typeof cityIndex === 'number' ? cityIndex : (this.scene.currentCityIndex ?? 0);
+        const session = startOrResumeQuizSession({
+            cityIndex: requestedCity,
             count: QUIZ_QUESTIONS_PER_ROUND
         });
-        this.currentIndex = 0;
-        this.correctCount = 0;
-        this.answeredCount = 0;
-        this.answeredCurrent = false;
+
+        this.cityIndex = session.cityIndex;
+        this.questions = session.questions;
+        this.currentIndex = session.currentIndex;
+        this.correctCount = session.correctCount;
+        this.answeredCount = session.answeredCount;
+        this.answeredCurrent = session.answeredCurrent;
         this.roundFinished = false;
         this.isOpen = true;
 
         this.createBackdrop();
-        this.renderQuestion();
+        if (this.currentIndex >= this.questions.length) {
+            this.finishRound();
+        } else {
+            this.renderQuestion();
+        }
+        this.scene?.mapControls?.updateQuizButtonState?.();
         return true;
     }
 
     close() {
         if (!this.isOpen) return;
 
-        // Inicia o intervalo de cooldown se o jogador respondeu ao menos 1 pergunta ou terminou a rodada.
-        if ((this.answeredCount > 0 || this.roundFinished) && !isQuizOnCooldown()) {
-            startQuizCooldown();
+        // Se todas as 7 perguntas ja foram respondidas e o jogador fechou na explicacao final,
+        // conclui a rodada (paga bonus 7/7 se houver e inicia o intervalo de 60 s).
+        // Caso contrario, apenas fecha preservando a rodada em andamento sem iniciar cooldown.
+        const session = getActiveQuizSession();
+        if (!this.roundFinished && session && session.answeredCount >= session.questions.length) {
+            const reward = completeActiveQuizSession();
+            if (reward && reward.perfectBonus > 0) {
+                addATP(reward.perfectBonus);
+                this.scene?.atpDisplay?.update?.();
+            }
+            this.roundFinished = true;
         }
 
         this.destroyPanelElements();
@@ -254,13 +276,14 @@ export class QuizPanel {
 
     handleAnswer(selectedOption) {
         if (this.answeredCurrent || !this.isOpen) return;
-        const question = this.questions[this.currentIndex];
-        if (!question) return;
+        const result = recordQuizAnswer(selectedOption);
+        if (!result) return;
 
+        const { isCorrect, question, atpEarned, isLast } = result;
+        const session = getActiveQuizSession();
         this.answeredCurrent = true;
-        this.answeredCount++;
-
-        const isCorrect = selectedOption === question.correctAnswer;
+        this.answeredCount = session ? session.answeredCount : this.answeredCount + 1;
+        this.correctCount = session ? session.correctCount : this.correctCount + (isCorrect ? 1 : 0);
 
         this.optionButtons.forEach(({ btn, value }) => {
             btn.setEnabled(false);
@@ -270,8 +293,7 @@ export class QuizPanel {
         });
 
         if (isCorrect) {
-            this.correctCount++;
-            addATP(QUIZ_ATP_PER_CORRECT);
+            addATP(atpEarned);
             this.scene.atpDisplay?.update?.();
             playSfx(this.scene, 'acerto');
             this.feedbackText?.setColor?.('#1d6b1d');
@@ -282,7 +304,8 @@ export class QuizPanel {
             this.feedbackText?.setText?.(question.explanation);
         }
 
-        const isLast = this.currentIndex >= this.questions.length - 1;
+        this.scene?.mapControls?.updateQuizButtonState?.();
+
         const nextBtn = new GreenButton(this.scene, {
             x: this.nextButtonAnchor.x,
             y: this.nextButtonAnchor.y,
@@ -295,7 +318,9 @@ export class QuizPanel {
                 if (isLast) {
                     this.finishRound();
                 } else {
+                    advanceActiveQuizQuestion();
                     this.currentIndex++;
+                    this.answeredCurrent = false;
                     this.renderQuestion();
                 }
             }
@@ -305,7 +330,13 @@ export class QuizPanel {
 
     finishRound() {
         this.roundFinished = true;
-        const reward = calculateQuizReward(this.correctCount, this.questions.length);
+        const reward = completeActiveQuizSession() || {
+            correctCount: this.correctCount,
+            totalQuestions: this.questions.length,
+            baseAtp: this.correctCount * QUIZ_ATP_PER_CORRECT,
+            perfectBonus: 0,
+            totalAtp: this.correctCount * QUIZ_ATP_PER_CORRECT
+        };
 
         if (reward.perfectBonus > 0) {
             addATP(reward.perfectBonus);
@@ -313,7 +344,6 @@ export class QuizPanel {
             playSfx(this.scene, 'vitoria');
         }
 
-        startQuizCooldown();
         this.scene?.mapControls?.updateQuizButtonState?.();
         this.renderSummary(reward);
     }

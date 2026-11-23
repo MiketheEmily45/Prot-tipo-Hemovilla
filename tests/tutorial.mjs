@@ -202,7 +202,7 @@ reactivateTutorial();
 assert.equal(getSettings().tutorialHintsEnabled, true);
 assert.deepEqual(progress(), DEFAULT_TUTORIAL_PROGRESS);
 
-// Seu Joaquim ja atendido: a introducao informativa roda, mas nada e forcado.
+// Seu Joaquim ja atendido: a introducao informativa roda (A1-A3) seguida por D1-D3 (incluindo Quiz), mas nada e forcado.
 markCharacterAttended('joaquim');
 resetOccurrenceState();
 scene = openMap();
@@ -210,6 +210,11 @@ assert.equal(pageText(scene), TUTORIAL_STEPS.intro[0].text);
 assert.deepEqual(updateActiveCityTimers(0, 10 * 60 * 1000).map((o) => o.id).sort(), ['aparecida', 'joaquim', 'marlene'], 'sem forcar, os relogios correm');
 resetOccurrenceState();
 ['keydown-SPACE', 'keydown-SPACE', 'keydown-SPACE'].forEach((key) => scene.input.keyboard.emit(key, {}));
+assert.equal(caption(scene).isOpen, true, 'reproduz aposPrimeiroAtendimento ao reativar tutorial com Joaquim ja atendido');
+assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[0].text);
+['keydown-SPACE', 'keydown-SPACE'].forEach((key) => scene.input.keyboard.emit(key, {}));
+assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text, 'reproduz legenda do Quiz (D3)');
+scene.input.keyboard.emit('keydown-SPACE', {});
 assert.equal(caption(scene).isOpen, false);
 assert.deepEqual(alertedIds(scene), []);
 assert.equal(getOccurrence('joaquim').hasAlert, false);
@@ -309,13 +314,16 @@ assert.equal(getOccurrence('marlene').remainingMs, 120000, 'relogios nao descont
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos concluir o minigame');
 
-// Volta ao mapa: secao D (D1 e D2, bloqueando).
+// Volta ao mapa: secao D (D1, D2 e D3 com convite ao Quiz, bloqueando).
 scene = openMap();
 assert.equal(caption(scene).isOpen, true);
 assert.equal(caption(scene).blocking, true);
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[0].text);
 caption(scene).advance();
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[1].text);
+caption(scene).advance();
+assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text);
+assert.ok(/Quiz/i.test(TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text), 'D3 convida a fazer o Quiz');
 caption(scene).advance();
 assert.equal(caption(scene).isOpen, false);
 assert.equal(progress().aposPrimeiroAtendimento, true);

@@ -5,7 +5,7 @@ import { playSfx, stopMusic } from './AudioManager.js';
 import { GreenButton, GREEN_BUTTON_COLORS } from './GreenButton.js';
 import { createTextStyle } from './textUtils.js';
 import { shouldFreezeOccurrenceClocks } from './tutorialState.js';
-import { getQuizCooldownRemainingSeconds } from './quizLogic.js';
+import { getQuizCooldownRemainingSeconds, getQuizProgressDisplay } from './quizLogic.js';
 
 const SHOP_HUD_TEXTURE_KEY = 'shop-hud-green-btn';
 const SHOP_HUD_WIDTH = 60;
@@ -249,6 +249,14 @@ export class MapControls {
             this.quizButton.setText('Quiz');
             this.quizButton.setEnabled(false);
             this.quizButton.setAlpha(0.55);
+            return;
+        }
+
+        const progress = getQuizProgressDisplay();
+        if (progress) {
+            this.quizButton.setText(`Quiz ${progress.current}/${progress.total}`);
+            this.quizButton.setEnabled(true);
+            this.quizButton.setAlpha(1);
             return;
         }
 

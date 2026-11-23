@@ -6,7 +6,7 @@
 //   ocorrenciaInicial        A4     alerta do Seu Joaquim (legenda fica na tela sem bloquear)
 //   minigameFase1/2/3        C1-C7  primeira vez que cada fase abre
 //   minigameFase2Rh          C8-C9  primeira vez que a Etapa 2 (Anti-D / Rh) abre na Cidade 2
-//   aposPrimeiroAtendimento  D1-D2  de volta ao mapa depois do primeiro atendimento
+//   aposPrimeiroAtendimento  D1-D3  de volta ao mapa depois do primeiro atendimento
 //   selecaoCidade            E1     primeira vez que a selecao de cidade abre
 
 export const TUTORIAL_STEPS = Object.freeze({
@@ -37,7 +37,8 @@ export const TUTORIAL_STEPS = Object.freeze({
     ],
     aposPrimeiroAtendimento: [
         { id: 'D1', text: 'Atendimento concluído! Você ganhou ATP. Os outros moradores também vão pedir ajuda com o tempo.' },
-        { id: 'D2', text: 'Atenda os 3 moradores da Cidade 1 para liberar a Cidade 2. O botão com os prédios abre a seleção de cidades.' }
+        { id: 'D2', text: 'Atenda os 3 moradores da Cidade 1 para liberar a Cidade 2. O botão com os prédios abre a seleção de cidades.' },
+        { id: 'D3', text: 'Enquanto espera novas ocorrências, clique em Quiz para ganhar ATP extra! Você pode fechar e continuar depois.' }
     ],
     selecaoCidade: [
         { id: 'E1', text: 'Aqui você escolhe a cidade. A Cidade 2 abre ao atender a Cidade 1 e, com ela liberada, a Cidade 3 pode ser comprada com ATP.' }

@@ -110,8 +110,12 @@ export class TutorialManager {
         if (progress.aposPrimeiroAtendimento) return;
 
         if (isCharacterAttended(TUTORIAL_CHARACTER_ID)) {
-            // Ex.: tutorial reativado depois do atendimento. Nao forca nada.
+            // Ex.: tutorial reativado depois do atendimento. Nao forca outra ocorrencia,
+            // mas reproduz as legendas informativas finais (incluindo o convite do Quiz).
             if (!progress.ocorrenciaInicial) this.markSeen('ocorrenciaInicial');
+            if (!progress.aposPrimeiroAtendimento && !this.caption.isOpen) {
+                this.runSection('aposPrimeiroAtendimento');
+            }
             return;
         }
 

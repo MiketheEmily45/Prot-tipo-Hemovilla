@@ -18,6 +18,7 @@ import {
 const RH_BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 let quizCooldownUntil = 0;
+let activeQuizSession = null;
 
 export function startQuizCooldown(now = Date.now()) {
     quizCooldownUntil = now + QUIZ_COOLDOWN_MS;
@@ -39,6 +40,94 @@ export function isQuizOnCooldown(now = Date.now()) {
 
 export function resetQuizCooldown() {
     quizCooldownUntil = 0;
+}
+
+export function getActiveQuizSession() {
+    return activeQuizSession;
+}
+
+export function clearActiveQuizSession() {
+    activeQuizSession = null;
+}
+
+export function resetQuizState() {
+    activeQuizSession = null;
+    quizCooldownUntil = 0;
+}
+
+export function startOrResumeQuizSession({ cityIndex = 0, count = QUIZ_QUESTIONS_PER_ROUND } = {}) {
+    if (activeQuizSession) {
+        if (activeQuizSession.answeredCurrent) {
+            activeQuizSession.currentIndex++;
+            activeQuizSession.answeredCurrent = false;
+        }
+        return activeQuizSession;
+    }
+
+    const questions = generateQuizRound({ cityIndex, count });
+    activeQuizSession = {
+        questions,
+        currentIndex: 0,
+        correctCount: 0,
+        answeredCount: 0,
+        answeredCurrent: false,
+        paidAtp: 0,
+        cityIndex
+    };
+    return activeQuizSession;
+}
+
+export function recordQuizAnswer(selectedOption) {
+    if (!activeQuizSession || activeQuizSession.answeredCurrent) {
+        return null;
+    }
+
+    const question = activeQuizSession.questions[activeQuizSession.currentIndex];
+    if (!question) {
+        return null;
+    }
+
+    activeQuizSession.answeredCurrent = true;
+    activeQuizSession.answeredCount++;
+
+    const isCorrect = selectedOption === question.correctAnswer;
+    const atpEarned = isCorrect ? QUIZ_ATP_PER_CORRECT : 0;
+    if (isCorrect) {
+        activeQuizSession.correctCount++;
+        activeQuizSession.paidAtp += atpEarned;
+    }
+
+    const isLast = activeQuizSession.currentIndex >= activeQuizSession.questions.length - 1;
+    return { isCorrect, question, atpEarned, isLast };
+}
+
+export function advanceActiveQuizQuestion() {
+    if (!activeQuizSession) return null;
+    activeQuizSession.currentIndex++;
+    activeQuizSession.answeredCurrent = false;
+    return activeQuizSession;
+}
+
+export function completeActiveQuizSession(now = Date.now()) {
+    if (!activeQuizSession) return null;
+    const reward = calculateQuizReward(
+        activeQuizSession.correctCount,
+        activeQuizSession.questions.length
+    );
+    activeQuizSession = null;
+    startQuizCooldown(now);
+    return reward;
+}
+
+export function getQuizProgressDisplay() {
+    if (!activeQuizSession || !activeQuizSession.questions?.length) {
+        return null;
+    }
+    const total = activeQuizSession.questions.length;
+    const nextStep = activeQuizSession.answeredCurrent
+        ? Math.min(total, activeQuizSession.currentIndex + 2)
+        : Math.min(total, activeQuizSession.currentIndex + 1);
+    return { current: nextStep, total };
 }
 
 function shuffle(array) {

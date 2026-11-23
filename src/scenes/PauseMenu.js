@@ -118,6 +118,11 @@ export class PauseMenu {
 
     handleEscapeKey() {
         if (!this.isOpen) {
+            if (this.scene?.quizPanel?.isOpen) {
+                playSfx(this.scene, 'clique');
+                this.scene.quizPanel.close();
+                return;
+            }
             this.open();
             return;
         }

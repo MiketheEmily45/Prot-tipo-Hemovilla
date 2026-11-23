@@ -13,6 +13,7 @@ import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSceneMusic } from './AudioManager.js';
 import { TutorialManager, MAP_CAPTION_BOTTOM_Y } from './TutorialManager.js';
 import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
+import { QuizPanel } from './QuizPanel.js';
 
 export class GameMap extends Phaser.Scene {
 
@@ -62,6 +63,7 @@ export class GameMap extends Phaser.Scene {
         this.mapControls = new MapControls(this);
         this.mapControls.create();
         this.pauseMenu = new PauseMenu(this, { mode: 'city' });
+        this.quizPanel = new QuizPanel(this);
 
         // Painel de exibicao de saldo de ATP na barra inferior (canto superior direito da barra preta)
         this.atpDisplay = new AtpDisplay(this, { x: 504, y: 520, width: 84, height: 24 });
@@ -88,6 +90,7 @@ export class GameMap extends Phaser.Scene {
         // Tutorial: introducao e ocorrencia inicial do Seu Joaquim (se ainda pendentes).
         this.tutorialManager = new TutorialManager(this, { bottomY: MAP_CAPTION_BOTTOM_Y });
         this.tutorialManager.startMap();
+        this.mapControls?.updateQuizButtonState?.();
     }
 
     syncActiveCityAlerts(silent = true) {
@@ -106,6 +109,8 @@ export class GameMap extends Phaser.Scene {
         if (this.pauseMenu?.isOpen) {
             return;
         }
+
+        this.mapControls?.updateQuizButtonState?.();
 
         if (typeof delta === 'number' && delta > 0) {
             const newlyAlerted = updateActiveCityTimers(this.currentCityIndex ?? 0, delta);

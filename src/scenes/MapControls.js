@@ -2,8 +2,10 @@ import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { triggerAllCharactersAlert } from './ClickableCharacterManager.js';
 import { isDebugEnabled } from './debugTools.js';
 import { playSfx, stopMusic } from './AudioManager.js';
-import { GREEN_BUTTON_COLORS } from './GreenButton.js';
+import { GreenButton, GREEN_BUTTON_COLORS } from './GreenButton.js';
 import { createTextStyle } from './textUtils.js';
+import { shouldFreezeOccurrenceClocks } from './tutorialState.js';
+import { getQuizCooldownRemainingSeconds } from './quizLogic.js';
 
 const SHOP_HUD_TEXTURE_KEY = 'shop-hud-green-btn';
 const SHOP_HUD_WIDTH = 60;
@@ -59,6 +61,7 @@ export class MapControls {
         this.pauseButton = null;
         this.citySelectButton = null;
         this.shopButton = null;
+        this.quizButton = null;
         this.alertButton = null;
     }
 
@@ -66,8 +69,10 @@ export class MapControls {
         const pauseButton = this.createPauseButton();
         const citySelectButton = this.createCitySelectButton(pauseButton);
         const shopButton = this.createShopButton(citySelectButton);
+        const quizButton = this.createQuizButton(shopButton);
         const alertButton = this.createAlertButton();
-        return { pauseButton, citySelectButton, shopButton, alertButton };
+        this.updateQuizButtonState();
+        return { pauseButton, citySelectButton, shopButton, quizButton, alertButton };
     }
 
     createPauseButton() {
@@ -203,5 +208,60 @@ export class MapControls {
         this.shopButton = shopButton;
         this.shopButtonLabel = label;
         return shopButton;
+    }
+
+    createQuizButton(shopButton) {
+        const leftX = shopButton
+            ? shopButton.x + (shopButton.displayWidth || SHOP_HUD_WIDTH) + 8
+            : 172;
+        const topY = shopButton ? shopButton.y : 8;
+        const height = Math.round(shopButton?.displayHeight || SHOP_HUD_HEIGHT);
+        const width = 84;
+
+        const quizButton = new GreenButton(this.scene, {
+            x: Math.round(leftX + width / 2),
+            y: Math.round(topY + height / 2),
+            width,
+            height,
+            label: 'Quiz',
+            fontSize: '14px',
+            depth: 100,
+            onClick: () => {
+                if (this.scene.pauseMenu?.isOpen || this.scene.quizPanel?.isOpen) {
+                    return;
+                }
+                closeCharacterDescription(this.scene);
+                this.scene.quizPanel?.open(this.scene.currentCityIndex ?? 0);
+            }
+        });
+
+        this.quizButton = quizButton;
+        return quizButton;
+    }
+
+    updateQuizButtonState(now = Date.now()) {
+        if (!this.quizButton) return;
+
+        const tutorialBlocked = shouldFreezeOccurrenceClocks()
+            || Boolean(this.scene?.tutorialManager?.caption?.isOpen);
+
+        if (tutorialBlocked) {
+            this.quizButton.setText('Quiz');
+            this.quizButton.setEnabled(false);
+            this.quizButton.setAlpha(0.55);
+            return;
+        }
+
+        const remainingSeconds = getQuizCooldownRemainingSeconds(now);
+        if (remainingSeconds > 0) {
+            this.quizButton.setText(`Quiz ${remainingSeconds}s`);
+            this.quizButton.setEnabled(false);
+            this.quizButton.setAlpha(0.65);
+            return;
+        }
+
+        this.quizButton.setText('Quiz');
+        this.quizButton.setEnabled(true);
+        this.quizButton.setAlpha(1);
     }
 }

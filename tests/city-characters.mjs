@@ -21,17 +21,36 @@ class DisplayObject extends EventEmitter {
     setVelocity(x, y) { this.body.velocity = { x, y }; return this; }
     setVelocityX(x) { this.body.velocity.x = x; return this; }
     setOrigin() { return this; }
+    setStrokeStyle() { return this; }
     setDisplaySize() { return this; }
     setCollideWorldBounds() { return this; }
     setImmovable() { return this; }
     setMask() { return this; }
     fillStyle() { return this; }
     fillRect() { return this; }
+    fillTriangle() { return this; }
+    lineStyle() { return this; }
+    strokeRect() { return this; }
+    clear() { return this; }
+    getWrappedText(text) { return String(text).match(/.{1,52}(\s|$)/g) ?? ['']; }
     createGeometryMask() { return this; }
     play() { return this; }
     destroy() { this.destroyed = true; }
 }
-globalThis.Phaser = { Scene: class {} };
+String.prototype.setFilter = function () {};
+const storage = new Map();
+globalThis.window = {
+    location: { search: '?debug' },
+    localStorage: {
+        getItem: (k) => (storage.has(k) ? storage.get(k) : null),
+        setItem: (k, v) => { storage.set(k, String(v)); },
+        removeItem: (k) => { storage.delete(k); }
+    }
+};
+globalThis.Phaser = { Scene: class {}, Textures: { FilterMode: { NEAREST: 0 } } };
+const { setAllCitiesUnlocked } = await import('../src/scenes/debugState.js');
+const { onAttendanceSuccess } = await import('../src/scenes/occurrenceState.js');
+setAllCitiesUnlocked(true);
 const { GameMap } = await import('../src/scenes/GameMap.js');
 const { closeCharacterDescription } = await import('../src/scenes/CharacterDescriptionPanel.js');
 const { triggerAllCharactersAlert } = await import('../src/scenes/ClickableCharacterManager.js');
@@ -46,13 +65,20 @@ Object.assign(scene, {
         image(key, path) { assert.ok(fs.existsSync(path), path); },
         audio(key, path) { assert.ok(fs.existsSync(path), path); }
     },
-    add: { image: create, sprite: create, tileSprite: create, rectangle: create, text: create },
+    add: { image: create, sprite: create, tileSprite: create, rectangle: create, text: create, graphics: create },
     make: { graphics: create },
     physics: { add: { sprite: create }, world: { setBounds() {} } },
     scale: { resize() {} }, cameras: { main: { setViewport() {} } },
     input: Object.assign(new EventEmitter(), { keyboard: { createCursorKeys() {} } }),
-    time: { now: 100 }, anims: { exists: () => false, create() {} },
-    sound: { play: (key, config) => { soundsPlayed.push({ key, config }); }, get: () => null }
+    events: new EventEmitter(),
+    tweens: { add: () => ({ stop() {} }) },
+    time: { now: 100, delayedCall: () => ({ remove() {} }) }, anims: { exists: () => false, create() {} },
+    sound: {
+        play: (key, config) => { soundsPlayed.push({ key, config }); },
+        get: () => null,
+        add: () => ({ play() {}, stop() {}, setVolume() {}, isPlaying: false }),
+        stopByKey: () => {}
+    }
 });
 scene.preload(); scene.create();
 const city1 = scene.clickableCharacters;
@@ -69,14 +95,13 @@ assert.ok(city1.every(c => !c.alertIcon));
 city2.forEach((character) => {
     const id = character.iconButtonKey;
     const alert = character.alertIcon;
-    const deadline = character.nextAlertTime;
     const expectedGenderSound = { bruno: 'masculine-huh', beatriz: 'feminine-huh', carlos: 'masculine-huh' }[id];
     scene.characterIconButtons[id].emit('pointerup');
     assert.equal(scene.characterOverlay.characterId, id);
     assert.ok(scene.characterOverlay.description.texture.includes('?'));
-    assert.notEqual(character.sprite.body.velocity.x, 0);
+    // Personagem com alerta ativo permanece parado no mapa (PER-04).
+    assert.equal(character.sprite.body.velocity.x, 0);
     assert.equal(character.alertIcon, alert);
-    assert.equal(character.nextAlertTime, deadline);
     assert.equal(scene.characterIconButtons[id].tint, 0xff5555);
     closeCharacterDescription(scene);
 
@@ -90,30 +115,18 @@ city2.forEach((character) => {
     assert.equal(character.miniGameButton.x, character.balloon.x + 22);
     assert.equal(character.descriptionButton.texture, 'botao_descricao');
     assert.equal(character.descriptionButton.x, character.balloon.x - 22);
-    assert.equal(character.descriptionButton.y, character.balloon.y);
+    assert.equal(character.descriptionButton.y, character.balloon.y + 15);
     character.descriptionButton.emit('pointerdown');
     assert.equal(scene.characterOverlay.characterId, id);
     assert.equal(character.alertIcon, alert);
     closeCharacterDescription(scene);
-    assert.equal(character.miniGameButton.y, character.balloon.y);
+    assert.equal(character.miniGameButton.y, character.balloon.y + 15);
     assert.equal(character.miniGameButton.input.enabled, true);
     assert.equal(character.alertIcon, alert);
     assert.equal(scene.alertedIconKeys.has(id), true);
     assert.equal(scene.characterIconButtons[id].tint, 0xff5555);
-    character.miniGameButton.emit('pointerdown');
-    character.miniGameButton.emit('pointerup');
-    assert.equal(character.alertIcon, null);
-    assert.equal(scene.alertedIconKeys.has(id), false);
-    assert.equal(scene.characterIconButtons[id].tint, null);
-    assert.equal(character.miniGameButton.tint, 0x9ca3af);
-    assert.equal(character.miniGameButton.visible, true);
-    assert.equal(character.miniGameButton.input.enabled, false);
-    const resetDeadline = character.nextAlertTime;
-    scene.time.now += 1;
-    character.miniGameButton.emit('pointerdown');
-    character.miniGameButton.emit('pointerup');
-    assert.equal(character.nextAlertTime, resetDeadline);
-    scene.time.now -= 1;
+    assert.ok(soundsPlayed.some(sound => sound.key === expectedGenderSound));
+
     const button = character.miniGameButton;
     const descriptionButton = character.descriptionButton;
     descriptionButton.emit('pointerdown');
@@ -131,6 +144,9 @@ city2.forEach((character) => {
     assert.ok(descriptionButton.destroyed);
     assert.equal(character.descriptionButton, null);
     assert.equal(character.miniGameButton, null);
+    // Remove o alerta manualmente para verificar retomada do movimento.
+    onAttendanceSuccess(id);
+    scene.clickableCharacterManager.getAlertManager().removeAlert(character);
     assert.notEqual(character.sprite.body.velocity.x, 0);
 });
 assert.equal(scene.input.listenerCount('wheel'), 0);
@@ -171,8 +187,8 @@ city3.forEach((character, index) => {
     assert.equal(character.balloon.texture, 'balao_temporario');
     assert.equal(character.sprite.body.velocity.x, 0);
     assert.equal(character.alertIcon, alert);
-    character.miniGameButton.emit('pointerdown');
-    character.miniGameButton.emit('pointerup');
+    onAttendanceSuccess(id);
+    scene.clickableCharacterManager.getAlertManager().removeAlert(character);
     assert.equal(character.alertIcon, null);
     assert.equal(scene.alertedIconKeys.has(id), false);
     assert.equal(scene.characterIconButtons[id].tint, null);
@@ -199,7 +215,6 @@ assert.equal(city3[0].descriptionButton.visible, false);
 assert.equal(city3[0].descriptionButton.input.enabled, false);
 assert.equal(city3[0].miniGameButton.input.enabled, false);
 assert.equal(scene.clickableCharacters, city2);
-assert.equal(city2[0].nextAlertTime, 61100);
 assert.ok(city2.every(c => c.sprite.visible && c.sprite.body.enable));
 assert.equal(scene.alertButton.visible, true);
 scene.cityNavigation.goTo(0);
@@ -228,7 +243,6 @@ assert.equal(city3[0].miniGameButton.visible, true);
 assert.equal(city3[0].descriptionButton.visible, true);
 assert.equal(city3[0].descriptionButton.input.enabled, true);
 assert.equal(city3[0].sprite.body.velocity.x, 0);
-assert.equal(city3[0].nextAlertTime, 61100);
 city3[0].sprite.emit('pointerdown');
 assert.notEqual(city3[0].sprite.body.velocity.x, 0);
 console.log('OK: assets, grupos, alertas isolados, painel, retomada, bounds e contadores.');

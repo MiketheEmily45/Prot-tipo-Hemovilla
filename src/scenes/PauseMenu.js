@@ -5,7 +5,7 @@ import { ConfigMenu, preloadConfigAssets } from './ConfigMenu.js';
 import { ConfirmPopup } from './ConfirmPopup.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
-import { isTutorialActive } from './tutorialState.js';
+import { isTutorialActive, refreshOccurrenceClockFreeze } from './tutorialState.js';
 import { getTutorialProgress } from './settingsStore.js';
 import { playSfx, stopMusic, stopAllSfx } from './AudioManager.js';
 
@@ -181,6 +181,11 @@ export class PauseMenu {
         this.destroyBackdrop();
         this.isOpen = false;
         this.resumeScene();
+
+        if (this.mode === 'city') {
+            refreshOccurrenceClockFreeze();
+            this.scene?.tutorialManager?.checkMapSections?.();
+        }
     }
 
     freezeScene() {

@@ -51,3 +51,10 @@ export function consumeAttendanceJustCompleted() {
     attendanceJustCompleted = false;
     return value;
 }
+
+// Reinicia os flags em memoria da sessao do tutorial (usado ao zerar progresso ou reativar tutorial).
+export function resetTutorialSessionState() {
+    attendanceJustCompleted = false;
+    attendanceCompletedInSession = false;
+    refreshOccurrenceClockFreeze();
+}

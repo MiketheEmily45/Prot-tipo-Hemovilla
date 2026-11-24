@@ -288,6 +288,9 @@ export class MapControls {
             }
             playSfx(this.scene, 'clique');
             closeCharacterDescription(this.scene);
+            if (this.scene.tutorialManager?.isShowingStep?.('D3')) {
+                this.scene.tutorialManager.completeCurrentSection();
+            }
             this.scene.quizPanel?.open(this.scene.currentCityIndex ?? 0);
         });
 
@@ -298,8 +301,10 @@ export class MapControls {
     updateQuizButtonState(now = Date.now()) {
         if (!this.quizButton) return;
 
-        const tutorialBlocked = shouldFreezeOccurrenceClocks()
-            || Boolean(this.scene?.tutorialManager?.caption?.isOpen);
+        const isQuizTutorialInvite = this.scene?.tutorialManager?.isShowingStep?.('D3') === true;
+        const tutorialBlocked = (shouldFreezeOccurrenceClocks() && !isQuizTutorialInvite)
+            || (Boolean(this.scene?.tutorialManager?.caption?.isOpen) && !isQuizTutorialInvite)
+            || Boolean(this.scene?.noticeCaption?.isOpen);
 
         if (tutorialBlocked) {
             this.quizButton.setText('QUIZ');

@@ -26,6 +26,7 @@ import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetShopMemory } from './shopStore.js';
 import { resetTutorialSessionState } from './tutorialState.js';
 import { resetQuizState } from './quizLogic.js';
+import { MAP_NOTICES_STORAGE_KEY, resetMapNoticesMemory } from './mapNotices.js';
 
 export const STORAGE_KEYS = [
     'hemovilla-atp',
@@ -34,7 +35,8 @@ export const STORAGE_KEYS = [
     'hemovilla-purchased-cities',
     'hemovilla-shop-purchases',
     'hemovilla-equipped-shop-character',
-    'hemovilla-character-replacements'
+    'hemovilla-character-replacements',
+    MAP_NOTICES_STORAGE_KEY
 ];
 
 let currentGame = null;
@@ -47,6 +49,7 @@ export function clearAllProgress() {
         console.warn('Erro ao limpar localStorage no modo debug:', e);
     }
     resetShopMemory();
+    resetMapNoticesMemory();
 }
 
 export function showToast(message, duration = 1800) {
@@ -191,6 +194,7 @@ export function resetProgressAndReload() {
     resetInMemoryATP();
     resetOccurrenceState();
     resetQuizState();
+    resetMapNoticesMemory();
     resetTutorialSessionState();
     showToast('Progresso e ocorrências zerados');
 

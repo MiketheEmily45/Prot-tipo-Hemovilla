@@ -9,6 +9,7 @@ import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSfx, stopSfx, playSceneMusic, stopMusic } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
+import { MinigameHintHelper } from './MinigameHintHelper.js';
 import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
 import { getCharacterReplacement } from './shopStore.js';
 
@@ -46,6 +47,7 @@ export class Minigame extends Phaser.Scene {
         this.collectionHidden = false;
         this.patientSprite = null;
         this.tutorialManager = null;
+        this.collectionHintHelper = null;
         this.pauseMenu = null;
         this.isCollectingSfxPlaying = false;
     }
@@ -62,6 +64,8 @@ export class Minigame extends Phaser.Scene {
         playSceneMusic(this, 'Minigame');
         this.events.once('shutdown', () => {
             this.stopCollectionSfx();
+            this.collectionHintHelper?.destroy();
+            this.collectionHintHelper = null;
         });
         this.setupViewport();
         this.setupBackground();
@@ -165,6 +169,12 @@ export class Minigame extends Phaser.Scene {
         this.progressBar = this.add.graphics();
         this.progressBar.setDepth(11);
 
+        this.collectionHintHelper = new MinigameHintHelper(this, { y: 384, depth: 90 });
+
+        this.syringe.on('dragstart', () => {
+            this.collectionHintHelper?.notifyAction();
+        });
+
         this.syringe.on('drag', (pointer, dragX, dragY) => {
             this.syringe.setPosition(dragX, dragY);
         });
@@ -175,6 +185,7 @@ export class Minigame extends Phaser.Scene {
     }
 
     handleSyringeDrop() {
+        this.collectionHintHelper?.notifyAction();
         if (this.collectionStep === 'MOVE_TO_CHAIR') {
             const chair = new Phaser.Geom.Rectangle(
                 CHAIR_AREA.x, CHAIR_AREA.y, CHAIR_AREA.width, CHAIR_AREA.height
@@ -228,6 +239,8 @@ export class Minigame extends Phaser.Scene {
     startTypingPhase() {
         // Esconde os objetos da Fase 1 e entrega a cena para a tipagem.
         this.collectionHidden = true;
+        this.collectionHintHelper?.destroy();
+        this.collectionHintHelper = null;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
         if (this.patientSprite) this.patientSprite.setVisible(false);
@@ -247,6 +260,8 @@ export class Minigame extends Phaser.Scene {
     startTransfusionPhase() {
         // Esconde os objetos das fases anteriores e inicia a transfusao.
         this.collectionHidden = true;
+        this.collectionHintHelper?.destroy();
+        this.collectionHintHelper = null;
         this.tube.setVisible(false);
         this.syringe.setVisible(false);
         if (this.patientSprite) this.patientSprite.setVisible(true);
@@ -293,6 +308,7 @@ export class Minigame extends Phaser.Scene {
         const isHolding = pointer.isDown && this.syringe.getBounds().contains(pointer.x, pointer.y);
 
         if (isHolding) {
+            this.collectionHintHelper?.notifyAction();
             this.fillProgressMs = Math.min(FILL_FULL_MS, this.fillProgressMs + delta);
         }
 
@@ -366,13 +382,17 @@ export class Minigame extends Phaser.Scene {
 
         this.attendanceState.update(delta);
         this.updateFilling(delta);
+        this.collectionHintHelper?.update(delta, {
+            stepKey: this.collectionHidden ? null : this.collectionStep,
+            suppressed: this.collectionHidden || Boolean(this.tutorialManager?.caption?.isOpen)
+        });
 
         if (this.typingPhase) {
-            this.typingPhase.update();
+            this.typingPhase.update(delta);
         }
 
         if (this.transfusionPhase) {
-            this.transfusionPhase.update();
+            this.transfusionPhase.update(delta);
         }
 
         if (this.collectionStep !== 'FILLING') {

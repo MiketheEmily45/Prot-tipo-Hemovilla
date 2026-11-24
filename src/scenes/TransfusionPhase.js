@@ -17,6 +17,7 @@ import { onAttendanceSuccess } from './occurrenceState.js';
 import { markAttendanceJustCompleted } from './tutorialState.js';
 import { GuidePanel } from './GuidePanel.js';
 import { playSfx } from './AudioManager.js';
+import { MinigameHintHelper } from './MinigameHintHelper.js';
 import { getCharacterReplacement } from './shopStore.js';
 
 // Configuracao da Fase 3 (regras de Rh e bolsas contaminadas por cidade ficam em cityOccurrenceConfig.js)
@@ -109,6 +110,7 @@ export class TransfusionPhase {
 
         this.setupHUD();
         this.setupMessageArea();
+        this.hintHelper = new MinigameHintHelper(this.scene, { y: 384, depth: 90 });
         this.setupRound();
         this.setupDebugOutline();
     }
@@ -346,6 +348,7 @@ export class TransfusionPhase {
 
             sprite.on('dragstart', () => {
                 sprite.setDepth(50);
+                this.hintHelper?.notifyAction();
             });
 
             sprite.on('drag', (pointer, dragX, dragY) => {
@@ -403,6 +406,7 @@ export class TransfusionPhase {
     }
 
     handleBagDrop(bagItem) {
+        this.hintHelper?.notifyAction();
         const chair = new Phaser.Geom.Rectangle(
             CHAIR_AREA.x,
             CHAIR_AREA.y,
@@ -641,8 +645,15 @@ export class TransfusionPhase {
         });
     }
 
-    update() {
-        // Logica por frame da Fase 3 caso necessaria
+    update(delta = 0) {
+        this.hintHelper?.update(delta, {
+            stepKey: this.isActive && !this.state.isFailed ? 'TRANSFUSE' : null,
+            suppressed: Boolean(
+                this.scene?.tutorialManager?.caption?.isOpen
+                || this.guidePanel?.isOpen
+                || this.messageText?.visible
+            )
+        });
     }
 
     destroy() {
@@ -670,6 +681,10 @@ export class TransfusionPhase {
         if (this.guidePanel) {
             this.guidePanel.destroy();
             this.guidePanel = null;
+        }
+        if (this.hintHelper) {
+            this.hintHelper.destroy();
+            this.hintHelper = null;
         }
     }
 }

@@ -87,10 +87,11 @@ export class TutorialCaption {
         this.pageIndex = 0;
         this.blocking = true;
         this.dismissOnLastPage = true;
+        this.showSkipButton = true;
         this.callbacks = {};
         this.isOpen = false;
         this.keyHandler = (event) => {
-            if (event?.repeat || this.scene?.pauseMenu?.isOpen || this.scene?.characterOverlay) return;
+            if (event?.repeat || this.scene?.pauseMenu?.isOpen || this.scene?.characterOverlay || this.scene?.quizPanel?.isOpen) return;
             this.advance();
         };
         this.keyboard = null;
@@ -115,6 +116,7 @@ export class TutorialCaption {
     show(steps, {
         blocking = true,
         dismissOnLastPage = true,
+        showSkipButton = true,
         startIndex = 0,
         bottomY = null,
         onStepDone = null,
@@ -128,6 +130,7 @@ export class TutorialCaption {
 
         this.blocking = blocking;
         this.dismissOnLastPage = dismissOnLastPage;
+        this.showSkipButton = Boolean(showSkipButton);
         this.callbacks = { onStepDone, onComplete, onSkip, onPageRender, onHide };
         this.pages = this.buildPages(steps).filter((page) => page.stepIndex >= startIndex);
         this.pageIndex = 0;
@@ -286,7 +289,9 @@ export class TutorialCaption {
             });
         }
 
-        this.createSkipButton(boxX + boxW - SKIP_TAB.right, boxY - BORDER, depth + 4);
+        if (this.showSkipButton) {
+            this.createSkipButton(boxX + boxW - SKIP_TAB.right, boxY - BORDER, depth + 4);
+        }
         this.callbacks.onPageRender?.(page);
     }
 

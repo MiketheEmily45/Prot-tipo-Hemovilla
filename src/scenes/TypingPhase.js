@@ -7,6 +7,7 @@ import { createTextStyle } from './textUtils.js';
 import { GuidePanel } from './GuidePanel.js';
 import { GreenButton } from './GreenButton.js';
 import { playSfx } from './AudioManager.js';
+import { MinigameHintHelper } from './MinigameHintHelper.js';
 import { getCharacterOccurrenceRules } from './cityOccurrenceConfig.js';
 import {
     RH_DIAGNOSIS_OPTIONS,
@@ -92,6 +93,7 @@ export class TypingPhase {
             }
         });
         this.createGuideButton();
+        this.hintHelper = new MinigameHintHelper(this.scene, { y: 374, depth: 90 });
         this.reset();
     }
 
@@ -243,6 +245,7 @@ export class TypingPhase {
         sprite.on('dragstart', () => {
             this.isDragging = true;
             sprite.setDepth(31);
+            this.hintHelper?.notifyAction();
         });
 
         sprite.on('drag', (pointer, dragX, dragY) => {
@@ -601,6 +604,7 @@ export class TypingPhase {
     }
 
     dropSerum(item) {
+        this.hintHelper?.notifyAction();
         const well = this.findWellAt(item.sprite.x, item.sprite.y);
 
         if (!well) {
@@ -646,6 +650,7 @@ export class TypingPhase {
     }
 
     dropTube(item) {
+        this.hintHelper?.notifyAction();
         const well = this.findWellAt(item.sprite.x, item.sprite.y);
         this.returnItem(item);
 
@@ -716,6 +721,7 @@ export class TypingPhase {
         if (this.stage !== 'ABO' || this.isConfirmed || this.state.isFailed) {
             return;
         }
+        this.hintHelper?.notifyAction();
         this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (type === this.patientType) {
@@ -783,6 +789,7 @@ export class TypingPhase {
         if (this.stage !== 'RH' || this.isConfirmed || this.state.isFailed) {
             return;
         }
+        this.hintHelper?.notifyAction();
         this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (rhValue === this.patientRh) {
@@ -922,6 +929,10 @@ export class TypingPhase {
             this.guidePanel.destroy();
             this.guidePanel = null;
         }
+        if (this.hintHelper) {
+            this.hintHelper.destroy();
+            this.hintHelper = null;
+        }
     }
 
     handleWrong() {
@@ -980,9 +991,13 @@ export class TypingPhase {
 
                 // So conta a distancia percorrida com o botao pressionado dentro do poco.
                 if (well.area.contains(pointer.x, pointer.y) && well.area.contains(this.lastPointer.x, this.lastPointer.y)) {
-                    well.mixDistance += Phaser.Math.Distance.Between(
+                    const stepDist = Phaser.Math.Distance.Between(
                         this.lastPointer.x, this.lastPointer.y, pointer.x, pointer.y
                     );
+                    if (stepDist > 0) {
+                        this.hintHelper?.notifyAction();
+                    }
+                    well.mixDistance += stepDist;
 
                     if (well.mixDistance >= MIX_DISTANCE) {
                         well.state = 'MIXED';
@@ -1024,12 +1039,37 @@ export class TypingPhase {
         });
     }
 
-    update() {
+    getCurrentHintStepKey() {
+        if (!this.isActive || this.isConfirmed || this.state.isFailed) {
+            return null;
+        }
+        if (this.stage === 'RH') {
+            const state = this.wells[0]?.state;
+            if (state === 'EMPTY') return 'RH_BLOOD';
+            if (state === 'BLOOD') return 'RH_SERUM';
+            if (state === 'READY') return 'RH_MIX';
+            return 'RH_DIAGNOSE';
+        }
+        if (this.wells.some((w) => w.state === 'EMPTY')) return 'ABO_BLOOD';
+        if (this.wells.some((w) => w.state === 'BLOOD')) return 'ABO_SERUM';
+        if (this.wells.some((w) => w.state === 'READY')) return 'ABO_MIX';
+        return 'ABO_DIAGNOSE';
+    }
+
+    update(delta = 0) {
         if (!this.isActive) {
             return;
         }
 
         this.updateMixing();
         this.drawProgressBars();
+        this.hintHelper?.update(delta, {
+            stepKey: this.getCurrentHintStepKey(),
+            suppressed: Boolean(
+                this.scene?.tutorialManager?.caption?.isOpen
+                || this.guidePanel?.isOpen
+                || this.hintText?.text
+            )
+        });
     }
 }

@@ -16,6 +16,7 @@ import { isCharacterAttended } from './atpStore.js';
 export const MAP_CAPTION_BOTTOM_Y = 506;
 export const ICON_DEFAULT_DEPTH = 100;
 export const ICON_TUTORIAL_DEPTH = 1005;
+export const QUIZ_BUTTON_TUTORIAL_DEPTH = 1005;
 export const JOAQUIM_TUTORIAL_DEPTH = 1020;
 export const JOAQUIM_TUTORIAL_MAX_Y = 410;
 
@@ -24,8 +25,20 @@ export class TutorialManager {
         this.scene = scene;
         this.caption = new TutorialCaption(scene, { bottomY, depth });
         this.currentSection = null;
+        this.currentStepId = null;
         this.elevatedCharacter = null;
         scene.events?.once?.('shutdown', () => this.destroy());
+    }
+
+    isShowingStep(stepId) {
+        return Boolean(this.caption?.isOpen && this.currentStepId === stepId);
+    }
+
+    setQuizButtonInteractiveDepth(elevated) {
+        const quizButton = this.scene?.mapControls?.quizButton;
+        if (!quizButton) return;
+        quizButton.background?.setDepth?.(elevated ? QUIZ_BUTTON_TUTORIAL_DEPTH : 100);
+        quizButton.label?.setDepth?.(elevated ? QUIZ_BUTTON_TUTORIAL_DEPTH + 1 : 101);
     }
 
     destroy() {
@@ -71,11 +84,14 @@ export class TutorialManager {
     }
 
     restoreTutorialVisuals() {
+        this.currentStepId = null;
         this.setCharacterIconsInteractiveDepth(false);
+        this.setQuizButtonInteractiveDepth(false);
         if (this.elevatedCharacter) {
             this.applyCharacterDepth(this.elevatedCharacter, 0);
             this.elevatedCharacter = null;
         }
+        this.scene?.mapControls?.updateQuizButtonState?.();
     }
 
     // ===== Nucleo =====
@@ -90,16 +106,22 @@ export class TutorialManager {
             bottomY: TUTORIAL_CAPTION_BOTTOM_Y[section] ?? null,
             onStepDone,
             onPageRender: (page) => {
+                this.currentStepId = page?.stepId ?? null;
                 this.setCharacterIconsInteractiveDepth(section === 'intro' && page?.stepId === 'A2');
+                this.setQuizButtonInteractiveDepth(section === 'aposPrimeiroAtendimento' && page?.stepId === 'D3');
                 if (section === 'ocorrenciaInicial') {
                     this.elevateTutorialCharacter();
                 }
+                this.scene?.mapControls?.updateQuizButtonState?.();
             },
             onHide: () => this.restoreTutorialVisuals(),
             onComplete: () => {
                 this.currentSection = null;
                 this.markSeen(section);
                 onDone?.();
+                if (!this.caption?.isOpen) {
+                    this.scene?.checkPendingMapNotices?.();
+                }
             },
             onSkip: () => this.skip()
         });
@@ -116,6 +138,7 @@ export class TutorialManager {
         this.currentSection = null;
         skipTutorial();
         refreshOccurrenceClockFreeze();
+        this.scene?.checkPendingMapNotices?.();
     }
 
     // Fecha a secao atual (se houver) marcando-a como vista.

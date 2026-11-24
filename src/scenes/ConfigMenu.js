@@ -7,6 +7,7 @@ import { resetInMemoryATP } from './atpStore.js';
 import { resetOccurrenceState, endMinigameSession } from './occurrenceState.js';
 import { resetTutorialSessionState } from './tutorialState.js';
 import { resetQuizState } from './quizLogic.js';
+import { resetMapNoticesMemory } from './mapNotices.js';
 import { closeCharacterDescription } from './CharacterDescriptionPanel.js';
 import { createTextStyle } from './textUtils.js';
 import { preloadAudio, playSfx, stopAllSfx, stopMusic, updateMusicVolume } from './AudioManager.js';
@@ -648,6 +649,7 @@ export class ConfigMenu extends Phaser.Scene {
                 resetInMemoryATP();
                 resetOccurrenceState();
                 resetQuizState();
+                resetMapNoticesMemory();
                 reactivateTutorial(scene.game);
                 resetTutorialSessionState();
 

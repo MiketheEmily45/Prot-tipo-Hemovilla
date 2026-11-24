@@ -58,6 +58,7 @@ const {
     TutorialManager,
     ICON_DEFAULT_DEPTH,
     ICON_TUTORIAL_DEPTH,
+    QUIZ_BUTTON_TUTORIAL_DEPTH,
     JOAQUIM_TUTORIAL_DEPTH,
     JOAQUIM_TUTORIAL_MAX_Y
 } = await import('../src/scenes/TutorialManager.js');
@@ -314,23 +315,24 @@ assert.equal(caption(mgScene).isOpen, true);
 assert.equal(caption(mgScene).blocking, false);
 assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase1[0].text);
 
-// Avanca para Fase 2: encerra C1 e mostra C2, C3, C4 e C5 (so ABO, sem Anti-D).
+// Avanca para Fase 2: encerra C1 e mostra C5 (guia primeiro), C2, C3 e C4 (so ABO, sem Anti-D).
 mgScene.tutorialManager.startMinigamePhase('minigameFase2');
 assert.equal(progress().minigameFase1, true);
 assert.equal(caption(mgScene).blocking, false);
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase2[0].text);
+assert.match(pageText(mgScene), /guia/i);
+caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: pingue o sangue nos poços, depois adicione os soros Anti-A e Anti-B e misture para ver se forma grumos (aglutinação).');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.');
-caption(mgScene).advance();
-assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase2[3].text);
 assert.ok(!TUTORIAL_STEPS.minigameFase2.some((s) => /Anti-D|Rh/i.test(s.text)), 'Fase 2 nao cita Anti-D nem Rh');
 
-// Avanca para Fase 3: encerra Fase 2 e mostra C6 e C7.
+// Avanca para Fase 3: encerra Fase 2 e mostra C6 (com mencao ao guia) e C7.
 mgScene.tutorialManager.startMinigamePhase('minigameFase3');
 assert.equal(progress().minigameFase2, true);
-assert.equal(pageText(mgScene), 'Fase 3 — Transfusão: arraste a bolsa certa e solte no paciente.');
+assert.equal(pageText(mgScene), 'Fase 3 — Transfusão: arraste a bolsa certa e solte no paciente. Em dúvida, abra o guia no canto superior direito.');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[1].text);
 // Mesmo se o jogador fechar C7 antes de concluir a transfusao, os relogios continuam parados ate concluir.
@@ -352,19 +354,27 @@ assert.equal(getOccurrence('marlene').remainingMs, 120000, 'relogios nao descont
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos concluir o minigame');
 
-// Volta ao mapa: secao D (D1, D2 e D3 com convite ao Quiz, bloqueando).
+// Volta ao mapa: secao D (D1, D2 e D3 com convite ao Quiz, bloqueando; em D3 o botao QUIZ fica clicavel).
 scene = openMap();
 assert.equal(caption(scene).isOpen, true);
 assert.equal(caption(scene).blocking, true);
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[0].text);
+assert.equal(scene.mapControls.quizButton.enabled, false, 'QUIZ bloqueado em D1');
 caption(scene).advance();
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[1].text);
+assert.equal(scene.mapControls.quizButton.enabled, false, 'QUIZ bloqueado em D2');
 caption(scene).advance();
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text);
 assert.ok(/Quiz/i.test(TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text), 'D3 convida a fazer o Quiz');
-caption(scene).advance();
-assert.equal(caption(scene).isOpen, false);
+assert.equal(scene.mapControls.quizButton.enabled, true, 'QUIZ liberado em D3');
+assert.equal(scene.mapControls.quizButton.background.depth, QUIZ_BUTTON_TUTORIAL_DEPTH);
+scene.mapControls.quizButton.background.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+scene.mapControls.quizButton.background.emit('pointerup', null, 0, 0, { stopPropagation() {} });
+assert.equal(caption(scene).isOpen, false, 'clicar em QUIZ encerra D3');
 assert.equal(progress().aposPrimeiroAtendimento, true);
+assert.equal(scene.mapControls.quizButton.background.depth, 100, 'depth do botao QUIZ restaurado');
+assert.equal(scene.quizPanel.isOpen, true, 'painel do Quiz abre a partir de D3');
+scene.quizPanel.close();
 closeScene(scene);
 
 // Abre a selecao de cidade (1a vez): secao E (E1, bloqueando); na 2a vez nao repete.

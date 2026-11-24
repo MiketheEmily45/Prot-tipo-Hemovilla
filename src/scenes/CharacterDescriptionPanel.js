@@ -2,7 +2,7 @@
 // texto com scroll/mascara e botao de fechar.
 
 import { getDiscoveredType } from './discoveredTypes.js';
-import { createTextStyle } from './textUtils.js';
+import { createTextStyle, fitTextToBox } from './textUtils.js';
 import { playSfx } from './AudioManager.js';
 import { getCharacterReplacement } from './shopStore.js';
 import { getShopCharacterPresentation } from './shopCharacterPresentation.js';
@@ -11,9 +11,11 @@ export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
     panelHeight: 448,
     panelX: 256,
-    contentWidth: 390,
+    contentWidth: 372,
     fontSize: 18,
+    minFontSize: 12,
     titleFontSize: 22,
+    minTitleFontSize: 14,
     lineSpacing: 2
 };
 
@@ -63,7 +65,9 @@ export class CharacterDescriptionPanel {
             panelX,
             contentWidth,
             fontSize,
+            minFontSize,
             titleFontSize,
+            minTitleFontSize,
             lineSpacing
         } = DESCRIPTION_PANEL_CONFIG;
 
@@ -75,40 +79,6 @@ export class CharacterDescriptionPanel {
             event?.stopPropagation?.();
             this.close();
         });
-
-        let descriptionX = panelX;
-
-        const title = scene.add.text(panelX, 0, data.nome, createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: `${titleFontSize}px`,
-            fontStyle: 'bold',
-            color: '#3b2a20'
-        })).setOrigin(0.5, 0);
-
-        const description = scene.add.text(panelX, 0, content, createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: `${fontSize}px`,
-            color: '#3b2a20',
-            lineSpacing: lineSpacing,
-            wordWrap: { width: contentWidth, useAdvancedWrap: true }
-        })).setOrigin(0.5, 0);
-
-        if (scene.currentCityIndex === 1 || scene.currentCityIndex === 2) {
-            // Fixa a margem esquerda usando Bruno na Cidade2 e Yasmin na
-            // Cidade3. Textos mais curtos, como o de Caue, nao ficam deslocados.
-            const alignmentReference = scene.currentCityIndex === 1
-                ? characterData.bruno : characterData.yasmin;
-            if (alignmentReference) {
-                description.setText([
-                    `Tipo sanguíneo: ${getDiscoveredType(scene.currentCityIndex === 1 ? 'bruno' : 'yasmin') ?? '?'}`,
-                    alignmentReference.descricao,
-                    ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
-                ].join('\n\n'));
-                descriptionX = Math.round(panelX - description.width / 2);
-                description.setOrigin(0, 0);
-                description.setText(content);
-            }
-        }
 
         // O painel fica 20 pixels acima do centro vertical da tela.
         const panelTop = 284 - panelHeight / 2;
@@ -122,21 +92,50 @@ export class CharacterDescriptionPanel {
         panelBlocker.setInteractive();
         panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event?.stopPropagation?.());
 
-        title.setPosition(panelX, panelTop + 34);
+        const title = scene.add.text(panelX, panelTop + 40, data.nome, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: `${titleFontSize}px`,
+            fontStyle: 'bold',
+            color: '#3b2a20',
+            align: 'center',
+            wordWrap: { width: contentWidth - 36, useAdvancedWrap: true }
+        })).setOrigin(0.5, 0);
+        fitTextToBox(title, {
+            maxWidth: contentWidth - 36,
+            maxHeight: 34,
+            maxFontSize: titleFontSize,
+            minFontSize: minTitleFontSize
+        });
         title.setDepth(PANEL_BASE_DEPTH + 3);
-        const descriptionTop = panelTop + 70 + title.height;
-        const descriptionBottom = panelTop + panelHeight - 20;
+
+        const descriptionX = Math.round(panelX - contentWidth / 2);
+        const descriptionTop = Math.round(title.y + title.height + 12);
+        const descriptionBottom = panelTop + 406;
         const descriptionViewportHeight = descriptionBottom - descriptionTop;
-        // A mascara impede que o texto ultrapasse a area interna da moldura.
+
+        const description = scene.add.text(descriptionX, descriptionTop, content, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: `${fontSize}px`,
+            color: '#3b2a20',
+            lineSpacing: lineSpacing,
+            wordWrap: { width: contentWidth, useAdvancedWrap: true }
+        })).setOrigin(0, 0);
+        fitTextToBox(description, {
+            maxWidth: contentWidth,
+            maxHeight: descriptionViewportHeight,
+            maxFontSize: fontSize,
+            minFontSize
+        });
+
+        // A mascara impede que o texto ultrapasse a area interna da moldura (scroll atua como reserva em 12px).
         const descriptionMask = scene.make.graphics({ add: false });
         descriptionMask.fillStyle(0xffffff);
         descriptionMask.fillRect(
-            panelX - contentWidth / 2,
+            descriptionX,
             descriptionTop,
             contentWidth,
             descriptionViewportHeight
         );
-        description.setPosition(descriptionX, descriptionTop);
         description.setMask(descriptionMask.createGeometryMask());
         description.setDepth(PANEL_BASE_DEPTH + 3);
 

@@ -4,7 +4,7 @@ import { ConfirmPopup } from './ConfirmPopup.js';
 import { clearAllProgress } from './debugTools.js';
 import { resetPurchasedCitiesMemory } from './cityUnlocks.js';
 import { resetInMemoryATP } from './atpStore.js';
-import { resetOccurrenceState, endMinigameSession } from './occurrenceState.js';
+import { resetOccurrenceState, endMinigameSession, updateActiveCityTimers } from './occurrenceState.js';
 import { resetTutorialSessionState } from './tutorialState.js';
 import { resetQuizState } from './quizLogic.js';
 import { resetMapNoticesMemory } from './mapNotices.js';
@@ -93,6 +93,15 @@ export class ConfigMenu extends Phaser.Scene {
         this.onCloseOverlay = null;
         this.confirmPopup = null;
         this.feedbackTimer = null;
+    }
+
+    update(_time, delta) {
+        if (!this.isOverlay && this.fromScene === 'GameMap' && typeof delta === 'number' && delta > 0) {
+            const cityIndex = typeof this.returnData?.targetCityIndex === 'number'
+                ? this.returnData.targetCityIndex
+                : (typeof this.returnData?.cityIndex === 'number' ? this.returnData.cityIndex : 0);
+            updateActiveCityTimers(cityIndex, delta);
+        }
     }
 
     preload() {
@@ -706,9 +715,5 @@ export class ConfigMenu extends Phaser.Scene {
         if (triggerCallback && typeof cb === 'function') {
             cb();
         }
-    }
-
-    update() {
-
     }
 }

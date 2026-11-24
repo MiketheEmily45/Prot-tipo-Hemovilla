@@ -570,8 +570,8 @@ export class TypingPhase {
             } else {
                 const rhKeys = {
                     EMPTY: 'bancada-vazia',
-                    SERUM: 'bancada-antid-soro',
-                    BLOOD: 'bancada-antid-sangue',
+                    BLOOD: 'bancada-sangue-sozinho',
+                    READY: 'bancada-antid-sangue',
                     MIXED: RH_RESULT_FRAMES[this.patientRh]
                 };
                 well.image.setTexture(rhKeys[well.state]);
@@ -582,8 +582,8 @@ export class TypingPhase {
 
         const keys = {
             EMPTY: 'bancada-vazia',
-            SERUM: 'bancada-soros',
-            BLOOD: 'bancada-sangue',
+            BLOOD: 'bancada-sangue-sozinho',
+            READY: 'bancada-sangue',
             MIXED: BENCH_RESULT_FRAMES[this.patientType]
         };
 
@@ -616,16 +616,33 @@ export class TypingPhase {
             return;
         }
 
-        playSfx(this.scene, 'clique');
-        const dropX = item.sprite.x;
-        const dropY = item.sprite.y;
-        well.state = 'SERUM';
-        this.updateWellImage(well);
-        item.sprite.setVisible(false);
-        this.scene.input.setDraggable(item.sprite, false);
-        if (item === this.items.antiD) {
-            this.playAntiDDropAnimation(dropX, dropY, well);
+        if (well.state === 'EMPTY') {
+            playSfx(this.scene, 'bloqueado');
+            this.returnItem(item);
+            this.showHint(
+                this.stage === 'RH'
+                    ? 'Pingue o sangue no poço 1 antes do soro Anti-D'
+                    : 'Pingue o sangue no poço antes do soro'
+            );
+            return;
         }
+
+        if (well.state === 'BLOOD') {
+            playSfx(this.scene, 'clique');
+            const dropX = item.sprite.x;
+            const dropY = item.sprite.y;
+            well.state = 'READY';
+            well.mixDistance = 0;
+            this.updateWellImage(well);
+            item.sprite.setVisible(false);
+            this.scene.input.setDraggable(item.sprite, false);
+            if (item === this.items.antiD) {
+                this.playAntiDDropAnimation(dropX, dropY, well);
+            }
+            return;
+        }
+
+        this.returnItem(item);
     }
 
     dropTube(item) {
@@ -643,21 +660,23 @@ export class TypingPhase {
         }
 
         if (well.state === 'EMPTY') {
-            playSfx(this.scene, 'bloqueado');
-            this.showHint(
-                this.stage === 'RH'
-                    ? 'Pingue o soro Anti-D no poço 1 antes do sangue'
-                    : 'Pingue o soro no poço antes do sangue'
-            );
-            return;
-        }
-
-        if (well.state === 'SERUM') {
             playSfx(this.scene, 'clique');
             well.state = 'BLOOD';
             well.mixDistance = 0;
             this.updateWellImage(well);
+
+            const allHaveBlood = this.stage === 'RH'
+                ? this.wells[0].state !== 'EMPTY'
+                : this.wells.every((w) => w.state !== 'EMPTY');
+            if (allHaveBlood) {
+                item.sprite.setVisible(false);
+                this.scene.input.setDraggable(item.sprite, false);
+            }
+            return;
         }
+
+        playSfx(this.scene, 'bloqueado');
+        this.showHint('Este poço já tem sangue. Agora pingue o soro.');
     }
 
     showHint(message) {
@@ -955,7 +974,7 @@ export class TypingPhase {
 
         if (this.lastPointer) {
             this.wells.forEach((well) => {
-                if (well.state !== 'BLOOD') {
+                if (well.state !== 'READY') {
                     return;
                 }
 
@@ -991,7 +1010,7 @@ export class TypingPhase {
         this.progressBar.clear();
 
         this.wells.forEach(({ area, state, mixDistance }) => {
-            if (state !== 'BLOOD' || mixDistance <= 0) {
+            if (state !== 'READY' || mixDistance <= 0) {
                 return;
             }
 

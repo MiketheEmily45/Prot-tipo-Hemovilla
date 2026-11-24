@@ -5,6 +5,7 @@ const {
     RH_ENABLED,
     canReceive,
     isContaminated,
+    isSameBloodType,
     incompatibilityReason,
     drawRound
 } = await import('../src/scenes/bloodCompatibility.js');
@@ -108,25 +109,37 @@ assert.equal(
     'O paciente Rh- não pode receber sangue Rh+, pois geraria anticorpos contra o fator Rh.'
 );
 
-// 5. drawRound rodado 200 vezes para cada tipo de paciente
-// Tipos com bolsas compativeis e incompativeis no sistema ABO (A, B, O)
-for (const patientType of ['A', 'B', 'O']) {
+// 5. drawRound rodado 200 vezes para cada tipo de paciente (sem oferecer o mesmo tipo quando ha alternativa)
+// Cidade 1 (sem Rh): A e B tem apenas 3 bolsas distintas (exclui A+/B+); todas tem compativel e incompativel
+for (const patientType of ['A', 'B']) {
     for (let i = 0; i < 200; i++) {
         const round = drawRound({ patientType, count: 4, contaminatedCount: 0 });
-        assert.equal(round.length, 4);
-        assert.equal(new Set(round).size, 4);
+        assert.equal(round.length, 3);
+        assert.equal(new Set(round).size, 3);
+        assert.ok(!round.some(b => isSameBloodType(patientType, b, { rhEnabled: false })));
         assert.ok(round.some(b => canReceive(patientType, b)));
         assert.ok(round.some(b => !canReceive(patientType, b)));
         assert.equal(round.filter(isContaminated).length, 0);
     }
 }
 
-// Paciente AB: como todas as 4 bolsas ABO sao compativeis, todas sao validas
+// Paciente AB sem Rh: exclui AB+ (ficam 3 bolsas compativeis diferentes)
 for (let i = 0; i < 200; i++) {
     const round = drawRound({ patientType: 'AB', count: 4, contaminatedCount: 0 });
+    assert.equal(round.length, 3);
+    assert.equal(new Set(round).size, 3);
+    assert.ok(!round.includes('AB+'));
+    assert.ok(round.every(b => canReceive('AB', b)));
+    assert.equal(round.filter(isContaminated).length, 0);
+}
+
+// Paciente O sem Rh: excecao automatica (unica compativel e O+)
+for (let i = 0; i < 200; i++) {
+    const round = drawRound({ patientType: 'O', count: 4, contaminatedCount: 0 });
     assert.equal(round.length, 4);
     assert.equal(new Set(round).size, 4);
-    assert.ok(round.every(b => canReceive('AB', b)));
+    assert.ok(round.includes('O+'));
+    assert.ok(round.some(b => !canReceive('O', b)));
     assert.equal(round.filter(isContaminated).length, 0);
 }
 
@@ -139,17 +152,27 @@ for (const patientType of ['A', 'B', 'AB', 'O']) {
         assert.ok(round.some(b => canReceive(patientType, b)));
         assert.ok(round.some(b => !canReceive(patientType, b)));
         assert.equal(round.filter(isContaminated).length, 1);
+        if (patientType !== 'O') {
+            assert.ok(!round.some(b => isSameBloodType(patientType, b, { rhEnabled: false })));
+        }
     }
 }
 
-// Com Rh ligado, tipos negativos tem compativeis e incompativeis mesmo sem contaminadas
-for (const patientType of ['A-', 'B-', 'AB-', 'O-']) {
+// Com Rh ligado, todos exceto O- nunca recebem bolsa do mesmo tipo ABO+Rh; O- mantem O- por excecao automatica
+for (const patientType of all8Bags) {
     for (let i = 0; i < 200; i++) {
         const round = drawRound({ patientType, count: 4, contaminatedCount: 0, rhEnabled: true });
         assert.equal(round.length, 4);
         assert.equal(new Set(round).size, 4);
         assert.ok(round.some(b => canReceive(patientType, b, { rhEnabled: true })));
-        assert.ok(round.some(b => !canReceive(patientType, b, { rhEnabled: true })));
+        if (patientType !== 'AB+') {
+            assert.ok(round.some(b => !canReceive(patientType, b, { rhEnabled: true })));
+        }
+        if (patientType === 'O-') {
+            assert.ok(round.includes('O-'));
+        } else {
+            assert.ok(!round.includes(patientType), `${patientType}: nao deve sortear bolsa igual`);
+        }
         assert.equal(round.filter(isContaminated).length, 0);
     }
 }

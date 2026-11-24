@@ -74,6 +74,7 @@ const { TypingPhase } = await import('../src/scenes/TypingPhase.js');
 const { getDiscoveredType } = await import('../src/scenes/discoveredTypes.js');
 
 // 1. Assets Anti-D e Rh registrados em minigameAssets.js.
+assert.equal(MINIGAME_ASSETS['bancada-sangue-sozinho'], 'assets/Minigame/Cenario/SalaAnalise/SangueSozinho.png');
 assert.equal(MINIGAME_ASSETS['bancada-antid-soro'], 'assets/Minigame/Cenario/SalaAnalise/AntiDSozinho.png');
 assert.equal(MINIGAME_ASSETS['bancada-antid-sangue'], 'assets/Minigame/Cenario/SalaAnalise/AntiDcomSangue.png');
 assert.equal(MINIGAME_ASSETS['bancada-antid-positivo'], 'assets/Minigame/Cenario/SalaAnalise/AntiDAglutinado.png');
@@ -188,6 +189,51 @@ function createMockScene() {
     });
     assert.equal(tp.rhEnabled, false);
     assert.equal(tp.stage, 'ABO');
+
+    // Soltar soro antes do sangue: bloqueado sem perder coracao.
+    tp.items.antiA.sprite.setPosition(150, 240);
+    tp.dropSerum(tp.items.antiA);
+    assert.equal(state.hearts, 3);
+    assert.equal(tp.wells[0].state, 'EMPTY');
+
+    // Ordem invertida: sangue nos 2 pocos -> bancada-sangue-sozinho -> soros Anti-A e Anti-B -> mistura.
+    tp.items.tube.sprite.setPosition(150, 240);
+    tp.dropTube(tp.items.tube);
+    assert.equal(tp.wells[0].state, 'BLOOD');
+    assert.equal(tp.wells[0].image.texture, 'bancada-sangue-sozinho');
+    assert.equal(tp.items.tube.sprite.visible, true);
+
+    tp.items.tube.sprite.setPosition(350, 240);
+    tp.dropTube(tp.items.tube);
+    assert.equal(tp.wells[1].state, 'BLOOD');
+    assert.equal(tp.wells[1].image.texture, 'bancada-sangue-sozinho');
+    assert.equal(tp.items.tube.sprite.visible, false);
+
+    tp.items.antiA.sprite.setPosition(150, 240);
+    tp.dropSerum(tp.items.antiA);
+    assert.equal(tp.wells[0].state, 'READY');
+    assert.equal(tp.wells[0].image.texture, 'bancada-sangue');
+
+    tp.items.antiB.sprite.setPosition(350, 240);
+    tp.dropSerum(tp.items.antiB);
+    assert.equal(tp.wells[1].state, 'READY');
+    assert.equal(tp.wells[1].image.texture, 'bancada-sangue');
+
+    // Mistura nos 2 pocos.
+    for (const wx of [100, 300]) {
+        scene.input.activePointer = { isDown: true, x: wx, y: 200 };
+        tp.update();
+        for (let i = 0; i < 10; i++) {
+            scene.input.activePointer = { isDown: true, x: i % 2 === 0 ? wx + 80 : wx, y: 200 };
+            tp.update();
+        }
+        scene.input.activePointer = { isDown: false, x: 0, y: 0 };
+        tp.update();
+    }
+    assert.equal(tp.wells[0].state, 'MIXED');
+    assert.equal(tp.wells[1].state, 'MIXED');
+    assert.equal(tp.wells[0].image.texture, 'bancada-resultado-9');
+
     tp.handleDiagnosis('O');
     assert.equal(getDiscoveredType('joaquim'), 'O');
     assert.equal(state.phase, 'TRANSFUSAO');
@@ -231,22 +277,24 @@ function createMockScene() {
     assert.equal(state.hearts, 3);
     assert.equal(tp.wells[0].state, 'EMPTY');
 
-    // Soltar sangue no poco 1 antes do Anti-D: bloqueado sem perder coracao.
-    tp.items.tube.sprite.setPosition(150, 240);
-    tp.dropTube(tp.items.tube);
+    // Soltar Anti-D no poco 1 antes do sangue: bloqueado sem perder coracao.
+    tp.items.antiD.sprite.setPosition(150, 240);
+    tp.dropSerum(tp.items.antiD);
     assert.equal(state.hearts, 3);
     assert.equal(tp.wells[0].state, 'EMPTY');
 
-    // Fluxo correto no poco 1: Anti-D -> sangue -> mistura.
-    tp.items.antiD.sprite.setPosition(150, 240);
-    tp.dropSerum(tp.items.antiD);
-    assert.equal(tp.wells[0].state, 'SERUM');
-    assert.equal(tp.wells[0].image.texture, 'bancada-antid-soro');
-
+    // Fluxo correto no poco 1: sangue -> Anti-D -> mistura.
     tp.items.tube.sprite.setPosition(150, 240);
     tp.dropTube(tp.items.tube);
     assert.equal(tp.wells[0].state, 'BLOOD');
+    assert.equal(tp.wells[0].image.texture, 'bancada-sangue-sozinho');
+    assert.equal(tp.items.tube.sprite.visible, false);
+
+    tp.items.antiD.sprite.setPosition(150, 240);
+    tp.dropSerum(tp.items.antiD);
+    assert.equal(tp.wells[0].state, 'READY');
     assert.equal(tp.wells[0].image.texture, 'bancada-antid-sangue');
+    assert.equal(tp.items.antiD.sprite.visible, false);
 
     // Mistura no poco 1.
     scene.input.activePointer = { isDown: true, x: 100, y: 200 };

@@ -22,13 +22,13 @@ export const TUTORIAL_STEPS = Object.freeze({
         { id: 'C1', text: 'Fase 1 — Coleta: arraste a seringa até a poltrona, segure o clique para enchê-la com o sangue do paciente e leve-a até o tubo de coleta.' }
     ],
     minigameFase2: [
-        { id: 'C2', text: 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Misture o sangue com os soros e observe se ele forma grumos (aglutinação).' },
+        { id: 'C2', text: 'Fase 2 — Tipagem: pingue o sangue nos poços, depois adicione os soros Anti-A e Anti-B e misture para ver se forma grumos (aglutinação).' },
         { id: 'C3', text: 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.' },
         { id: 'C4', text: 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.' },
         { id: 'C5', text: 'Em dúvida? O botão de guia, no canto superior direito, mostra os tipos e as compatibilidades.' }
     ],
     minigameFase2Rh: [
-        { id: 'C8', text: 'Etapa 2 — Fator Rh: pingue o soro Anti-D e o sangue só no Poço 1 e misture (o Poço 2 não é usado aqui).' },
+        { id: 'C8', text: 'Etapa 2 — Fator Rh: pingue o sangue e depois o soro Anti-D só no Poço 1 e misture (o Poço 2 não é usado aqui).' },
         { id: 'C9', text: 'Aglutinou (formou grumos) é Rh+. Ficou liso é Rh−. Depois escolha o fator Rh certo — o guia mostra as regras.' }
     ],
     minigameFase3: [

@@ -318,7 +318,7 @@ assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase1[0].text);
 mgScene.tutorialManager.startMinigamePhase('minigameFase2');
 assert.equal(progress().minigameFase1, true);
 assert.equal(caption(mgScene).blocking, false);
-assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Misture o sangue com os soros e observe se ele forma grumos (aglutinação).');
+assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: pingue o sangue nos poços, depois adicione os soros Anti-A e Anti-B e misture para ver se forma grumos (aglutinação).');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.');
 caption(mgScene).advance();

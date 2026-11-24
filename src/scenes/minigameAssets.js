@@ -11,6 +11,7 @@ export const MINIGAME_ASSETS = {
     'frasco-anti-a': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoA.png',
     'frasco-anti-b': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoB.png',
     'bancada-vazia': 'assets/Minigame/Cenario/SalaAnalise/BancadaLaboratorio.png',
+    'bancada-sangue-sozinho': 'assets/Minigame/Cenario/SalaAnalise/SangueSozinho.png',
     'bancada-soros': 'assets/Minigame/Cenario/SalaAnalise/AntiAeAntiBSozinhos.png',
     'bancada-sangue-poco1': 'assets/Minigame/Cenario/SalaAnalise/SangueEmUmFrasco.png',
     'bancada-sangue': 'assets/Minigame/Cenario/SalaAnalise/SangueEmDoisFrascos.png',

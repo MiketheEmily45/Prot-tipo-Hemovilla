@@ -51,6 +51,13 @@ export function getCharacterPortraitKey(characterId) {
 }
 
 export function getBagSlots(count) {
+    if (count === 3) {
+        return [
+            { x: 128, y: BAG_SLOT_Y },
+            { x: 256, y: BAG_SLOT_Y },
+            { x: 384, y: BAG_SLOT_Y }
+        ];
+    }
     if (count === 4) {
         return DEFAULT_FOUR_BAG_SLOTS;
     }

@@ -90,7 +90,7 @@ export class TutorialCaption {
         this.callbacks = {};
         this.isOpen = false;
         this.keyHandler = (event) => {
-            if (event?.repeat || this.scene?.pauseMenu?.isOpen) return;
+            if (event?.repeat || this.scene?.pauseMenu?.isOpen || this.scene?.characterOverlay) return;
             this.advance();
         };
         this.keyboard = null;
@@ -112,13 +112,23 @@ export class TutorialCaption {
      * @param {()=>void} [options.onComplete] chamado depois do ultimo passo
      * @param {()=>void} [options.onSkip] chamado ao clicar em "Pular tutorial"
      */
-    show(steps, { blocking = true, dismissOnLastPage = true, startIndex = 0, bottomY = null, onStepDone = null, onComplete = null, onSkip = null } = {}) {
+    show(steps, {
+        blocking = true,
+        dismissOnLastPage = true,
+        startIndex = 0,
+        bottomY = null,
+        onStepDone = null,
+        onComplete = null,
+        onSkip = null,
+        onPageRender = null,
+        onHide = null
+    } = {}) {
         this.hide();
         this.activeBottomY = bottomY;
 
         this.blocking = blocking;
         this.dismissOnLastPage = dismissOnLastPage;
-        this.callbacks = { onStepDone, onComplete, onSkip };
+        this.callbacks = { onStepDone, onComplete, onSkip, onPageRender, onHide };
         this.pages = this.buildPages(steps).filter((page) => page.stepIndex >= startIndex);
         this.pageIndex = 0;
 
@@ -152,7 +162,12 @@ export class TutorialCaption {
         steps.forEach((step, stepIndex) => {
             const parts = paginateCaption(step.text, fits);
             parts.forEach((text, partIndex) => {
-                pages.push({ text, stepIndex, isLastOfStep: partIndex === parts.length - 1 });
+                pages.push({
+                    text,
+                    stepIndex,
+                    stepId: step.id ?? null,
+                    isLastOfStep: partIndex === parts.length - 1
+                });
             });
         });
 
@@ -232,23 +247,26 @@ export class TutorialCaption {
         gfx.fillRect(boxX + 14, boxY + 9, boxW - 28, boxH - 18);
         this.elements.push(gfx);
 
-        // Clique na caixa avanca.
-        const hit = scene.add.rectangle(boxX + boxW / 2, boxY + boxH / 2, boxW + 2 * BORDER, boxH + 2 * BORDER, 0x000000, 0);
-        hit.setDepth(depth + 3);
-        hit.setInteractive({ useHandCursor: true });
-        let pressed = false;
-        hit.on('pointerdown', (_p, _x, _y, event) => {
-            event?.stopPropagation?.();
-            pressed = true;
-        });
-        hit.on('pointerout', () => { pressed = false; });
-        hit.on('pointerup', (_p, _x, _y, event) => {
-            event?.stopPropagation?.();
-            if (!pressed) return;
-            pressed = false;
-            this.advance();
-        });
-        this.elements.push(hit);
+        const canAdvance = this.dismissOnLastPage || this.pageIndex < this.pages.length - 1;
+        if (canAdvance) {
+            // Clique na caixa avanca.
+            const hit = scene.add.rectangle(boxX + boxW / 2, boxY + boxH / 2, boxW + 2 * BORDER, boxH + 2 * BORDER, 0x000000, 0);
+            hit.setDepth(depth + 3);
+            hit.setInteractive({ useHandCursor: true });
+            let pressed = false;
+            hit.on('pointerdown', (_p, _x, _y, event) => {
+                event?.stopPropagation?.();
+                pressed = true;
+            });
+            hit.on('pointerout', () => { pressed = false; });
+            hit.on('pointerup', (_p, _x, _y, event) => {
+                event?.stopPropagation?.();
+                if (!pressed) return;
+                pressed = false;
+                this.advance();
+            });
+            this.elements.push(hit);
+        }
 
         // Indicador piscando (triangulo para baixo) no canto inferior direito da caixa.
         const indicator = scene.add.graphics();
@@ -269,6 +287,7 @@ export class TutorialCaption {
         }
 
         this.createSkipButton(boxX + boxW - SKIP_TAB.right, boxY - BORDER, depth + 4);
+        this.callbacks.onPageRender?.(page);
     }
 
     // Botao pequeno "Pular tutorial" na aba que sai do canto superior direito da caixa.
@@ -350,14 +369,16 @@ export class TutorialCaption {
         this.render();
     }
 
-    // Fecha sem chamar nenhum callback.
+    // Fecha sem chamar nenhum callback de conclusao/pulo.
     hide() {
+        const onHide = this.callbacks.onHide;
         this.unbindKeys();
         this.clearElements();
         this.isOpen = false;
         this.pages = [];
         this.pageIndex = 0;
         this.callbacks = {};
+        onHide?.();
     }
 
     destroy() {

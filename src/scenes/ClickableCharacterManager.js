@@ -62,8 +62,19 @@ export class ClickableCharacterManager {
     register(config) {
         const character = new Character(this.scene, config);
 
-        character.sprite.setInteractive({ useHandCursor: true });
-        character.sprite.on('pointerdown', () => {
+        if (typeof Phaser !== 'undefined' && Phaser.Geom?.Rectangle?.Contains) {
+            const w = character.sprite.width || 26;
+            const h = character.sprite.height || 43;
+            character.sprite.setInteractive({
+                hitArea: new Phaser.Geom.Rectangle(-10, -6, w + 20, h + 12),
+                hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+                useHandCursor: true
+            });
+        } else {
+            character.sprite.setInteractive({ useHandCursor: true });
+        }
+        character.sprite.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
             this.playCharacterClickSound(character);
             this.toggleInteraction(character);
         });
@@ -108,7 +119,8 @@ export class ClickableCharacterManager {
         character.descriptionButton = scene.add.image(0, 0, 'botao_descricao');
         character.descriptionButton.setDepth(character.balloon.depth + 1);
         character.descriptionButton.setInteractive({ useHandCursor: true });
-        character.descriptionButton.on('pointerdown', () => {
+        character.descriptionButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
             playSfx(scene, 'clique');
             openCharacterDescription(scene, character.iconButtonKey, characterData);
         });
@@ -125,11 +137,13 @@ export class ClickableCharacterManager {
         character.miniGameButton = scene.add.image(0, 0, 'botao_minigame');
         character.miniGameButton.setDepth(character.balloon.depth + 1);
         character.miniGameButton.setInteractive({ useHandCursor: true });
-        character.miniGameButton.on('pointerdown', () => {
+        character.miniGameButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.setTint(0x8B2E40);
         });
-        character.miniGameButton.on('pointerup', () => {
+        character.miniGameButton.on('pointerup', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
             if (!character.alertIcon || !character.miniGameButton.input.enabled) return;
             character.miniGameButton.clearTint();
             playSfx(scene, 'clique');

@@ -17,6 +17,9 @@ export const DESCRIPTION_PANEL_CONFIG = {
     lineSpacing: 2
 };
 
+// Acima da legenda do tutorial (1000..1006) e do Joaquim elevado (1020..1023), abaixo de Quiz (1400) e Pause (1500).
+const PANEL_BASE_DEPTH = 1100;
+
 export class CharacterDescriptionPanel {
     constructor(scene, characterData = {}) {
         this.scene = scene;
@@ -66,9 +69,12 @@ export class CharacterDescriptionPanel {
 
         // Escurece somente o mapa para manter a faixa de icones clicavel.
         const overlay = scene.add.rectangle(256, 256, 512, 512, 0x000000, 0.68);
-        overlay.setDepth(200);
+        overlay.setDepth(PANEL_BASE_DEPTH);
         overlay.setInteractive({ useHandCursor: true });
-        overlay.on('pointerdown', () => this.close());
+        overlay.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            this.close();
+        });
 
         let descriptionX = panelX;
 
@@ -109,15 +115,15 @@ export class CharacterDescriptionPanel {
         const panelY = panelTop + panelHeight / 2;
         const frame = scene.add.image(panelX, panelY, 'character-frame');
         frame.setDisplaySize(panelWidth, panelHeight);
-        frame.setDepth(201);
+        frame.setDepth(PANEL_BASE_DEPTH + 1);
 
         const panelBlocker = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0xffffff, 0);
-        panelBlocker.setDepth(202);
+        panelBlocker.setDepth(PANEL_BASE_DEPTH + 2);
         panelBlocker.setInteractive();
         panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event?.stopPropagation?.());
 
         title.setPosition(panelX, panelTop + 34);
-        title.setDepth(203);
+        title.setDepth(PANEL_BASE_DEPTH + 3);
         const descriptionTop = panelTop + 70 + title.height;
         const descriptionBottom = panelTop + panelHeight - 20;
         const descriptionViewportHeight = descriptionBottom - descriptionTop;
@@ -132,7 +138,7 @@ export class CharacterDescriptionPanel {
         );
         description.setPosition(descriptionX, descriptionTop);
         description.setMask(descriptionMask.createGeometryMask());
-        description.setDepth(203);
+        description.setDepth(PANEL_BASE_DEPTH + 3);
 
         let descriptionScrollY = 0;
         const maxDescriptionScroll = Math.max(0, description.height - descriptionViewportHeight);
@@ -163,7 +169,7 @@ export class CharacterDescriptionPanel {
             fontStyle: 'bold',
             color: '#afadab'
         })).setOrigin(0.5);
-        closeButton.setDepth(204);
+        closeButton.setDepth(PANEL_BASE_DEPTH + 4);
         closeButton.setInteractive({ useHandCursor: true });
         closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
             event?.stopPropagation?.();

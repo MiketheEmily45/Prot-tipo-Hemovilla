@@ -54,6 +54,13 @@ const {
 const { getSettings, reactivateTutorial, DEFAULT_TUTORIAL_PROGRESS, TUTORIAL_FLAG_KEYS } = await import('../src/scenes/settingsStore.js');
 const { TUTORIAL_STEPS } = await import('../src/scenes/tutorialSteps.js');
 const { paginateCaption } = await import('../src/scenes/TutorialCaption.js');
+const {
+    TutorialManager,
+    ICON_DEFAULT_DEPTH,
+    ICON_TUTORIAL_DEPTH,
+    JOAQUIM_TUTORIAL_DEPTH,
+    JOAQUIM_TUTORIAL_MAX_Y
+} = await import('../src/scenes/TutorialManager.js');
 const { setAllCitiesUnlocked } = await import('../src/scenes/debugState.js');
 const { markAttendanceJustCompleted } = await import('../src/scenes/tutorialState.js');
 const { markCharacterAttended } = await import('../src/scenes/atpStore.js');
@@ -135,18 +142,34 @@ assert.deepEqual(updateActiveCityTimers(0, 10 * 60 * 1000), []);
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.equal(getOccurrence('marlene').remainingMs, 120000);
 
-// A1 -> A2 e fechar o jogo no meio: retoma em A2.
+// A1 -> A2: texto cita apenas os icones; icones ficam clicaveis acima do blocker e abrem descricao por cima.
 caption(scene).advance();
 assert.equal(progress().introStep, 1);
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text);
+assert.match(pageText(scene), /ícones/i);
+assert.ok(Object.values(scene.characterIconButtons).every((icon) => icon.depth === ICON_TUTORIAL_DEPTH && icon.depth > caption(scene).depth));
 assert.ok(soundsPlayed.includes('clique'));
+
+// Clica no icone do Seu Joaquim durante A2: painel abre acima da legenda e pausa o avanco por teclado.
+scene.characterIconButtons.joaquim.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+scene.characterIconButtons.joaquim.emit('pointerup', null, 0, 0, { stopPropagation() {} });
+assert.ok(scene.characterOverlay, 'painel de descricao abre durante A2');
+assert.ok(scene.characterOverlay.overlay.depth > caption(scene).depth + 6);
+assert.ok(scene.characterOverlay.frame.depth > caption(scene).depth + 6);
+scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
+assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text, 'Espaco nao avanca A2 enquanto a descricao esta aberta');
+scene.characterOverlay.overlay.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+assert.equal(scene.characterOverlay, null, 'fechar descricao mantem A2 na tela');
+assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text);
+
 closeScene(scene);
 scene = openMap();
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text, 'retoma no passo salvo');
 
-// Espaco e Enter tambem avancam.
+// Espaco e Enter tambem avancam; ao ir para A3, icones voltam ao depth padrao.
 scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[2].text);
+assert.ok(Object.values(scene.characterIconButtons).every((icon) => icon.depth === ICON_DEFAULT_DEPTH));
 scene.input.keyboard.emit('keydown-SPACE', { repeat: true });
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[2].text, 'repeticao da tecla nao avanca');
 assert.deepEqual(alertedIds(scene), []);
@@ -161,6 +184,20 @@ assert.equal(getOccurrence('aparecida').hasAlert, false);
 assert.equal(pageText(scene), TUTORIAL_STEPS.ocorrenciaInicial[0].text);
 assert.equal(caption(scene).blocking, false);
 assert.ok(!caption(scene).elements.some((el) => el.width === 512 && el.height === 608), 'A4 nao bloqueia o jogo');
+// A4 mantem Seu Joaquim acima da caixa de legenda e com depth maior que a legenda.
+{
+    const joaquim = joaquimOf(scene);
+    assert.ok(joaquim.sprite.y <= JOAQUIM_TUTORIAL_MAX_Y, 'Joaquim fica acima da caixa de legenda durante A4');
+    assert.equal(joaquim.sprite.depth, JOAQUIM_TUTORIAL_DEPTH);
+    assert.ok(joaquim.sprite.depth > caption(scene).depth + 6);
+    assert.ok(joaquim.alertIcon.depth > joaquim.sprite.depth);
+    joaquim.sprite.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+    assert.ok(joaquim.balloon.depth > caption(scene).depth + 6);
+    assert.ok(joaquim.miniGameButton.depth > caption(scene).depth + 6);
+    joaquim.sprite.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+    const interactiveCaptionEls = caption(scene).elements.filter((el) => el.input);
+    assert.equal(interactiveCaptionEls.length, 1, 'A4 nao cria hit bloqueador sobre a caixa (so Pular tutorial)');
+}
 // A4 fica na tela ate abrir o minigame (clicar na legenda ou apertar Espaco/Enter nao fecha A4).
 caption(scene).advance();
 scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
@@ -183,6 +220,8 @@ const skipHit = caption(scene).elements.filter((el) => el.input && el.width < 51
 skipHit.emit('pointerdown', null, 0, 0, {});
 skipHit.emit('pointerup', null, 0, 0, {});
 assert.equal(caption(scene).isOpen, false);
+assert.equal(joaquimOf(scene).sprite.depth, 0, 'depth do Joaquim volta ao normal apos pular');
+assert.equal(joaquimOf(scene).alertIcon.depth, 1, 'depth do alerta volta ao normal apos pular');
 assert.equal(getSettings().tutorialHintsEnabled, false);
 assert.ok(TUTORIAL_FLAG_KEYS.every((key) => progress()[key] === true));
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos pular');
@@ -240,7 +279,6 @@ assert.equal(caption(scene).isOpen, false);
 closeScene(scene);
 
 // ===== Etapa 2: secoes C (minigame Fases 1, 2 e 3), D (apos 1o atendimento) e E (selecao de cidade) =====
-const { TutorialManager } = await import('../src/scenes/TutorialManager.js');
 const { addATP, getATP, isCharacterAttended } = await import('../src/scenes/atpStore.js');
 
 function createDummyScene(width = 512, height = 512) {
@@ -292,7 +330,7 @@ assert.ok(!TUTORIAL_STEPS.minigameFase2.some((s) => /Anti-D|Rh/i.test(s.text)), 
 // Avanca para Fase 3: encerra Fase 2 e mostra C6 e C7.
 mgScene.tutorialManager.startMinigamePhase('minigameFase3');
 assert.equal(progress().minigameFase2, true);
-assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[0].text);
+assert.equal(pageText(mgScene), 'Fase 3 — Transfusão: arraste a bolsa certa e solte no paciente.');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[1].text);
 // Mesmo se o jogador fechar C7 antes de concluir a transfusao, os relogios continuam parados ate concluir.

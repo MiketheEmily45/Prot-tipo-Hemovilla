@@ -12,7 +12,7 @@
 export const TUTORIAL_STEPS = Object.freeze({
     intro: [
         { id: 'A1', text: 'Bem-vindo ao Hemovilla! Nesta cidade, você ajuda moradores que precisam de uma transfusão de sangue.' },
-        { id: 'A2', text: 'Os moradores andam pela cidade. Clique em um deles, ou no ícone de algum deles aqui embaixo, para conhecê-los melhor.' },
+        { id: 'A2', text: 'Os moradores andam pela cidade. Clique nos ícones deles aqui embaixo para conhecê-los melhor.' },
         { id: 'A3', text: 'O seu saldo de ATP, a moeda do jogo, fica no canto inferior direito.' }
     ],
     ocorrenciaInicial: [
@@ -32,7 +32,7 @@ export const TUTORIAL_STEPS = Object.freeze({
         { id: 'C9', text: 'Aglutinou (formou grumos) é Rh+. Ficou liso é Rh−. Depois escolha o fator Rh certo — o guia mostra as regras.' }
     ],
     minigameFase3: [
-        { id: 'C6', text: 'Fase 3 — Transfusão: arraste a bolsa de sangue compatível até o paciente.' },
+        { id: 'C6', text: 'Fase 3 — Transfusão: arraste a bolsa certa e solte no paciente.' },
         { id: 'C7', text: 'Bolsa errada tira um coração. Se os três acabarem, você tenta de novo.' }
     ],
     aposPrimeiroAtendimento: [

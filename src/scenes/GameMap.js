@@ -12,6 +12,15 @@ import { AtpDisplay } from './AtpDisplay.js';
 import { updateActiveCityTimers, getOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSceneMusic } from './AudioManager.js';
 import { TutorialManager, MAP_CAPTION_BOTTOM_Y } from './TutorialManager.js';
+import { TutorialCaption } from './TutorialCaption.js';
+import {
+    CITY_2_UNLOCKED_NOTICE_TEXT,
+    QUIZ_NEW_TYPES_NOTICE_TEXT,
+    markCity2UnlockedNoticeSeen,
+    markQuizCityNoticeSeen,
+    shouldShowCity2UnlockedNotice,
+    shouldShowQuizCityNotice
+} from './mapNotices.js';
 import { PauseMenu, preloadPauseMenu } from './PauseMenu.js';
 import { QuizPanel } from './QuizPanel.js';
 
@@ -22,6 +31,8 @@ export class GameMap extends Phaser.Scene {
     }
 
     init(data) {
+        this.tutorialManager = null;
+        this.noticeCaption = null;
         this.targetCityIndex = data && typeof data.targetCityIndex === 'number'
             ? data.targetCityIndex
             : (data && typeof data.cityIndex === 'number' ? data.cityIndex : 0);
@@ -89,8 +100,42 @@ export class GameMap extends Phaser.Scene {
 
         // Tutorial: introducao e ocorrencia inicial do Seu Joaquim (se ainda pendentes).
         this.tutorialManager = new TutorialManager(this, { bottomY: MAP_CAPTION_BOTTOM_Y });
+        this.noticeCaption = new TutorialCaption(this, { bottomY: MAP_CAPTION_BOTTOM_Y, depth: 1010 });
+        this.events?.once?.('shutdown', () => {
+            this.noticeCaption?.destroy();
+            this.noticeCaption = null;
+            this.tutorialManager = null;
+        });
         this.tutorialManager.startMap();
+        this.checkPendingMapNotices();
         this.mapControls?.updateQuizButtonState?.();
+    }
+
+    checkPendingMapNotices() {
+        if (!this.noticeCaption || !this.noticeCaption.scene || this.noticeCaption.isOpen || this.tutorialManager?.caption?.isOpen) {
+            return;
+        }
+
+        const steps = [];
+        const cityIndex = this.currentCityIndex ?? 0;
+
+        if (shouldShowCity2UnlockedNotice()) {
+            markCity2UnlockedNoticeSeen();
+            steps.push({ id: 'N-CITY2', text: CITY_2_UNLOCKED_NOTICE_TEXT });
+        }
+
+        if (shouldShowQuizCityNotice(cityIndex)) {
+            markQuizCityNoticeSeen(cityIndex);
+            steps.push({ id: 'N-QUIZ', text: QUIZ_NEW_TYPES_NOTICE_TEXT });
+        }
+
+        if (steps.length > 0) {
+            this.noticeCaption.show(steps, {
+                blocking: true,
+                dismissOnLastPage: true,
+                showSkipButton: false
+            });
+        }
     }
 
     syncActiveCityAlerts(silent = true) {

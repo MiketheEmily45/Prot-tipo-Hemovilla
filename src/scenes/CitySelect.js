@@ -32,6 +32,8 @@ export class CitySelect extends Phaser.Scene {
                 : (data && typeof data.currentCityIndex === 'number' ? data.currentCityIndex : 0));
 
         this.selectedIndex = this.currentCityIndex;
+        this.feedbackText = null;
+        this.feedbackTimer = null;
     }
 
     preload() {
@@ -72,11 +74,40 @@ export class CitySelect extends Phaser.Scene {
         this.createNavigationArrows();
 
         // Renderiza a cidade inicial
+        this.createFeedbackText();
         this.renderCityView();
 
         // Tutorial: legenda da primeira vez que a selecao de cidade abre.
         this.tutorialManager = new TutorialManager(this);
         this.tutorialManager.startCitySelect();
+
+        this.events?.once?.('shutdown', () => {
+            this.feedbackTimer?.remove?.(false);
+            this.feedbackTimer = null;
+        });
+    }
+
+    createFeedbackText() {
+        this.feedbackText = this.add.text(256, 468, '', createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            fontStyle: 'bold',
+            color: '#BDEE38',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: { x: 10, y: 5 }
+        })).setOrigin(0.5).setDepth(80).setVisible(false);
+    }
+
+    showFeedback(message, durationMs = 2500) {
+        if (!this.feedbackText) return;
+        this.feedbackText.setText(message).setVisible(true);
+        this.feedbackTimer?.remove?.(false);
+        if (this.time?.delayedCall) {
+            this.feedbackTimer = this.time.delayedCall(durationMs, () => {
+                this.feedbackText?.setVisible(false);
+                this.feedbackTimer = null;
+            });
+        }
     }
 
     createBackButton() {
@@ -293,6 +324,7 @@ export class CitySelect extends Phaser.Scene {
                             playSfx(this, 'compra');
                             this.atpDisplay?.update();
                             this.renderCityView();
+                            this.showFeedback('Cidade comprada!');
                         } else {
                             playSfx(this, 'bloqueado');
                         }

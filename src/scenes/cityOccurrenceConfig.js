@@ -1,12 +1,11 @@
 // Configuracao centralizada de tipos de ocorrencia por cidade (Rh e bolsas contaminadas).
 // Todos os parametros ficam juntos aqui para ajuste facil apos confirmacao do grupo.
+import { CITY_CHARACTER_IDS } from './cityCharacterIds.js';
+import { getCharacterReplacement } from './shopStore.js';
+import { getShopCharacterBloodType } from './shopCharacterPresentation.js';
 
 // Quais personagens pertencem a cada cidade (1 = Centro, 2 = Distrito Profissional, 3 = Periferia/lazer).
-export const CITY_CHARACTER_IDS = {
-    1: ['joaquim', 'marlene', 'aparecida'],
-    2: ['bruno', 'beatriz', 'carlos'],
-    3: ['caue', 'yasmin', 'teo']
-};
+export { CITY_CHARACTER_IDS };
 
 // Quantidade de pacientes Rh- por cidade.
 export const RH_NEGATIVE_COUNT_BY_CITY = {
@@ -58,6 +57,14 @@ export function getCityNumberForCharacter(characterId) {
     return 1;
 }
 
+export function getEffectiveFixedBloodType(characterId) {
+    if (!characterId) return null;
+    const ownType = getShopCharacterBloodType(characterId);
+    if (ownType) return ownType;
+    const replacementId = getCharacterReplacement(characterId);
+    return replacementId ? getShopCharacterBloodType(replacementId) : null;
+}
+
 export function getRhNegativeCharactersForCity(cityNumber) {
     const city = Number(cityNumber) || 1;
     const cityChars = CITY_CHARACTER_IDS[city] || [];
@@ -69,10 +76,18 @@ export function getRhNegativeCharactersForCity(cityNumber) {
 
     const preferred = (RH_NEGATIVE_CANDIDATES_BY_CITY[city] || []).filter((id) => cityChars.includes(id));
     const remaining = cityChars.filter((id) => !preferred.includes(id));
-    return [...preferred, ...remaining].slice(0, targetCount);
+    const baseRhNegative = [...preferred, ...remaining].slice(0, targetCount);
+    return baseRhNegative.filter((id) => {
+        const fixed = getEffectiveFixedBloodType(id);
+        return !fixed || fixed.endsWith('-');
+    });
 }
 
 export function getCharacterRh(characterId, cityNumber = null) {
+    const fixed = getEffectiveFixedBloodType(characterId);
+    if (fixed) {
+        return fixed.endsWith('-') ? '-' : '+';
+    }
     const city = typeof cityNumber === 'number' ? cityNumber : getCityNumberForCharacter(characterId);
     const rhNegativeChars = getRhNegativeCharactersForCity(city);
     return rhNegativeChars.includes(characterId) ? '-' : '+';
@@ -136,6 +151,10 @@ export function getCharacterOccurrenceRules(characterId, cityIndex = null) {
 }
 
 export function resolveBloodTypeWithRh(characterId, aboType, cityNumber = null) {
+    const fixed = getEffectiveFixedBloodType(characterId);
+    if (fixed) {
+        return fixed;
+    }
     const cleanAbo = String(aboType || 'A').trim().toUpperCase().replace(/[+-]/g, '');
     const rh = getCharacterRh(characterId, cityNumber);
     return `${cleanAbo}${rh}`;

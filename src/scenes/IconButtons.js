@@ -61,11 +61,13 @@ export class CharacterIconButtonBar {
             iconButton.setInteractive({ useHandCursor: true });
             this.scene.characterIconButtons[id] = iconButton;
 
-            iconButton.on('pointerdown', () => {
+            iconButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
+                event?.stopPropagation?.();
                 iconButton.setTint(0x8B2E40);
             });
 
-            iconButton.on('pointerup', () => {
+            iconButton.on('pointerup', (_pointer, _localX, _localY, event) => {
+                event?.stopPropagation?.();
                 this.updateTint(id);
                 playSfx(this.scene, 'clique');
                 // O mesmo icone alterna a descricao; outro icone troca o personagem.

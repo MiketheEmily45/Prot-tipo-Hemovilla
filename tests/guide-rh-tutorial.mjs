@@ -98,7 +98,7 @@ const {
     RH_GUIDE_RULE_SUMMARY
 } = await import('../src/scenes/bloodCompatibility.js');
 const { CONTAMINATED_SCREENING_INFO } = await import('../src/scenes/contaminatedInfo.js');
-const { GuidePanel } = await import('../src/scenes/GuidePanel.js');
+const { GuidePanel, GUIDE_TABS } = await import('../src/scenes/GuidePanel.js');
 const {
     TUTORIAL_FLAG_KEYS,
     DEFAULT_TUTORIAL_PROGRESS,
@@ -134,6 +134,11 @@ assert.match(CONTAMINATED_SCREENING_INFO.footerNotice, /Cidade 3/i);
 assert.match(CONTAMINATED_SCREENING_INFO.footerNotice, /1 coração/i);
 
 // ===== 2. GuidePanel nas Cidades 1, 2 e 3 =====
+assert.deepEqual(
+    GUIDE_TABS.map((t) => t.id),
+    ['tipos', 'aglutinacao', 'compatibilidade', 'contaminadas']
+);
+
 for (const [cityIndex, expectedRh] of [[0, false], [1, true], [2, true]]) {
     const scene = createMockScene(cityIndex);
     let paused = false;
@@ -160,6 +165,25 @@ for (const [cityIndex, expectedRh] of [[0, false], [1, true], [2, true]]) {
     assert.ok(tiposImages.includes('hemacia-rh-pos'));
     assert.ok(tiposImages.includes('hemacia-rh-neg'));
     assert.ok(tiposImages.includes('anticorpo-anti-d'));
+
+    // Aba Aglutinacao: 8 recortes reais de pocos (A, B, AB e O) e textos granulado/liso
+    panel.selectTab('aglutinacao');
+    const aglTexts = panel.contentElements.filter((e) => e.kind === 'text').map((e) => e.text).join(' | ');
+    const aglImages = panel.contentElements.filter((e) => e.kind === 'image').map((e) => e.key);
+    assert.match(aglTexts, /Aglutinou: o sangue fica granulado/);
+    assert.match(aglTexts, /Não aglutinou: continua liso/);
+    assert.match(aglTexts, /Tipo A/);
+    assert.match(aglTexts, /Tipo B/);
+    assert.match(aglTexts, /Tipo AB/);
+    assert.match(aglTexts, /Tipo O/);
+    [
+        'guia-tipoA-antiA', 'guia-tipoA-antiB',
+        'guia-tipoB-antiA', 'guia-tipoB-antiB',
+        'guia-tipoAB-antiA', 'guia-tipoAB-antiB',
+        'guia-tipoO-antiA', 'guia-tipoO-antiB'
+    ].forEach((key) => {
+        assert.ok(aglImages.includes(key), `Aba Aglutinacao deve incluir ${key}`);
+    });
 
     // Aba Compatibilidade: 4 tipos ABO na Cidade 1; 8 tipos + regra Rh nas Cidades 2 e 3
     panel.selectTab('compatibilidade');

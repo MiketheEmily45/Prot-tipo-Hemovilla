@@ -11,6 +11,7 @@ export const MINIGAME_ASSETS = {
     'frasco-anti-a': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoA.png',
     'frasco-anti-b': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoB.png',
     'bancada-vazia': 'assets/Minigame/Cenario/SalaAnalise/BancadaLaboratorio.png',
+    'bancada-sangue-sozinho': 'assets/Minigame/Cenario/SalaAnalise/SangueSozinho.png',
     'bancada-soros': 'assets/Minigame/Cenario/SalaAnalise/AntiAeAntiBSozinhos.png',
     'bancada-sangue-poco1': 'assets/Minigame/Cenario/SalaAnalise/SangueEmUmFrasco.png',
     'bancada-sangue': 'assets/Minigame/Cenario/SalaAnalise/SangueEmDoisFrascos.png',
@@ -72,7 +73,15 @@ export const MINIGAME_ASSETS = {
     'anticorpo-anti-b': 'assets/Minigame/Anticorpos/AntiB.png',
     'anticorpo-anti-d': 'assets/Minigame/Anticorpos/AntiD.png',
     'frasco-anti-d': 'assets/Minigame/FrascoAntigenos/FrascoAntigenoD.png',
-    'character-frame': 'assets/Personagens/moldura_personagens.png'
+    'character-frame': 'assets/Personagens/moldura_personagens.png',
+    'guia-tipoA-antiA': 'assets/Guia/tipoA_antiA_aglutinou.png',
+    'guia-tipoA-antiB': 'assets/Guia/tipoA_antiB_sem_aglutinar.png',
+    'guia-tipoB-antiA': 'assets/Guia/tipoB_antiA_sem_aglutinar.png',
+    'guia-tipoB-antiB': 'assets/Guia/tipoB_antiB_aglutinou.png',
+    'guia-tipoAB-antiA': 'assets/Guia/tipoAB_antiA_aglutinou.png',
+    'guia-tipoAB-antiB': 'assets/Guia/tipoAB_antiB_aglutinou.png',
+    'guia-tipoO-antiA': 'assets/Guia/tipoO_antiA_sem_aglutinar.png',
+    'guia-tipoO-antiB': 'assets/Guia/tipoO_antiB_sem_aglutinar.png'
 };
 
 // Tipo ABO -> chave da imagem de resultado da bancada.

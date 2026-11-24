@@ -70,6 +70,7 @@ export class CityNavigation {
 
         this.updateButtons();
         scene.tutorialManager?.onCityChanged();
+        scene.checkPendingMapNotices?.();
     }
 
     showLockNotice(message) {

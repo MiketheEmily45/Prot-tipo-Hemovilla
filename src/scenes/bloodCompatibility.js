@@ -61,6 +61,13 @@ export function isContaminated(bagType) {
     return clean === 'C+' || clean === 'C-' || clean === 'C';
 }
 
+export function isSameBloodType(patientType, bagType, { rhEnabled = RH_ENABLED } = {}) {
+    if (isContaminated(bagType)) return false;
+    if (getAbo(patientType) !== getAbo(bagType)) return false;
+    if (!rhEnabled) return true;
+    return getRh(patientType) === getRh(bagType);
+}
+
 export function canReceive(patientType, bagType, { rhEnabled = RH_ENABLED } = {}) {
     if (isContaminated(bagType)) {
         return false;
@@ -151,16 +158,25 @@ export function drawRound({
     contaminatedCount = 0,
     rhEnabled = RH_ENABLED
 } = {}) {
-    const normalPool = rhEnabled
+    const baseNormalPool = rhEnabled
         ? ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
         : ['A+', 'B+', 'AB+', 'O+'];
+
+    // Nunca oferece bolsa do mesmo tipo (ABO+Rh com Rh ativo; ABO sem Rh),
+    // mantendo excecao automatica quando nao ha outra bolsa compativel (ex.: O- ou O na Cidade 1).
+    const differentCompatible = baseNormalPool.filter(
+        (bag) => canReceive(patientType, bag, { rhEnabled }) && !isSameBloodType(patientType, bag, { rhEnabled })
+    );
+    const normalPool = differentCompatible.length > 0
+        ? baseNormalPool.filter((bag) => !isSameBloodType(patientType, bag, { rhEnabled }))
+        : baseNormalPool;
 
     const contaminatedPool = rhEnabled
         ? ['C+', 'C-']
         : ['C+'];
 
     const selectedContaminated = shuffle(contaminatedPool).slice(0, contaminatedCount);
-    const normalCountNeeded = Math.max(0, count - selectedContaminated.length);
+    const normalCountNeeded = Math.min(normalPool.length, Math.max(0, count - selectedContaminated.length));
 
     const compatiblePool = normalPool.filter((bag) => canReceive(patientType, bag, { rhEnabled }));
     const incompatiblePool = normalPool.filter((bag) => !canReceive(patientType, bag, { rhEnabled }));

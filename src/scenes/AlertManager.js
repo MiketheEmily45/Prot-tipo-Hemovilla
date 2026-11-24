@@ -39,6 +39,7 @@ export class AlertManager {
         }
 
         if (character.alertIcon) {
+            character.alertIcon.setDepth(character.sprite.depth + 1);
             character.alertIcon.setVisible(true);
             character.alertIcon.setPosition(
                 character.sprite.x + character.alertOffset.x,
@@ -79,6 +80,7 @@ export class AlertManager {
         }
 
         if (character.alertIcon) {
+            character.alertIcon.setDepth(character.sprite.depth + 1);
             character.alertIcon.setVisible(true);
             character.alertIcon.setPosition(
                 character.sprite.x + character.alertOffset.x,

@@ -98,11 +98,18 @@ for (const [id, patientType] of Object.entries(expectedTypes)) {
             rhEnabled: rules.rhEnabled
         });
 
-        assert.equal(bags.length, rules.totalBags, `${id}: total de bolsas`);
-        assert.equal(new Set(bags).size, rules.totalBags, `${id}: bolsas unicas`);
+        const expectedCount = (rules.city === 1 && id !== 'joaquim') ? 3 : rules.totalBags;
+        assert.equal(bags.length, expectedCount, `${id}: total de bolsas`);
+        assert.equal(new Set(bags).size, expectedCount, `${id}: bolsas unicas`);
         assert.equal(bags.filter(isContaminated).length, rules.contaminatedBags, `${id}: contaminadas`);
         assert.ok(bags.every((b) => Boolean(MINIGAME_ASSETS[`bolsa-${b}`])), `${id}: textura existente`);
         assert.ok(bags.some((b) => canReceive(patientType, b, { rhEnabled: rules.rhEnabled })), `${id}: >=1 compativel`);
+
+        if (id === 'joaquim' || id === 'bruno' || id === 'yasmin') {
+            assert.ok(bags.includes(patientType), `${id}: excecao automatica mantem ${patientType}`);
+        } else {
+            assert.ok(!bags.includes(patientType), `${id}: nao oferece bolsa do mesmo tipo (${patientType})`);
+        }
 
         if (rules.city === 1) {
             assert.ok(bags.every((b) => b.endsWith('+')), 'Cidade 1 so sorteia bolsas Rh+');

@@ -2,7 +2,7 @@
 // texto com scroll/mascara e botao de fechar.
 
 import { getDiscoveredType } from './discoveredTypes.js';
-import { createTextStyle } from './textUtils.js';
+import { createTextStyle, fitTextToBox } from './textUtils.js';
 import { playSfx } from './AudioManager.js';
 import { getCharacterReplacement } from './shopStore.js';
 import { getShopCharacterPresentation } from './shopCharacterPresentation.js';
@@ -11,11 +11,16 @@ export const DESCRIPTION_PANEL_CONFIG = {
     panelWidth: 448,
     panelHeight: 448,
     panelX: 256,
-    contentWidth: 390,
+    contentWidth: 372,
     fontSize: 18,
+    minFontSize: 12,
     titleFontSize: 22,
+    minTitleFontSize: 14,
     lineSpacing: 2
 };
+
+// Acima da legenda do tutorial (1000..1006) e do Joaquim elevado (1020..1023), abaixo de Quiz (1400) e Pause (1500).
+const PANEL_BASE_DEPTH = 1100;
 
 export class CharacterDescriptionPanel {
     constructor(scene, characterData = {}) {
@@ -60,79 +65,79 @@ export class CharacterDescriptionPanel {
             panelX,
             contentWidth,
             fontSize,
+            minFontSize,
             titleFontSize,
+            minTitleFontSize,
             lineSpacing
         } = DESCRIPTION_PANEL_CONFIG;
 
         // Escurece somente o mapa para manter a faixa de icones clicavel.
         const overlay = scene.add.rectangle(256, 256, 512, 512, 0x000000, 0.68);
-        overlay.setDepth(200);
+        overlay.setDepth(PANEL_BASE_DEPTH);
         overlay.setInteractive({ useHandCursor: true });
-        overlay.on('pointerdown', () => this.close());
-
-        let descriptionX = panelX;
-
-        const title = scene.add.text(panelX, 0, data.nome, createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: `${titleFontSize}px`,
-            fontStyle: 'bold',
-            color: '#3b2a20'
-        })).setOrigin(0.5, 0);
-
-        const description = scene.add.text(panelX, 0, content, createTextStyle({
-            fontFamily: 'monospace',
-            fontSize: `${fontSize}px`,
-            color: '#3b2a20',
-            lineSpacing: lineSpacing,
-            wordWrap: { width: contentWidth, useAdvancedWrap: true }
-        })).setOrigin(0.5, 0);
-
-        if (scene.currentCityIndex === 1 || scene.currentCityIndex === 2) {
-            // Fixa a margem esquerda usando Bruno na Cidade2 e Yasmin na
-            // Cidade3. Textos mais curtos, como o de Caue, nao ficam deslocados.
-            const alignmentReference = scene.currentCityIndex === 1
-                ? characterData.bruno : characterData.yasmin;
-            if (alignmentReference) {
-                description.setText([
-                    `Tipo sanguíneo: ${getDiscoveredType(scene.currentCityIndex === 1 ? 'bruno' : 'yasmin') ?? '?'}`,
-                    alignmentReference.descricao,
-                    ...(alignmentReference.condicao ? [`Condição: ${alignmentReference.condicao}`] : [])
-                ].join('\n\n'));
-                descriptionX = Math.round(panelX - description.width / 2);
-                description.setOrigin(0, 0);
-                description.setText(content);
-            }
-        }
+        overlay.on('pointerdown', (_pointer, _localX, _localY, event) => {
+            event?.stopPropagation?.();
+            this.close();
+        });
 
         // O painel fica 20 pixels acima do centro vertical da tela.
         const panelTop = 284 - panelHeight / 2;
         const panelY = panelTop + panelHeight / 2;
         const frame = scene.add.image(panelX, panelY, 'character-frame');
         frame.setDisplaySize(panelWidth, panelHeight);
-        frame.setDepth(201);
+        frame.setDepth(PANEL_BASE_DEPTH + 1);
 
         const panelBlocker = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0xffffff, 0);
-        panelBlocker.setDepth(202);
+        panelBlocker.setDepth(PANEL_BASE_DEPTH + 2);
         panelBlocker.setInteractive();
         panelBlocker.on('pointerdown', (_pointer, _localX, _localY, event) => event?.stopPropagation?.());
 
-        title.setPosition(panelX, panelTop + 34);
-        title.setDepth(203);
-        const descriptionTop = panelTop + 70 + title.height;
-        const descriptionBottom = panelTop + panelHeight - 20;
+        const title = scene.add.text(panelX, panelTop + 40, data.nome, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: `${titleFontSize}px`,
+            fontStyle: 'bold',
+            color: '#3b2a20',
+            align: 'center',
+            wordWrap: { width: contentWidth - 36, useAdvancedWrap: true }
+        })).setOrigin(0.5, 0);
+        fitTextToBox(title, {
+            maxWidth: contentWidth - 36,
+            maxHeight: 34,
+            maxFontSize: titleFontSize,
+            minFontSize: minTitleFontSize
+        });
+        title.setDepth(PANEL_BASE_DEPTH + 3);
+
+        const descriptionX = Math.round(panelX - contentWidth / 2);
+        const descriptionTop = Math.round(title.y + title.height + 12);
+        const descriptionBottom = panelTop + 406;
         const descriptionViewportHeight = descriptionBottom - descriptionTop;
-        // A mascara impede que o texto ultrapasse a area interna da moldura.
+
+        const description = scene.add.text(descriptionX, descriptionTop, content, createTextStyle({
+            fontFamily: 'monospace',
+            fontSize: `${fontSize}px`,
+            color: '#3b2a20',
+            lineSpacing: lineSpacing,
+            wordWrap: { width: contentWidth, useAdvancedWrap: true }
+        })).setOrigin(0, 0);
+        fitTextToBox(description, {
+            maxWidth: contentWidth,
+            maxHeight: descriptionViewportHeight,
+            maxFontSize: fontSize,
+            minFontSize
+        });
+
+        // A mascara impede que o texto ultrapasse a area interna da moldura (scroll atua como reserva em 12px).
         const descriptionMask = scene.make.graphics({ add: false });
         descriptionMask.fillStyle(0xffffff);
         descriptionMask.fillRect(
-            panelX - contentWidth / 2,
+            descriptionX,
             descriptionTop,
             contentWidth,
             descriptionViewportHeight
         );
-        description.setPosition(descriptionX, descriptionTop);
         description.setMask(descriptionMask.createGeometryMask());
-        description.setDepth(203);
+        description.setDepth(PANEL_BASE_DEPTH + 3);
 
         let descriptionScrollY = 0;
         const maxDescriptionScroll = Math.max(0, description.height - descriptionViewportHeight);
@@ -163,7 +168,7 @@ export class CharacterDescriptionPanel {
             fontStyle: 'bold',
             color: '#afadab'
         })).setOrigin(0.5);
-        closeButton.setDepth(204);
+        closeButton.setDepth(PANEL_BASE_DEPTH + 4);
         closeButton.setInteractive({ useHandCursor: true });
         closeButton.on('pointerdown', (_pointer, _localX, _localY, event) => {
             event?.stopPropagation?.();

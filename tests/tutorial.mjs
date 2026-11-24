@@ -54,6 +54,14 @@ const {
 const { getSettings, reactivateTutorial, DEFAULT_TUTORIAL_PROGRESS, TUTORIAL_FLAG_KEYS } = await import('../src/scenes/settingsStore.js');
 const { TUTORIAL_STEPS } = await import('../src/scenes/tutorialSteps.js');
 const { paginateCaption } = await import('../src/scenes/TutorialCaption.js');
+const {
+    TutorialManager,
+    ICON_DEFAULT_DEPTH,
+    ICON_TUTORIAL_DEPTH,
+    QUIZ_BUTTON_TUTORIAL_DEPTH,
+    JOAQUIM_TUTORIAL_DEPTH,
+    JOAQUIM_TUTORIAL_MAX_Y
+} = await import('../src/scenes/TutorialManager.js');
 const { setAllCitiesUnlocked } = await import('../src/scenes/debugState.js');
 const { markAttendanceJustCompleted } = await import('../src/scenes/tutorialState.js');
 const { markCharacterAttended } = await import('../src/scenes/atpStore.js');
@@ -135,18 +143,34 @@ assert.deepEqual(updateActiveCityTimers(0, 10 * 60 * 1000), []);
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.equal(getOccurrence('marlene').remainingMs, 120000);
 
-// A1 -> A2 e fechar o jogo no meio: retoma em A2.
+// A1 -> A2: texto cita apenas os icones; icones ficam clicaveis acima do blocker e abrem descricao por cima.
 caption(scene).advance();
 assert.equal(progress().introStep, 1);
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text);
+assert.match(pageText(scene), /ícones/i);
+assert.ok(Object.values(scene.characterIconButtons).every((icon) => icon.depth === ICON_TUTORIAL_DEPTH && icon.depth > caption(scene).depth));
 assert.ok(soundsPlayed.includes('clique'));
+
+// Clica no icone do Seu Joaquim durante A2: painel abre acima da legenda e pausa o avanco por teclado.
+scene.characterIconButtons.joaquim.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+scene.characterIconButtons.joaquim.emit('pointerup', null, 0, 0, { stopPropagation() {} });
+assert.ok(scene.characterOverlay, 'painel de descricao abre durante A2');
+assert.ok(scene.characterOverlay.overlay.depth > caption(scene).depth + 6);
+assert.ok(scene.characterOverlay.frame.depth > caption(scene).depth + 6);
+scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
+assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text, 'Espaco nao avanca A2 enquanto a descricao esta aberta');
+scene.characterOverlay.overlay.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+assert.equal(scene.characterOverlay, null, 'fechar descricao mantem A2 na tela');
+assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text);
+
 closeScene(scene);
 scene = openMap();
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[1].text, 'retoma no passo salvo');
 
-// Espaco e Enter tambem avancam.
+// Espaco e Enter tambem avancam; ao ir para A3, icones voltam ao depth padrao.
 scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[2].text);
+assert.ok(Object.values(scene.characterIconButtons).every((icon) => icon.depth === ICON_DEFAULT_DEPTH));
 scene.input.keyboard.emit('keydown-SPACE', { repeat: true });
 assert.equal(pageText(scene), TUTORIAL_STEPS.intro[2].text, 'repeticao da tecla nao avanca');
 assert.deepEqual(alertedIds(scene), []);
@@ -161,6 +185,20 @@ assert.equal(getOccurrence('aparecida').hasAlert, false);
 assert.equal(pageText(scene), TUTORIAL_STEPS.ocorrenciaInicial[0].text);
 assert.equal(caption(scene).blocking, false);
 assert.ok(!caption(scene).elements.some((el) => el.width === 512 && el.height === 608), 'A4 nao bloqueia o jogo');
+// A4 mantem Seu Joaquim acima da caixa de legenda e com depth maior que a legenda.
+{
+    const joaquim = joaquimOf(scene);
+    assert.ok(joaquim.sprite.y <= JOAQUIM_TUTORIAL_MAX_Y, 'Joaquim fica acima da caixa de legenda durante A4');
+    assert.equal(joaquim.sprite.depth, JOAQUIM_TUTORIAL_DEPTH);
+    assert.ok(joaquim.sprite.depth > caption(scene).depth + 6);
+    assert.ok(joaquim.alertIcon.depth > joaquim.sprite.depth);
+    joaquim.sprite.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+    assert.ok(joaquim.balloon.depth > caption(scene).depth + 6);
+    assert.ok(joaquim.miniGameButton.depth > caption(scene).depth + 6);
+    joaquim.sprite.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+    const interactiveCaptionEls = caption(scene).elements.filter((el) => el.input);
+    assert.equal(interactiveCaptionEls.length, 1, 'A4 nao cria hit bloqueador sobre a caixa (so Pular tutorial)');
+}
 // A4 fica na tela ate abrir o minigame (clicar na legenda ou apertar Espaco/Enter nao fecha A4).
 caption(scene).advance();
 scene.input.keyboard.emit('keydown-SPACE', { repeat: false });
@@ -183,6 +221,8 @@ const skipHit = caption(scene).elements.filter((el) => el.input && el.width < 51
 skipHit.emit('pointerdown', null, 0, 0, {});
 skipHit.emit('pointerup', null, 0, 0, {});
 assert.equal(caption(scene).isOpen, false);
+assert.equal(joaquimOf(scene).sprite.depth, 0, 'depth do Joaquim volta ao normal apos pular');
+assert.equal(joaquimOf(scene).alertIcon.depth, 1, 'depth do alerta volta ao normal apos pular');
 assert.equal(getSettings().tutorialHintsEnabled, false);
 assert.ok(TUTORIAL_FLAG_KEYS.every((key) => progress()[key] === true));
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos pular');
@@ -240,7 +280,6 @@ assert.equal(caption(scene).isOpen, false);
 closeScene(scene);
 
 // ===== Etapa 2: secoes C (minigame Fases 1, 2 e 3), D (apos 1o atendimento) e E (selecao de cidade) =====
-const { TutorialManager } = await import('../src/scenes/TutorialManager.js');
 const { addATP, getATP, isCharacterAttended } = await import('../src/scenes/atpStore.js');
 
 function createDummyScene(width = 512, height = 512) {
@@ -276,23 +315,24 @@ assert.equal(caption(mgScene).isOpen, true);
 assert.equal(caption(mgScene).blocking, false);
 assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase1[0].text);
 
-// Avanca para Fase 2: encerra C1 e mostra C2, C3, C4 e C5 (so ABO, sem Anti-D).
+// Avanca para Fase 2: encerra C1 e mostra C5 (guia primeiro), C2, C3 e C4 (so ABO, sem Anti-D).
 mgScene.tutorialManager.startMinigamePhase('minigameFase2');
 assert.equal(progress().minigameFase1, true);
 assert.equal(caption(mgScene).blocking, false);
-assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: descubra o tipo sanguíneo! Misture o sangue com os soros e observe se ele forma grumos (aglutinação).');
+assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase2[0].text);
+assert.match(pageText(mgScene), /guia/i);
+caption(mgScene).advance();
+assert.equal(pageText(mgScene), 'Fase 2 — Tipagem: pingue o sangue nos poços, depois adicione os soros Anti-A e Anti-B e misture para ver se forma grumos (aglutinação).');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Aglutinou com o Anti-A: tem antígeno A. Com o Anti-B: tem B. Com os dois: AB. Sem reação: tipo O.');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), 'Agora escolha o tipo sanguíneo certo. Cada erro tira um dos seus 3 corações.');
-caption(mgScene).advance();
-assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase2[3].text);
 assert.ok(!TUTORIAL_STEPS.minigameFase2.some((s) => /Anti-D|Rh/i.test(s.text)), 'Fase 2 nao cita Anti-D nem Rh');
 
-// Avanca para Fase 3: encerra Fase 2 e mostra C6 e C7.
+// Avanca para Fase 3: encerra Fase 2 e mostra C6 (com mencao ao guia) e C7.
 mgScene.tutorialManager.startMinigamePhase('minigameFase3');
 assert.equal(progress().minigameFase2, true);
-assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[0].text);
+assert.equal(pageText(mgScene), 'Fase 3 — Transfusão: arraste a bolsa certa e solte no paciente. Em dúvida, abra o guia no canto superior direito.');
 caption(mgScene).advance();
 assert.equal(pageText(mgScene), TUTORIAL_STEPS.minigameFase3[1].text);
 // Mesmo se o jogador fechar C7 antes de concluir a transfusao, os relogios continuam parados ate concluir.
@@ -314,19 +354,27 @@ assert.equal(getOccurrence('marlene').remainingMs, 120000, 'relogios nao descont
 assert.equal(getOccurrence('marlene').hasAlert, false);
 assert.ok(updateActiveCityTimers(0, 10 * 60 * 1000).length > 0, 'relogios voltam a contar apos concluir o minigame');
 
-// Volta ao mapa: secao D (D1, D2 e D3 com convite ao Quiz, bloqueando).
+// Volta ao mapa: secao D (D1, D2 e D3 com convite ao Quiz, bloqueando; em D3 o botao QUIZ fica clicavel).
 scene = openMap();
 assert.equal(caption(scene).isOpen, true);
 assert.equal(caption(scene).blocking, true);
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[0].text);
+assert.equal(scene.mapControls.quizButton.enabled, false, 'QUIZ bloqueado em D1');
 caption(scene).advance();
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[1].text);
+assert.equal(scene.mapControls.quizButton.enabled, false, 'QUIZ bloqueado em D2');
 caption(scene).advance();
 assert.equal(pageText(scene), TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text);
 assert.ok(/Quiz/i.test(TUTORIAL_STEPS.aposPrimeiroAtendimento[2].text), 'D3 convida a fazer o Quiz');
-caption(scene).advance();
-assert.equal(caption(scene).isOpen, false);
+assert.equal(scene.mapControls.quizButton.enabled, true, 'QUIZ liberado em D3');
+assert.equal(scene.mapControls.quizButton.background.depth, QUIZ_BUTTON_TUTORIAL_DEPTH);
+scene.mapControls.quizButton.background.emit('pointerdown', null, 0, 0, { stopPropagation() {} });
+scene.mapControls.quizButton.background.emit('pointerup', null, 0, 0, { stopPropagation() {} });
+assert.equal(caption(scene).isOpen, false, 'clicar em QUIZ encerra D3');
 assert.equal(progress().aposPrimeiroAtendimento, true);
+assert.equal(scene.mapControls.quizButton.background.depth, 100, 'depth do botao QUIZ restaurado');
+assert.equal(scene.quizPanel.isOpen, true, 'painel do Quiz abre a partir de D3');
+scene.quizPanel.close();
 closeScene(scene);
 
 // Abre a selecao de cidade (1a vez): secao E (E1, bloqueando); na 2a vez nao repete.

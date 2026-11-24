@@ -14,19 +14,84 @@ import { isCharacterAttended } from './atpStore.js';
 
 // No mapa (512x608) a caixa fica no fim da area da cidade (512 px), acima da barra dos icones.
 export const MAP_CAPTION_BOTTOM_Y = 506;
+export const ICON_DEFAULT_DEPTH = 100;
+export const ICON_TUTORIAL_DEPTH = 1005;
+export const QUIZ_BUTTON_TUTORIAL_DEPTH = 1005;
+export const JOAQUIM_TUTORIAL_DEPTH = 1020;
+export const JOAQUIM_TUTORIAL_MAX_Y = 410;
 
 export class TutorialManager {
     constructor(scene, { bottomY = null, depth = undefined } = {}) {
         this.scene = scene;
         this.caption = new TutorialCaption(scene, { bottomY, depth });
         this.currentSection = null;
+        this.currentStepId = null;
+        this.elevatedCharacter = null;
         scene.events?.once?.('shutdown', () => this.destroy());
     }
 
+    isShowingStep(stepId) {
+        return Boolean(this.caption?.isOpen && this.currentStepId === stepId);
+    }
+
+    setQuizButtonInteractiveDepth(elevated) {
+        const quizButton = this.scene?.mapControls?.quizButton;
+        if (!quizButton) return;
+        quizButton.background?.setDepth?.(elevated ? QUIZ_BUTTON_TUTORIAL_DEPTH : 100);
+        quizButton.label?.setDepth?.(elevated ? QUIZ_BUTTON_TUTORIAL_DEPTH + 1 : 101);
+    }
+
     destroy() {
+        this.restoreTutorialVisuals();
         this.caption?.destroy();
         this.caption = null;
         this.currentSection = null;
+    }
+
+    setCharacterIconsInteractiveDepth(elevated) {
+        const icons = Object.values(this.scene?.characterIconButtons || {});
+        const targetDepth = elevated ? ICON_TUTORIAL_DEPTH : ICON_DEFAULT_DEPTH;
+        icons.forEach((icon) => icon?.setDepth?.(targetDepth));
+    }
+
+    applyCharacterDepth(character, baseDepth) {
+        if (!character) return;
+        character.sprite?.setDepth?.(baseDepth);
+        character.alertIcon?.setDepth?.(baseDepth + 1);
+        character.balloon?.setDepth?.(baseDepth + 2);
+        character.balloonTitle?.setDepth?.(baseDepth + 3);
+        character.descriptionButton?.setDepth?.(baseDepth + 3);
+        character.miniGameButton?.setDepth?.(baseDepth + 3);
+    }
+
+    elevateTutorialCharacter() {
+        const character = this.scene?.clickableCharacters?.find(
+            (c) => c.iconButtonKey === TUTORIAL_CHARACTER_ID
+        );
+        if (!character) return;
+
+        if (character.sprite && typeof character.sprite.y === 'number' && character.sprite.y > JOAQUIM_TUTORIAL_MAX_Y) {
+            character.sprite.setPosition(character.sprite.x, JOAQUIM_TUTORIAL_MAX_Y);
+            if (typeof character.sprite.body?.reset === 'function') {
+                character.sprite.body.reset(character.sprite.x, JOAQUIM_TUTORIAL_MAX_Y);
+            }
+            this.scene.clickableCharacterManager?.updateBalloonPosition(character);
+            this.scene.clickableCharacterManager?.getAlertManager().updateCharacterAlert(character);
+        }
+
+        this.applyCharacterDepth(character, JOAQUIM_TUTORIAL_DEPTH);
+        this.elevatedCharacter = character;
+    }
+
+    restoreTutorialVisuals() {
+        this.currentStepId = null;
+        this.setCharacterIconsInteractiveDepth(false);
+        this.setQuizButtonInteractiveDepth(false);
+        if (this.elevatedCharacter) {
+            this.applyCharacterDepth(this.elevatedCharacter, 0);
+            this.elevatedCharacter = null;
+        }
+        this.scene?.mapControls?.updateQuizButtonState?.();
     }
 
     // ===== Nucleo =====
@@ -40,10 +105,23 @@ export class TutorialManager {
             startIndex,
             bottomY: TUTORIAL_CAPTION_BOTTOM_Y[section] ?? null,
             onStepDone,
+            onPageRender: (page) => {
+                this.currentStepId = page?.stepId ?? null;
+                this.setCharacterIconsInteractiveDepth(section === 'intro' && page?.stepId === 'A2');
+                this.setQuizButtonInteractiveDepth(section === 'aposPrimeiroAtendimento' && page?.stepId === 'D3');
+                if (section === 'ocorrenciaInicial') {
+                    this.elevateTutorialCharacter();
+                }
+                this.scene?.mapControls?.updateQuizButtonState?.();
+            },
+            onHide: () => this.restoreTutorialVisuals(),
             onComplete: () => {
                 this.currentSection = null;
                 this.markSeen(section);
                 onDone?.();
+                if (!this.caption?.isOpen) {
+                    this.scene?.checkPendingMapNotices?.();
+                }
             },
             onSkip: () => this.skip()
         });
@@ -60,6 +138,7 @@ export class TutorialManager {
         this.currentSection = null;
         skipTutorial();
         refreshOccurrenceClockFreeze();
+        this.scene?.checkPendingMapNotices?.();
     }
 
     // Fecha a secao atual (se houver) marcando-a como vista.
@@ -122,6 +201,7 @@ export class TutorialManager {
         // Se o jogo foi fechado antes de concluir, o alerta volta (em silencio) ao reabrir.
         const firstTime = !progress.ocorrenciaInicial;
         this.scene.clickableCharacterManager?.getAlertManager().triggerCharacter(TUTORIAL_CHARACTER_ID, !firstTime);
+        this.elevateTutorialCharacter();
         refreshOccurrenceClockFreeze();
 
         if (firstTime && !this.caption.isOpen) {

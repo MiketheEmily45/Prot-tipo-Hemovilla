@@ -7,7 +7,8 @@ import { createTextStyle } from './textUtils.js';
 import { GuidePanel } from './GuidePanel.js';
 import { GreenButton } from './GreenButton.js';
 import { playSfx } from './AudioManager.js';
-import { getCharacterOccurrenceRules } from './cityOccurrenceConfig.js';
+import { MinigameHintHelper } from './MinigameHintHelper.js';
+import { getCharacterOccurrenceRules, getEffectiveFixedBloodType } from './cityOccurrenceConfig.js';
 import {
     RH_DIAGNOSIS_OPTIONS,
     RH_NEUTRAL_ERROR_HINT,
@@ -72,8 +73,7 @@ export class TypingPhase {
         this.isActive = true;
         this.isConfirmed = false;
         this.cellSprite = null;
-        this.antiDDropSprite = null;
-        this.antiDDropTween = null;
+        this.serumDropEffects = [];
         this.hintTimer = null;
         this.confirmTimer = null;
 
@@ -92,6 +92,7 @@ export class TypingPhase {
             }
         });
         this.createGuideButton();
+        this.hintHelper = new MinigameHintHelper(this.scene, { y: 374, depth: 90 });
         this.reset();
     }
 
@@ -103,13 +104,13 @@ export class TypingPhase {
         if (this.confirmTimer) {
             this.confirmTimer.paused = isPaused;
         }
-        if (this.antiDDropTween) {
+        this.serumDropEffects.forEach((effect) => {
             if (isPaused) {
-                this.antiDDropTween.pause?.();
+                effect.tween?.pause?.();
             } else {
-                this.antiDDropTween.resume?.();
+                effect.tween?.resume?.();
             }
-        }
+        });
     }
 
     createGuideButton() {
@@ -133,6 +134,11 @@ export class TypingPhase {
     resolvePatientType(characterId) {
         if (DEBUG_FORCE_TYPE) {
             return DEBUG_FORCE_TYPE;
+        }
+
+        const fixedBloodType = getEffectiveFixedBloodType(characterId);
+        if (fixedBloodType) {
+            return fixedBloodType.replace(/[+-]/g, '');
         }
 
         const data = characterData[characterId];
@@ -221,10 +227,13 @@ export class TypingPhase {
             tube: this.createItem('frasco-cheio', TUBE_START)
         };
         this.items.antiA.wellIndex = 0;
+        this.items.antiA.dropIconKey = 'anticorpo-anti-a';
         this.items.antiA.hint = 'O poço 1 é o do Anti-A';
         this.items.antiB.wellIndex = 1;
+        this.items.antiB.dropIconKey = 'anticorpo-anti-b';
         this.items.antiB.hint = 'O poço 2 é o do Anti-B';
         this.items.antiD.wellIndex = 0;
+        this.items.antiD.dropIconKey = 'anticorpo-anti-d';
         this.items.antiD.hint = 'O poço 2 não é usado nesta etapa. Use o poço 1.';
 
         this.items.antiA.sprite.on('dragend', () => this.dropSerum(this.items.antiA));
@@ -243,6 +252,7 @@ export class TypingPhase {
         sprite.on('dragstart', () => {
             this.isDragging = true;
             sprite.setDepth(31);
+            this.hintHelper?.notifyAction();
         });
 
         sprite.on('drag', (pointer, dragX, dragY) => {
@@ -453,7 +463,7 @@ export class TypingPhase {
         this.setDiagnosisEnabled(false);
         this.hideFailureButtons();
         this.clearCellSprite();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -496,7 +506,7 @@ export class TypingPhase {
 
         this.hideFailureButtons();
         this.clearCellSprite();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -520,34 +530,36 @@ export class TypingPhase {
         }
     }
 
-    clearAntiDDropAnimation() {
-        this.antiDDropTween?.stop?.();
-        this.antiDDropTween = null;
-        this.antiDDropSprite?.destroy?.();
-        this.antiDDropSprite = null;
+    clearSerumDropAnimations() {
+        this.serumDropEffects.forEach((effect) => {
+            effect.tween?.stop?.();
+            effect.sprite?.destroy?.();
+        });
+        this.serumDropEffects = [];
     }
 
-    playAntiDDropAnimation(fromX, fromY, well) {
-        if (!this.scene?.textures?.exists?.('anticorpo-anti-d') || !this.scene?.tweens?.add) {
+    playSerumDropAnimation(iconKey, fromX, fromY, well) {
+        if (!iconKey || !this.scene?.textures?.exists?.(iconKey) || !this.scene?.tweens?.add) {
             return;
         }
-        this.clearAntiDDropAnimation();
 
         const targetX = well.area.x + well.area.width / 2;
         const targetY = well.area.y + well.area.height / 2;
-        const startX = typeof fromX === 'number' ? fromX : ANTI_D_START.x;
-        const startY = typeof fromY === 'number' ? fromY : ANTI_D_START.y;
+        const startX = typeof fromX === 'number' ? fromX : targetX;
+        const startY = typeof fromY === 'number' ? fromY : targetY - 120;
 
-        const sprite = this.scene.add.image(startX, startY, 'anticorpo-anti-d');
+        const sprite = this.scene.add.image(startX, startY, iconKey);
         sprite.setOrigin(0.5);
         sprite.setScale(0.65);
         sprite.setDepth(35);
         if (sprite.texture) {
             sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
-        this.antiDDropSprite = sprite;
 
-        this.antiDDropTween = this.scene.tweens.add({
+        const effect = { sprite, tween: null };
+        this.serumDropEffects.push(effect);
+
+        effect.tween = this.scene.tweens.add({
             targets: sprite,
             x: targetX,
             y: targetY,
@@ -556,9 +568,8 @@ export class TypingPhase {
             duration: 320,
             ease: 'Quad.easeOut',
             onComplete: () => {
-                this.antiDDropTween = null;
-                this.antiDDropSprite?.destroy?.();
-                this.antiDDropSprite = null;
+                sprite?.destroy?.();
+                this.serumDropEffects = this.serumDropEffects.filter((item) => item !== effect);
             }
         });
     }
@@ -570,8 +581,8 @@ export class TypingPhase {
             } else {
                 const rhKeys = {
                     EMPTY: 'bancada-vazia',
-                    SERUM: 'bancada-antid-soro',
-                    BLOOD: 'bancada-antid-sangue',
+                    BLOOD: 'bancada-sangue-sozinho',
+                    READY: 'bancada-antid-sangue',
                     MIXED: RH_RESULT_FRAMES[this.patientRh]
                 };
                 well.image.setTexture(rhKeys[well.state]);
@@ -582,8 +593,8 @@ export class TypingPhase {
 
         const keys = {
             EMPTY: 'bancada-vazia',
-            SERUM: 'bancada-soros',
-            BLOOD: 'bancada-sangue',
+            BLOOD: 'bancada-sangue-sozinho',
+            READY: 'bancada-sangue',
             MIXED: BENCH_RESULT_FRAMES[this.patientType]
         };
 
@@ -601,6 +612,7 @@ export class TypingPhase {
     }
 
     dropSerum(item) {
+        this.hintHelper?.notifyAction();
         const well = this.findWellAt(item.sprite.x, item.sprite.y);
 
         if (!well) {
@@ -616,19 +628,35 @@ export class TypingPhase {
             return;
         }
 
-        playSfx(this.scene, 'clique');
-        const dropX = item.sprite.x;
-        const dropY = item.sprite.y;
-        well.state = 'SERUM';
-        this.updateWellImage(well);
-        item.sprite.setVisible(false);
-        this.scene.input.setDraggable(item.sprite, false);
-        if (item === this.items.antiD) {
-            this.playAntiDDropAnimation(dropX, dropY, well);
+        if (well.state === 'EMPTY') {
+            playSfx(this.scene, 'bloqueado');
+            this.returnItem(item);
+            this.showHint(
+                this.stage === 'RH'
+                    ? 'Pingue o sangue no poço 1 antes do soro Anti-D'
+                    : 'Pingue o sangue no poço antes do soro'
+            );
+            return;
         }
+
+        if (well.state === 'BLOOD') {
+            playSfx(this.scene, 'clique');
+            const dropX = item.sprite.x;
+            const dropY = item.sprite.y;
+            well.state = 'READY';
+            well.mixDistance = 0;
+            this.updateWellImage(well);
+            item.sprite.setVisible(false);
+            this.scene.input.setDraggable(item.sprite, false);
+            this.playSerumDropAnimation(item.dropIconKey, dropX, dropY, well);
+            return;
+        }
+
+        this.returnItem(item);
     }
 
     dropTube(item) {
+        this.hintHelper?.notifyAction();
         const well = this.findWellAt(item.sprite.x, item.sprite.y);
         this.returnItem(item);
 
@@ -643,21 +671,23 @@ export class TypingPhase {
         }
 
         if (well.state === 'EMPTY') {
-            playSfx(this.scene, 'bloqueado');
-            this.showHint(
-                this.stage === 'RH'
-                    ? 'Pingue o soro Anti-D no poço 1 antes do sangue'
-                    : 'Pingue o soro no poço antes do sangue'
-            );
-            return;
-        }
-
-        if (well.state === 'SERUM') {
             playSfx(this.scene, 'clique');
             well.state = 'BLOOD';
             well.mixDistance = 0;
             this.updateWellImage(well);
+
+            const allHaveBlood = this.stage === 'RH'
+                ? this.wells[0].state !== 'EMPTY'
+                : this.wells.every((w) => w.state !== 'EMPTY');
+            if (allHaveBlood) {
+                item.sprite.setVisible(false);
+                this.scene.input.setDraggable(item.sprite, false);
+            }
+            return;
         }
+
+        playSfx(this.scene, 'bloqueado');
+        this.showHint('Este poço já tem sangue. Agora pingue o soro.');
     }
 
     showHint(message) {
@@ -697,6 +727,7 @@ export class TypingPhase {
         if (this.stage !== 'ABO' || this.isConfirmed || this.state.isFailed) {
             return;
         }
+        this.hintHelper?.notifyAction();
         this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (type === this.patientType) {
@@ -764,6 +795,7 @@ export class TypingPhase {
         if (this.stage !== 'RH' || this.isConfirmed || this.state.isFailed) {
             return;
         }
+        this.hintHelper?.notifyAction();
         this.scene.tutorialManager?.completeCurrentSection();
         this.hintText.setDepth(45);
         if (rhValue === this.patientRh) {
@@ -884,7 +916,7 @@ export class TypingPhase {
         this.well2Label?.destroy?.();
         this.stageBadge?.destroy?.();
         this.antiDLabel?.destroy?.();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.retryButton?.destroy?.();
         this.retryLabel?.destroy?.();
         this.returnButton?.destroy?.();
@@ -902,6 +934,10 @@ export class TypingPhase {
         if (this.guidePanel) {
             this.guidePanel.destroy();
             this.guidePanel = null;
+        }
+        if (this.hintHelper) {
+            this.hintHelper.destroy();
+            this.hintHelper = null;
         }
     }
 
@@ -955,15 +991,19 @@ export class TypingPhase {
 
         if (this.lastPointer) {
             this.wells.forEach((well) => {
-                if (well.state !== 'BLOOD') {
+                if (well.state !== 'READY') {
                     return;
                 }
 
                 // So conta a distancia percorrida com o botao pressionado dentro do poco.
                 if (well.area.contains(pointer.x, pointer.y) && well.area.contains(this.lastPointer.x, this.lastPointer.y)) {
-                    well.mixDistance += Phaser.Math.Distance.Between(
+                    const stepDist = Phaser.Math.Distance.Between(
                         this.lastPointer.x, this.lastPointer.y, pointer.x, pointer.y
                     );
+                    if (stepDist > 0) {
+                        this.hintHelper?.notifyAction();
+                    }
+                    well.mixDistance += stepDist;
 
                     if (well.mixDistance >= MIX_DISTANCE) {
                         well.state = 'MIXED';
@@ -991,7 +1031,7 @@ export class TypingPhase {
         this.progressBar.clear();
 
         this.wells.forEach(({ area, state, mixDistance }) => {
-            if (state !== 'BLOOD' || mixDistance <= 0) {
+            if (state !== 'READY' || mixDistance <= 0) {
                 return;
             }
 
@@ -1005,12 +1045,37 @@ export class TypingPhase {
         });
     }
 
-    update() {
+    getCurrentHintStepKey() {
+        if (!this.isActive || this.isConfirmed || this.state.isFailed) {
+            return null;
+        }
+        if (this.stage === 'RH') {
+            const state = this.wells[0]?.state;
+            if (state === 'EMPTY') return 'RH_BLOOD';
+            if (state === 'BLOOD') return 'RH_SERUM';
+            if (state === 'READY') return 'RH_MIX';
+            return 'RH_DIAGNOSE';
+        }
+        if (this.wells.some((w) => w.state === 'EMPTY')) return 'ABO_BLOOD';
+        if (this.wells.some((w) => w.state === 'BLOOD')) return 'ABO_SERUM';
+        if (this.wells.some((w) => w.state === 'READY')) return 'ABO_MIX';
+        return 'ABO_DIAGNOSE';
+    }
+
+    update(delta = 0) {
         if (!this.isActive) {
             return;
         }
 
         this.updateMixing();
         this.drawProgressBars();
+        this.hintHelper?.update(delta, {
+            stepKey: this.getCurrentHintStepKey(),
+            suppressed: Boolean(
+                this.scene?.tutorialManager?.caption?.isOpen
+                || this.guidePanel?.isOpen
+                || this.hintText?.text
+            )
+        });
     }
 }

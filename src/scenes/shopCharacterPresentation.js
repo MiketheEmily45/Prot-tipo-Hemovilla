@@ -16,6 +16,7 @@ export const SHOP_CHARACTER_PRESENTATIONS = {
     cristina: {
         name: 'Cristina',
         gender: 'female',
+        bloodType: 'B+',
         description: 'Uma educadora incrível, que espalha conhecimento e alegria com carisma excepcional. Só não mexa nas plantinhas dela!',
         icon: 'assets/Personagens/Extras/Cristina/Cristina.Icone.png',
         map: {
@@ -45,6 +46,10 @@ export const SHOP_CHARACTER_PRESENTATIONS = {
 
 export function getShopCharacterPresentation(characterId) {
     return SHOP_CHARACTER_PRESENTATIONS[characterId] ?? null;
+}
+
+export function getShopCharacterBloodType(characterId) {
+    return SHOP_CHARACTER_PRESENTATIONS[characterId]?.bloodType ?? null;
 }
 
 export function preloadShopCharacterMapAssets(scene) {

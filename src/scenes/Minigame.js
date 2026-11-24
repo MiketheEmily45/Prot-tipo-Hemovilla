@@ -5,6 +5,7 @@ import { TypingPhase } from './TypingPhase.js';
 import { TransfusionPhase } from './TransfusionPhase.js';
 import { getDiscoveredType } from './discoveredTypes.js';
 import { isProgressSavingDisabled } from './debugTools.js';
+import { isRhEnabledForCity } from './cityOccurrenceConfig.js';
 import { getCityIndexByCharacterId } from './CityCharacters.js';
 import { endMinigameSession, triggerOccurrence } from './occurrenceState.js';
 import { preloadAudio, playSfx, stopSfx, playSceneMusic, stopMusic } from './AudioManager.js';
@@ -138,10 +139,13 @@ export class Minigame extends Phaser.Scene {
     }
 
     setupAttendanceState() {
+        const discoveredType = isProgressSavingDisabled() ? null : getDiscoveredType(this.characterId);
+        const rhRequired = isRhEnabledForCity((this.cityIndex ?? 0) + 1);
+        const typeKnown = discoveredType !== null && (!rhRequired || /[+-]$/.test(discoveredType));
         this.attendanceState = new AttendanceState({
             characterId: this.characterId,
             cityIndex: this.cityIndex,
-            typeKnown: isProgressSavingDisabled() ? false : (getDiscoveredType(this.characterId) !== null)
+            typeKnown
         });
     }
 

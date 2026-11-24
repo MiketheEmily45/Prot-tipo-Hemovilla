@@ -16,6 +16,7 @@ export const GUIDE_PANEL_CONFIG = {
 
 export const GUIDE_TABS = [
     { id: 'tipos', label: 'Tipos' },
+    { id: 'aglutinacao', label: 'Aglutinação' },
     { id: 'compatibilidade', label: 'Compatibilidade' },
     { id: 'contaminadas', label: 'Contaminadas' }
 ];
@@ -114,23 +115,40 @@ export class GuidePanel {
 
     createTabs(tabY) {
         const scene = this.scene;
-        const tabWidth = 120;
+        const tabWidths = {
+            tipos: 60,
+            aglutinacao: 92,
+            compatibilidade: 114,
+            contaminadas: 90
+        };
+        const tabGap = 4;
         const tabHeight = 24;
-        const startX = 256 - tabWidth; // Tres abas centralizadas: -120, 0, +120
+        const totalWidth = GUIDE_TABS.reduce((sum, tab) => sum + (tabWidths[tab.id] || 90), 0)
+            + tabGap * (GUIDE_TABS.length - 1);
+        let cursorX = Math.round(GUIDE_PANEL_CONFIG.panelX - totalWidth / 2);
 
-        this.tabButtons = GUIDE_TABS.map((tab, index) => {
-            const x = startX + index * tabWidth;
-            const bg = scene.add.rectangle(x, tabY, tabWidth - 6, tabHeight, 0x2c1e18, 0.85);
+        this.tabButtons = GUIDE_TABS.map((tab) => {
+            const width = tabWidths[tab.id] || 90;
+            const x = Math.round(cursorX + width / 2);
+            cursorX += width + tabGap;
+
+            const bg = scene.add.rectangle(x, tabY, width, tabHeight, 0x2c1e18, 0.85);
             bg.setStrokeStyle(1, 0x8B2E40);
             bg.setDepth(203);
             bg.setInteractive({ useHandCursor: true });
 
             const label = scene.add.text(x, tabY, tab.label, createTextStyle({
                 fontFamily: 'monospace',
-                fontSize: '11px',
+                fontSize: '10px',
                 fontStyle: 'bold',
                 color: '#d1d5db'
             })).setOrigin(0.5).setDepth(204);
+            fitTextToBox(label, {
+                maxWidth: width - 8,
+                maxHeight: 18,
+                maxFontSize: 10,
+                minFontSize: 8
+            });
             label.setInteractive({ useHandCursor: true });
 
             const onSelect = () => {
@@ -188,6 +206,8 @@ export class GuidePanel {
 
         if (this.activeTab === 'tipos') {
             this.renderTiposTab();
+        } else if (this.activeTab === 'aglutinacao') {
+            this.renderAglutinacaoTab();
         } else if (this.activeTab === 'compatibilidade') {
             this.renderCompatibilidadeTab();
         } else if (this.activeTab === 'contaminadas') {
@@ -412,6 +432,165 @@ export class GuidePanel {
             antiD.setDepth(203);
             this.contentElements.push(antiD);
         }
+    }
+
+    renderAglutinacaoTab() {
+        const scene = this.scene;
+        const { panelX } = GUIDE_PANEL_CONFIG;
+
+        const legendBg = scene.add.rectangle(panelX, 145, 366, 26, 0x8B2E40, 0.08);
+        legendBg.setStrokeStyle(1, 0x8c7355, 0.45);
+        legendBg.setDepth(203);
+        this.contentElements.push(legendBg);
+
+        const legendItems = [
+            { y: 139, colorHex: '#8B2E40', swatch: 0x8B2E40, text: 'Aglutinou: o sangue fica granulado' },
+            { y: 151, colorHex: '#2c5e2e', swatch: 0x2e7d32, text: 'Não aglutinou: continua liso' }
+        ];
+        legendItems.forEach((item) => {
+            const dot = scene.add.rectangle(82, item.y, 8, 8, item.swatch, 1).setDepth(203);
+            this.contentElements.push(dot);
+
+            const txt = scene.add.text(92, item.y, item.text, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fontStyle: 'bold',
+                color: item.colorHex,
+                wordWrap: { width: 338, useAdvancedWrap: true }
+            })).setOrigin(0, 0.5).setDepth(203);
+            fitTextToBox(txt, {
+                maxWidth: 338,
+                maxHeight: 12,
+                maxFontSize: 10,
+                minFontSize: 8
+            });
+            this.contentElements.push(txt);
+        });
+
+        const rows = [
+            {
+                tipo: 'Tipo A',
+                wells: [
+                    { serum: 'Anti-A', imageKey: 'guia-tipoA-antiA', agglutinated: true },
+                    { serum: 'Anti-B', imageKey: 'guia-tipoA-antiB', agglutinated: false }
+                ]
+            },
+            {
+                tipo: 'Tipo B',
+                wells: [
+                    { serum: 'Anti-A', imageKey: 'guia-tipoB-antiA', agglutinated: false },
+                    { serum: 'Anti-B', imageKey: 'guia-tipoB-antiB', agglutinated: true }
+                ]
+            },
+            {
+                tipo: 'Tipo AB',
+                wells: [
+                    { serum: 'Anti-A', imageKey: 'guia-tipoAB-antiA', agglutinated: true },
+                    { serum: 'Anti-B', imageKey: 'guia-tipoAB-antiB', agglutinated: true }
+                ]
+            },
+            {
+                tipo: 'Tipo O',
+                wells: [
+                    { serum: 'Anti-A', imageKey: 'guia-tipoO-antiA', agglutinated: false },
+                    { serum: 'Anti-B', imageKey: 'guia-tipoO-antiB', agglutinated: false }
+                ]
+            }
+        ];
+
+        const startY = 162;
+        const rowHeight = 65;
+        const columns = [
+            { imgX: 152, textX: 184, textMaxW: 88 },
+            { imgX: 308, textX: 340, textMaxW: 96 }
+        ];
+
+        rows.forEach((row, index) => {
+            const rowY = startY + index * rowHeight;
+            const rowCenter = rowY + 32;
+
+            if (index < rows.length - 1) {
+                const separator = scene.add.line(
+                    panelX,
+                    rowY + rowHeight,
+                    0,
+                    0,
+                    364,
+                    0,
+                    0x8c7355,
+                    0.35
+                ).setDepth(203);
+                this.contentElements.push(separator);
+            }
+
+            const tipoText = scene.add.text(94, rowCenter, row.tipo, createTextStyle({
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                fontStyle: 'bold',
+                color: '#8B2E40',
+                wordWrap: { width: 48, useAdvancedWrap: true }
+            })).setOrigin(0.5, 0.5).setDepth(203);
+            fitTextToBox(tipoText, {
+                maxWidth: 48,
+                maxHeight: 22,
+                maxFontSize: 12,
+                minFontSize: 9
+            });
+            this.contentElements.push(tipoText);
+
+            row.wells.forEach((well, colIdx) => {
+                const col = columns[colIdx];
+                const borderColor = well.agglutinated ? 0x8B2E40 : 0x2e7d32;
+                const statusColor = well.agglutinated ? '#8B2E40' : '#2c5e2e';
+                const statusText = well.agglutinated ? 'Aglutinou:\ngranulado' : 'Não aglutinou:\nliso';
+
+                const imgFrame = scene.add.rectangle(col.imgX, rowCenter, 54, 54, 0xffffff, 0.25);
+                imgFrame.setStrokeStyle(2, borderColor, 1);
+                imgFrame.setDepth(203);
+                this.contentElements.push(imgFrame);
+
+                if (scene.textures?.exists?.(well.imageKey)) {
+                    const wellImg = scene.add.image(col.imgX, rowCenter, well.imageKey);
+                    wellImg.setDisplaySize(50, 50);
+                    if (wellImg.texture) {
+                        wellImg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                    }
+                    wellImg.setDepth(203);
+                    this.contentElements.push(wellImg);
+                }
+
+                const serumLabel = scene.add.text(col.textX, rowCenter - 12, well.serum, createTextStyle({
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    fontStyle: 'bold',
+                    color: '#3b2a20',
+                    wordWrap: { width: col.textMaxW, useAdvancedWrap: true }
+                })).setOrigin(0, 0.5).setDepth(203);
+                fitTextToBox(serumLabel, {
+                    maxWidth: col.textMaxW,
+                    maxHeight: 12,
+                    maxFontSize: 9,
+                    minFontSize: 8
+                });
+                this.contentElements.push(serumLabel);
+
+                const resultLabel = scene.add.text(col.textX, rowCenter + 9, statusText, createTextStyle({
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    fontStyle: 'bold',
+                    color: statusColor,
+                    lineSpacing: 1,
+                    wordWrap: { width: col.textMaxW, useAdvancedWrap: true }
+                })).setOrigin(0, 0.5).setDepth(203);
+                fitTextToBox(resultLabel, {
+                    maxWidth: col.textMaxW,
+                    maxHeight: 28,
+                    maxFontSize: 9,
+                    minFontSize: 8
+                });
+                this.contentElements.push(resultLabel);
+            });
+        });
     }
 
     renderCompatibilidadeTab() {

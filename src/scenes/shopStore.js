@@ -1,5 +1,5 @@
 import { isProgressSavingDisabled } from './debugState.js';
-import { CITY_CHARACTER_IDS } from './cityOccurrenceConfig.js';
+import { CITY_CHARACTER_IDS } from './cityCharacterIds.js';
 import { isCityUnlocked } from './cityUnlocks.js';
 import { SHOP_CHARACTER_PRESENTATIONS } from './shopCharacterPresentation.js';
 

@@ -8,7 +8,7 @@ import { GuidePanel } from './GuidePanel.js';
 import { GreenButton } from './GreenButton.js';
 import { playSfx } from './AudioManager.js';
 import { MinigameHintHelper } from './MinigameHintHelper.js';
-import { getCharacterOccurrenceRules } from './cityOccurrenceConfig.js';
+import { getCharacterOccurrenceRules, getEffectiveFixedBloodType } from './cityOccurrenceConfig.js';
 import {
     RH_DIAGNOSIS_OPTIONS,
     RH_NEUTRAL_ERROR_HINT,
@@ -134,6 +134,11 @@ export class TypingPhase {
     resolvePatientType(characterId) {
         if (DEBUG_FORCE_TYPE) {
             return DEBUG_FORCE_TYPE;
+        }
+
+        const fixedBloodType = getEffectiveFixedBloodType(characterId);
+        if (fixedBloodType) {
+            return fixedBloodType.replace(/[+-]/g, '');
         }
 
         const data = characterData[characterId];

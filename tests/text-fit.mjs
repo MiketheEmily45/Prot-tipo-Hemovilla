@@ -196,14 +196,18 @@ function createScene(cityIndex = 0) {
     }
 }
 
-// 3. GuidePanel nas Cidades 1 e 2: todos os textos das 3 abas tem wordWrap e cabem na moldura (x <= 455, y <= 432).
+// 3. GuidePanel nas Cidades 1 e 2: todos os textos das 4 abas e rotulos das abas tem wordWrap e cabem na moldura (x <= 455, y <= 432).
 {
     for (const cityIndex of [0, 1]) {
         const scene = createScene(cityIndex);
         const panel = new GuidePanel(scene, { isClockRunning: false });
-        for (const tab of ['tipos', 'compatibilidade', 'contaminadas']) {
+        for (const tab of ['tipos', 'aglutinacao', 'compatibilidade', 'contaminadas']) {
             if (!panel.isOpen) panel.open(tab);
             else panel.selectTab(tab);
+
+            for (const tabBtn of panel.tabButtons) {
+                assert.ok(tabBtn.label.width <= tabBtn.bg.width, `tabBtn=${tabBtn.id}: label cabe no botao`);
+            }
 
             const textEls = panel.contentElements.filter((el) => el.kind === 'text');
             assert.ok(textEls.length > 0);

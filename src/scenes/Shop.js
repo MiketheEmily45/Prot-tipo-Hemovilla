@@ -12,6 +12,7 @@ import {
     purchaseShopCharacter
 } from './shopStore.js';
 import { CITY_CHARACTER_IDS } from './cityOccurrenceConfig.js';
+import { updateActiveCityTimers } from './occurrenceState.js';
 import { characterData } from './characterData.js';
 import { getShopCharacterPresentation } from './shopCharacterPresentation.js';
 
@@ -116,6 +117,15 @@ export class Shop extends Phaser.Scene {
             this.input.keyboard?.off('keydown-ESC', this.escapeHandler);
             this.feedbackTimer?.remove(false);
         });
+    }
+
+    update(_time, delta) {
+        if (this.fromScene === 'GameMap' && typeof delta === 'number' && delta > 0) {
+            const cityIndex = typeof this.returnData?.targetCityIndex === 'number'
+                ? this.returnData.targetCityIndex
+                : (typeof this.returnData?.cityIndex === 'number' ? this.returnData.cityIndex : 0);
+            updateActiveCityTimers(cityIndex, delta);
+        }
     }
 
     createBalancePanel() {

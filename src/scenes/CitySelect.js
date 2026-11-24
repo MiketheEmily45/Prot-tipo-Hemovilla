@@ -12,6 +12,7 @@ import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { createTextStyle } from './textUtils.js';
 import { preloadAudio, playSfx, playSceneMusic } from './AudioManager.js';
 import { TutorialManager } from './TutorialManager.js';
+import { updateActiveCityTimers } from './occurrenceState.js';
 
 export const CITY_NAMES = [
     'Centro',
@@ -85,6 +86,12 @@ export class CitySelect extends Phaser.Scene {
             this.feedbackTimer?.remove?.(false);
             this.feedbackTimer = null;
         });
+    }
+
+    update(_time, delta) {
+        if (typeof delta === 'number' && delta > 0) {
+            updateActiveCityTimers(this.currentCityIndex ?? 0, delta);
+        }
     }
 
     createFeedbackText() {

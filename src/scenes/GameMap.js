@@ -152,6 +152,18 @@ export class GameMap extends Phaser.Scene {
 
     update(time, delta) {
         if (this.pauseMenu?.isOpen) {
+            // Enquanto a minitela de Configuracoes estiver aberta na cidade, os timers da cidade atual continuam rodando.
+            if (this.pauseMenu.configOverlay?.isOpen && typeof delta === 'number' && delta > 0) {
+                const newlyAlerted = updateActiveCityTimers(this.currentCityIndex ?? 0, delta);
+                if (newlyAlerted && newlyAlerted.length > 0) {
+                    newlyAlerted.forEach((occ) => {
+                        const char = this.clickableCharacters?.find((c) => c.iconButtonKey === occ.id);
+                        if (char) {
+                            this.clickableCharacterManager?.getAlertManager().applyAlert(char, true);
+                        }
+                    });
+                }
+            }
             return;
         }
 

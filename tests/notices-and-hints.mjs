@@ -184,6 +184,24 @@ assert.equal(hasSeenCity2UnlockedNotice(), false);
 assert.equal(hasSeenQuizCityNotice(1), false);
 assert.equal(hasSeenQuizCityNotice(2), false);
 
+// Regressao: reutilizar a mesma instancia de GameMap entre shutdown -> init -> create
+// ao selecionar outra cidade no CitySelect (targetCityIndex > 0) nao pode acessar noticeCaption destruida.
+skipTutorial();
+markCharacterAttended('joaquim');
+markCharacterAttended('marlene');
+markCharacterAttended('aparecida');
+const reusedMap = openMap({ targetCityIndex: 0 });
+assert.equal(reusedMap.noticeCaption.isOpen, true);
+reusedMap.noticeCaption.advance();
+reusedMap.events.emit('shutdown');
+assert.equal(reusedMap.noticeCaption, null);
+reusedMap.init({ targetCityIndex: 1 });
+reusedMap.create();
+assert.equal(reusedMap.noticeCaption.isOpen, true);
+assert.equal(reusedMap.noticeCaption.pages[0].text, QUIZ_NEW_TYPES_NOTICE_TEXT);
+reusedMap.events.emit('shutdown');
+clearAllProgress();
+
 // ===== 3. Item 9: guia em destaque na Fase 2 e mencionado na Fase 3 =====
 assert.equal(TUTORIAL_STEPS.minigameFase2[0].id, 'C5');
 assert.match(TUTORIAL_STEPS.minigameFase2[0].text, /guia/i);

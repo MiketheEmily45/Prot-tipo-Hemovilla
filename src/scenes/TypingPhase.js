@@ -73,8 +73,7 @@ export class TypingPhase {
         this.isActive = true;
         this.isConfirmed = false;
         this.cellSprite = null;
-        this.antiDDropSprite = null;
-        this.antiDDropTween = null;
+        this.serumDropEffects = [];
         this.hintTimer = null;
         this.confirmTimer = null;
 
@@ -105,13 +104,13 @@ export class TypingPhase {
         if (this.confirmTimer) {
             this.confirmTimer.paused = isPaused;
         }
-        if (this.antiDDropTween) {
+        this.serumDropEffects.forEach((effect) => {
             if (isPaused) {
-                this.antiDDropTween.pause?.();
+                effect.tween?.pause?.();
             } else {
-                this.antiDDropTween.resume?.();
+                effect.tween?.resume?.();
             }
-        }
+        });
     }
 
     createGuideButton() {
@@ -223,10 +222,13 @@ export class TypingPhase {
             tube: this.createItem('frasco-cheio', TUBE_START)
         };
         this.items.antiA.wellIndex = 0;
+        this.items.antiA.dropIconKey = 'anticorpo-anti-a';
         this.items.antiA.hint = 'O poço 1 é o do Anti-A';
         this.items.antiB.wellIndex = 1;
+        this.items.antiB.dropIconKey = 'anticorpo-anti-b';
         this.items.antiB.hint = 'O poço 2 é o do Anti-B';
         this.items.antiD.wellIndex = 0;
+        this.items.antiD.dropIconKey = 'anticorpo-anti-d';
         this.items.antiD.hint = 'O poço 2 não é usado nesta etapa. Use o poço 1.';
 
         this.items.antiA.sprite.on('dragend', () => this.dropSerum(this.items.antiA));
@@ -456,7 +458,7 @@ export class TypingPhase {
         this.setDiagnosisEnabled(false);
         this.hideFailureButtons();
         this.clearCellSprite();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -499,7 +501,7 @@ export class TypingPhase {
 
         this.hideFailureButtons();
         this.clearCellSprite();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.hintText.setPosition(HINT_POSITION.x, HINT_POSITION.y);
         this.hintText.setText('');
         this.progressBar.clear();
@@ -523,34 +525,36 @@ export class TypingPhase {
         }
     }
 
-    clearAntiDDropAnimation() {
-        this.antiDDropTween?.stop?.();
-        this.antiDDropTween = null;
-        this.antiDDropSprite?.destroy?.();
-        this.antiDDropSprite = null;
+    clearSerumDropAnimations() {
+        this.serumDropEffects.forEach((effect) => {
+            effect.tween?.stop?.();
+            effect.sprite?.destroy?.();
+        });
+        this.serumDropEffects = [];
     }
 
-    playAntiDDropAnimation(fromX, fromY, well) {
-        if (!this.scene?.textures?.exists?.('anticorpo-anti-d') || !this.scene?.tweens?.add) {
+    playSerumDropAnimation(iconKey, fromX, fromY, well) {
+        if (!iconKey || !this.scene?.textures?.exists?.(iconKey) || !this.scene?.tweens?.add) {
             return;
         }
-        this.clearAntiDDropAnimation();
 
         const targetX = well.area.x + well.area.width / 2;
         const targetY = well.area.y + well.area.height / 2;
-        const startX = typeof fromX === 'number' ? fromX : ANTI_D_START.x;
-        const startY = typeof fromY === 'number' ? fromY : ANTI_D_START.y;
+        const startX = typeof fromX === 'number' ? fromX : targetX;
+        const startY = typeof fromY === 'number' ? fromY : targetY - 120;
 
-        const sprite = this.scene.add.image(startX, startY, 'anticorpo-anti-d');
+        const sprite = this.scene.add.image(startX, startY, iconKey);
         sprite.setOrigin(0.5);
         sprite.setScale(0.65);
         sprite.setDepth(35);
         if (sprite.texture) {
             sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
-        this.antiDDropSprite = sprite;
 
-        this.antiDDropTween = this.scene.tweens.add({
+        const effect = { sprite, tween: null };
+        this.serumDropEffects.push(effect);
+
+        effect.tween = this.scene.tweens.add({
             targets: sprite,
             x: targetX,
             y: targetY,
@@ -559,9 +563,8 @@ export class TypingPhase {
             duration: 320,
             ease: 'Quad.easeOut',
             onComplete: () => {
-                this.antiDDropTween = null;
-                this.antiDDropSprite?.destroy?.();
-                this.antiDDropSprite = null;
+                sprite?.destroy?.();
+                this.serumDropEffects = this.serumDropEffects.filter((item) => item !== effect);
             }
         });
     }
@@ -640,9 +643,7 @@ export class TypingPhase {
             this.updateWellImage(well);
             item.sprite.setVisible(false);
             this.scene.input.setDraggable(item.sprite, false);
-            if (item === this.items.antiD) {
-                this.playAntiDDropAnimation(dropX, dropY, well);
-            }
+            this.playSerumDropAnimation(item.dropIconKey, dropX, dropY, well);
             return;
         }
 
@@ -910,7 +911,7 @@ export class TypingPhase {
         this.well2Label?.destroy?.();
         this.stageBadge?.destroy?.();
         this.antiDLabel?.destroy?.();
-        this.clearAntiDDropAnimation();
+        this.clearSerumDropAnimations();
         this.retryButton?.destroy?.();
         this.retryLabel?.destroy?.();
         this.returnButton?.destroy?.();

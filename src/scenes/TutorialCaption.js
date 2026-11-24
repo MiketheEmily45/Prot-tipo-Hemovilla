@@ -125,6 +125,7 @@ export class TutorialCaption {
         onPageRender = null,
         onHide = null
     } = {}) {
+        if (!this.scene) return;
         this.hide();
         this.activeBottomY = bottomY;
 

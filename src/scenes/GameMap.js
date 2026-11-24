@@ -31,6 +31,8 @@ export class GameMap extends Phaser.Scene {
     }
 
     init(data) {
+        this.tutorialManager = null;
+        this.noticeCaption = null;
         this.targetCityIndex = data && typeof data.targetCityIndex === 'number'
             ? data.targetCityIndex
             : (data && typeof data.cityIndex === 'number' ? data.cityIndex : 0);
@@ -99,14 +101,18 @@ export class GameMap extends Phaser.Scene {
         // Tutorial: introducao e ocorrencia inicial do Seu Joaquim (se ainda pendentes).
         this.tutorialManager = new TutorialManager(this, { bottomY: MAP_CAPTION_BOTTOM_Y });
         this.noticeCaption = new TutorialCaption(this, { bottomY: MAP_CAPTION_BOTTOM_Y, depth: 1010 });
-        this.events?.once?.('shutdown', () => this.noticeCaption?.destroy());
+        this.events?.once?.('shutdown', () => {
+            this.noticeCaption?.destroy();
+            this.noticeCaption = null;
+            this.tutorialManager = null;
+        });
         this.tutorialManager.startMap();
         this.checkPendingMapNotices();
         this.mapControls?.updateQuizButtonState?.();
     }
 
     checkPendingMapNotices() {
-        if (!this.noticeCaption || this.noticeCaption.isOpen || this.tutorialManager?.caption?.isOpen) {
+        if (!this.noticeCaption || !this.noticeCaption.scene || this.noticeCaption.isOpen || this.tutorialManager?.caption?.isOpen) {
             return;
         }
 

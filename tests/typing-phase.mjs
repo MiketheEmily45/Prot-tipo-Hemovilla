@@ -132,9 +132,11 @@ assert.equal(runAtp('bruno', 60.1, { typeKnown: true }).withinTime, false);
 // Helper para simular cena do Phaser no TypingPhase.
 function createMockScene() {
     const pendingTimers = [];
+    const tweensCreated = [];
     const makeObj = (...args) => new DisplayObject(...args);
     const scene = {
         pendingTimers,
+        tweensCreated,
         flushTimers() {
             while (pendingTimers.length > 0) {
                 const t = pendingTimers.shift();
@@ -161,6 +163,12 @@ function createMockScene() {
             activePointer: { isDown: false, x: 0, y: 0 },
             setDraggable() {},
             keyboard: { addKey: () => new EventEmitter() }
+        },
+        tweens: {
+            add: (cfg) => {
+                tweensCreated.push(cfg);
+                return { pause() {}, resume() {}, stop() {} };
+            }
         },
         time: {
             delayedCall: (_ms, cb) => {
@@ -208,16 +216,19 @@ function createMockScene() {
     assert.equal(tp.wells[1].state, 'BLOOD');
     assert.equal(tp.wells[1].image.texture, 'bancada-sangue-sozinho');
     assert.equal(tp.items.tube.sprite.visible, false);
+    assert.equal(scene.tweensCreated.length, 0, 'tubo de sangue nao dispara animacao de gota');
 
     tp.items.antiA.sprite.setPosition(150, 240);
     tp.dropSerum(tp.items.antiA);
     assert.equal(tp.wells[0].state, 'READY');
     assert.equal(tp.wells[0].image.texture, 'bancada-sangue');
+    assert.equal(scene.tweensCreated.at(-1).targets.texture, 'anticorpo-anti-a');
 
     tp.items.antiB.sprite.setPosition(350, 240);
     tp.dropSerum(tp.items.antiB);
     assert.equal(tp.wells[1].state, 'READY');
     assert.equal(tp.wells[1].image.texture, 'bancada-sangue');
+    assert.equal(scene.tweensCreated.at(-1).targets.texture, 'anticorpo-anti-b');
 
     // Mistura nos 2 pocos.
     for (const wx of [100, 300]) {
@@ -295,6 +306,7 @@ function createMockScene() {
     assert.equal(tp.wells[0].state, 'READY');
     assert.equal(tp.wells[0].image.texture, 'bancada-antid-sangue');
     assert.equal(tp.items.antiD.sprite.visible, false);
+    assert.equal(scene.tweensCreated.at(-1).targets.texture, 'anticorpo-anti-d');
 
     // Mistura no poco 1.
     scene.input.activePointer = { isDown: true, x: 100, y: 200 };

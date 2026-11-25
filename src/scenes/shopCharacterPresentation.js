@@ -1,3 +1,7 @@
+function createSpecialMovementFrames(basePath, count) {
+    return Array.from({ length: count }, (_, index) => `${basePath}/pixil-frame-${index}.png`);
+}
+
 export const SHOP_CHARACTER_PRESENTATIONS = {
     douglas: {
         name: 'Professor Doug',
@@ -11,6 +15,10 @@ export const SHOP_CHARACTER_PRESENTATIONS = {
             left2: 'assets/Personagens/Extras/Douglas/Movimento no Mapa/Douglas.AndarEsquerda2.png',
             right1: 'assets/Personagens/Extras/Douglas/Movimento no Mapa/Douglas.AndarDireita1.png',
             right2: 'assets/Personagens/Extras/Douglas/Movimento no Mapa/Douglas.AndarDireita2.png'
+        },
+        specialMovement: {
+            frameRate: 8,
+            frames: createSpecialMovementFrames('assets/Personagens/Extras/Douglas/Movimento Especial', 10)
         }
     },
     cristina: {
@@ -26,6 +34,10 @@ export const SHOP_CHARACTER_PRESENTATIONS = {
             left2: 'assets/Personagens/Extras/Cristina/Movimento no mapa/Cristina.AndarEsquerda2.png',
             right1: 'assets/Personagens/Extras/Cristina/Movimento no mapa/Cristina.AndarDireita1.png',
             right2: 'assets/Personagens/Extras/Cristina/Movimento no mapa/Cristina.AndarDireita2.png'
+        },
+        specialMovement: {
+            frameRate: 8,
+            frames: createSpecialMovementFrames('assets/Personagens/Extras/Cristina/Movimento Especial', 11)
         }
     },
     enfermeira: {
@@ -40,6 +52,10 @@ export const SHOP_CHARACTER_PRESENTATIONS = {
             left2: 'assets/Personagens/Extras/Enfermeira/Movimento no mapa/Enfermeira.AndarEsquerda2.png',
             right1: 'assets/Personagens/Extras/Enfermeira/Movimento no mapa/Enfermeira.AndarDireita1.png',
             right2: 'assets/Personagens/Extras/Enfermeira/Movimento no mapa/Enfermeira.AndarDireita2.png'
+        },
+        specialMovement: {
+            frameRate: 8,
+            frames: createSpecialMovementFrames('assets/Personagens/Extras/Enfermeira/Movimento Especial/pixilart-frames (2)', 19)
         }
     }
 };
@@ -52,6 +68,14 @@ export function getShopCharacterBloodType(characterId) {
     return SHOP_CHARACTER_PRESENTATIONS[characterId]?.bloodType ?? null;
 }
 
+export function getShopCharacterSpecialMovementAnimKey(characterId) {
+    return `extra-${characterId}-special-movement`;
+}
+
+export function getShopCharacterSpecialMovementFrameKey(characterId, frameIndex) {
+    return `extra-${characterId}-special-${frameIndex}`;
+}
+
 export function preloadShopCharacterMapAssets(scene) {
     Object.entries(SHOP_CHARACTER_PRESENTATIONS).forEach(([characterId, presentation]) => {
         const prefix = `extra-${characterId}`;
@@ -62,5 +86,34 @@ export function preloadShopCharacterMapAssets(scene) {
         scene.load.image(`${prefix}-left-2`, presentation.map.left2);
         scene.load.image(`${prefix}-right-1`, presentation.map.right1);
         scene.load.image(`${prefix}-right-2`, presentation.map.right2);
+
+        const specialMovement = presentation.specialMovement;
+        if (specialMovement?.frames?.length) {
+            specialMovement.frames.forEach((framePath, frameIndex) => {
+                scene.load.image(getShopCharacterSpecialMovementFrameKey(characterId, frameIndex), framePath);
+            });
+        }
     });
+}
+
+export function ensureShopCharacterSpecialMovementAnim(scene, characterId) {
+    const presentation = SHOP_CHARACTER_PRESENTATIONS[characterId];
+    const specialMovement = presentation?.specialMovement;
+    if (!scene || !specialMovement?.frames?.length) {
+        return null;
+    }
+
+    const animKey = getShopCharacterSpecialMovementAnimKey(characterId);
+    if (!scene.anims.exists(animKey)) {
+        scene.anims.create({
+            key: animKey,
+            frames: specialMovement.frames.map((_, frameIndex) => ({
+                key: getShopCharacterSpecialMovementFrameKey(characterId, frameIndex)
+            })),
+            frameRate: specialMovement.frameRate ?? 8,
+            repeat: -1
+        });
+    }
+
+    return animKey;
 }

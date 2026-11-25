@@ -5,6 +5,7 @@ import { isDebugEnabled } from './debugTools.js';
 import { getOccurrence } from './occurrenceState.js';
 import { getCharacterReplacement } from './shopStore.js';
 import {
+    ensureShopCharacterSpecialMovementAnim,
     getShopCharacterPresentation,
     preloadShopCharacterMapAssets
 } from './shopCharacterPresentation.js';
@@ -181,6 +182,14 @@ export function createCityCharacter(scene, config) {
         stop: () => movement.stop(),
         resume: () => movement.resume()
     });
+
+    const specialMovementAnim = presentation
+        ? ensureShopCharacterSpecialMovementAnim(scene, replacementId)
+        : null;
+    if (specialMovementAnim) {
+        character.specialMovementAnim = specialMovementAnim;
+        character.isExtraReplacement = true;
+    }
 
     const occ = getOccurrence(id);
     if (occ && occ.hasAlert) {

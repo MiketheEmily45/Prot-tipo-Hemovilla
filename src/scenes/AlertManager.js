@@ -32,6 +32,7 @@ export class AlertManager {
             }
 
             character.stop?.();
+            this.playOccurrenceSpecialMovement(character);
         }
 
         if (character.miniGameButton) {
@@ -65,9 +66,22 @@ export class AlertManager {
             this.updateMiniGameButtonState(character);
         }
 
-        if (!character.isStoppedByClick) {
-            character.resume?.();
+        if (character.isStoppedByClick) {
+            if (character.specialMovementAnim) {
+                character.stop?.();
+            }
+            return;
         }
+
+        character.resume?.();
+    }
+
+    playOccurrenceSpecialMovement(character) {
+        if (!character?.specialMovementAnim || !character.sprite?.anims) {
+            return;
+        }
+
+        character.sprite.anims.play(character.specialMovementAnim, true);
     }
 
     updateCharacterAlert(character, time) {
